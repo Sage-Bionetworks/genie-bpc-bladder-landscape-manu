@@ -1,0 +1,194 @@
+---
+title: "GENIE BPC Bladder"
+author: "Alex Paynter"
+date: "May 2023"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, include = F,
+                      warning = F, message = F,
+                      fig.width = 7, fig.height = 5)
+k_dpi <- 150
+```
+
+
+<style type="text/css">
+.main-container {
+  max-width: 1000px !important;
+  margin: auto;
+}
+</style>
+
+
+
+```{r}
+library(cli)
+library(readr)
+library(here)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(rlang)
+library(magrittr)
+library(janitor)
+library(stringr)
+library(vctrs)
+library(glue)
+
+library(ggplot2)
+library(ggrepel)
+
+library(gt)
+library(gtsummary)
+library(sunburstR)
+library(huxtable)
+
+
+as_list(here("R", dir(here("R"))))
+
+# Source everything in the "R" folder - just functions, no scripts.
+purrr::walk(.x = here("R", dir(here("R"))), .f = source)
+```
+
+
+```{r, set_gtsummary_theme}
+theme_gtsummary_compact()
+```
+
+
+```{r, warning = T}
+read_wrap <- function(p) {
+  read_csv(file = here("data-raw", p), show_col_types = F)
+}
+
+dft_pt <- read_wrap("patient_level_dataset.csv")
+dft_ca_ind <- read_wrap("cancer_level_dataset_index.csv")
+dft_img <- read_wrap("imaging_level_dataset.csv")
+dft_med_onc <- read_wrap("med_onc_note_level_dataset.csv")
+dft_path <- read_wrap("pathology_report_level_dataset.csv")
+dft_regimens <- read_wrap("regimen_cancer_level_dataset.csv")
+# dft_tm <- read_wrap("tm_level_dataset.csv")
+dft_cpt <- read_wrap("cancer_panel_test_level_dataset.csv")
+
+# A few sanity checks on the data:
+if ((dft_pt$record_id %>% duplicated %>% any)) {
+  stop("Duplicated records in patient level dataset.")
+}
+# At the time we started working there was only one index cancer per
+#  record id.  Double checking this as we go:
+if ((dft_ca_ind %>% 
+     count(record_id, ca_seq, sort = T) %>%
+     pull(n) %>% is_greater_than(1) %>% any)) {
+  stop("Some patients have >1 index cancer - adjust as needed.")
+}
+```
+
+```{r, demo_data_manipulation, include = F}
+dft_pt_baseline_sub <- dft_pt %>%
+  mutate(
+    `Race (primary)` = format_ptlevel_naaccr_race_code_primary(
+      naaccr_race_code_primary
+    ),
+    `Ethnicity` = format_ptlevel_naaccr_ethnicity_code(
+      naaccr_ethnicity_code,
+    `Sex at birth` = naaccr_sex_code,
+    )) %>%
+  select(record_id, 
+         Institution = institution,
+         `Race (primary)`,
+         `Ethnicity`,
+         `Sex at birth`)
+
+
+dft_ca_ind_baseline_sub <- dft_ca_ind %>%
+  mutate(
+    ca_dx_how = format_ca_dx_how(ca_dx_how),
+    ca_hist_adeno_squamous = format_ca_hist_adeno_squamous(ca_hist_adeno_squamous),
+    stage_dx = format_stage_dx(stage_dx),
+    ca_path_n_stage = format_ca_path_n_stage(ca_path_n_stage)
+  ) %>%
+  select(
+    record_id,
+    `Age at dx (years)` = dob_ca_dx_yrs,
+    `Stage at dx` = stage_dx,
+    `Source of dx` = ca_dx_how,
+    # Update May 5:  Removed histology (unimportant)
+    # `Histology` = ca_hist_adeno_squamous, # at dx?
+    `Pathologic N Stage` = ca_path_n_stage # describes spread to lymph nodes
+  ) 
+
+# On histology alternatives:
+# - naaccr_histology_cd has mostly the same info according to https://seer.cancer.gov/icd-o-3/.  Most of these levels are singletons.
+
+
+
+dft_tm_baseline <- dft_tm %>%
+  psa_test_unit_convert() %>%
+  filter(!is.na(tm_num_result_conv)) %>%
+  # filter down to results at or on diagnosis.
+  # Importantly there are psa/test values available before diagnosis for
+  #   many participants.
+  filter(dx_tm_days <= 30 & dx_tm_days >= -180) %>% 
+  group_by(record_id, tm_type) %>%
+  # Prioritize values at/before 
+  mutate(abs_dx_tm_days = abs(dx_tm_days)) %>%
+  arrange(abs_dx_tm_days) %>%
+  slice(1) %>%
+  ungroup() %>% 
+  select(record_id, 
+         tm_type, 
+         tm_num_result_conv, 
+         tm_result_units_conv) 
+
+# Visual check:
+# ggplot(dft_tm_baseline, aes(x = dx_tm_days)) + stat_ecdf()
+
+
+# kind of a hacky check:  the resulting tibble will be 2 rows and 3 columns if there are 2 analytes with one unit each.
+tm_unit_conv_check <- dft_tm_baseline %>% 
+  tabyl(tm_type, tm_result_units_conv) %>% 
+  dim
+if (!all.equal(tm_unit_conv_check,c(2,3))) {
+  cli::abort("Unit conversion problem.")
+}
+
+dft_tm_baseline %<>% 
+  select(-tm_result_units_conv) %>%
+  tidyr::pivot_wider(
+    names_from = "tm_type",
+    values_from = "tm_num_result_conv"
+  ) %>%
+  rename(
+    `PSA (ng/mL)` = PSA,
+    `Testosterone (ng/dL)` = Testosterone
+  )
+
+
+
+
+
+
+
+
+
+
+dft_demo <- full_join(
+  dft_pt_baseline_sub,
+  dft_ca_ind_baseline_sub,
+  by = "record_id"
+) %>%
+  full_join(
+    .,
+    dft_tm_baseline,
+    by = "record_id"
+  )
+
+```
+
