@@ -34,6 +34,8 @@ format_ptlevel_naaccr_race_code_primary <- function(col, drop_unused = T) {
                          "Unknown")
   )
   
+  f <- forcats::fct_explicit_na(f, na_level = "Unknown")
+  
   if (drop_unused) {
     f <- forcats::fct_drop(f)
   }
