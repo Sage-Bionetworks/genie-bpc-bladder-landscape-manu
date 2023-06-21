@@ -225,7 +225,7 @@ dft_timing <- make_grand_timing_df(
   reg_dat = dft_reg
 )
 
-dft_timing %>% 
+gg_timing_all <- dft_timing %>% 
   select(record_id, ca_seq, matches("^tt_")) %>%
   select(-tt_dx_dob_yrs) %>%
   pivot_longer(
@@ -233,33 +233,28 @@ dft_timing %>%
     names_to = "interval",
     values_to = "years"
   ) %>%
-  ggplot(data = .,
-         aes(x = years, y = 1)) + 
-  geom_violin(fill = "#cceeff", color = "#225555",
-              draw_quantiles = c(0.25, 0.5, 0.75)) + 
-  geom_jitter(width = 0, height = 0.25, alpha = 0.2, size = 0.25) + 
-  theme_bw() + 
-  facet_wrap(vars(interval), ncol = 1, scales = "free")
-
-
-dict_timing_vars <- tibble(
-  ~raw, ~plot_long
-  "tt_seq_dx_yrs", "First NGS (from dx)",
-  "tt_first_reg_dx_yrs", "First regimen (from dx)",
-  "tt_dmet_dx_yrs", "Distant Metastasis (from dx)",
-  "tt_os_dx_yrs", "Overall Survival (from dx)"
-)
-
-
-
-  
-  
-  
-  
+  mutate(interval = beautify_strings(interval, dict = dict_timing_vars)) %>%
+  plot_timing_intervals(
+    dat = .,
+    facet_scale = "fixed"
+  )
   
 ```
   
 ### R1.3: Timing of key events
+
+The following plots show four time intervals relative to the diagnosis date in the entire cohort:
+
+1. Time (years) from diagnosis to the first next generation sequencing test.
+2. Time (years) from diagnosis to the start of the first regimen.
+3. Time (years) from diagnosis to the first note of distant metastasis (some are diagnosed at Stage IV, implying a time of zero years).
+4. Time (years) that the participant was followed for survival.  Follow-up ends with censoring or death.
+
+These are violin plots, which show the density of observations.  Each individual observation is plotted in light opacity these density representations.  Summary statistics for each interval are printed on the rigth hand side.
+
+```{r, include = T, fig.height = 6}
+gg_timing_all
+```
 
 
 
