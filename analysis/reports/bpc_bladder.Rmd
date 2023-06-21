@@ -217,10 +217,48 @@ dft_demo %>%
 
 
 ```{r}
-# Gather up a dataframe of key event timing.  Starting with the anything goes setting (i.e. not limited to metastatic disease).
-dft_timing <- get_first_cpt(dft_ca_ind, dft_cpt)
-```
 
+dft_timing <- make_grand_timing_df(
+  pt_dat = dft_pt,
+  ca_ind_dat = dft_ca_ind,
+  cpt_dat = dft_cpt,
+  reg_dat = dft_reg
+)
+
+dft_timing %>% 
+  select(record_id, ca_seq, matches("^tt_")) %>%
+  select(-tt_dx_dob_yrs) %>%
+  pivot_longer(
+    cols = matches("^tt_"),
+    names_to = "interval",
+    values_to = "years"
+  ) %>%
+  ggplot(data = .,
+         aes(x = years, y = 1)) + 
+  geom_violin(fill = "#cceeff", color = "#225555",
+              draw_quantiles = c(0.25, 0.5, 0.75)) + 
+  geom_jitter(width = 0, height = 0.25, alpha = 0.2, size = 0.25) + 
+  theme_bw() + 
+  facet_wrap(vars(interval), ncol = 1, scales = "free")
+
+
+dict_timing_vars <- tibble(
+  ~raw, ~plot_long
+  "tt_seq_dx_yrs", "First NGS (from dx)",
+  "tt_first_reg_dx_yrs", "First regimen (from dx)",
+  "tt_dmet_dx_yrs", "Distant Metastasis (from dx)",
+  "tt_os_dx_yrs", "Overall Survival (from dx)"
+)
+
+
+
+  
+  
+  
+  
+  
+```
+  
 ### R1.3: Timing of key events
 
 
