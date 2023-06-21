@@ -60,7 +60,11 @@ purrr::walk(.x = here("R", dir(here("R"))), .f = source)
 
 
 ```{r, set_gtsummary_theme}
-theme_gtsummary_compact(font_size = 10)
+theme_gtsummary_compact(font_size = 12)
+# A bit of a hack:  I don't want commas in my years.  As it happens,
+#   I don't have any numbers bigger than 1000 otherwise, so I'm 
+#   just making a global change.
+theme_gtsummary_language("en", big.mark = "") 
 ```
 
 
@@ -120,7 +124,8 @@ dft_pt_baseline_sub <- dft_pt %>%
          Institution = institution,
          `Race (primary)`,
          `Ethnicity`,
-         `Sex at birth`)
+         `Sex at birth`,
+         birth_year)
 
 dft_ca_ind_baseline_sub <- dft_ca_ind %>%
   mutate(
@@ -158,6 +163,17 @@ dft_demo <- full_join(
     dft_med_onc_dx,
     by = "record_id"
   )
+
+
+# age_dx is not an integer in this cohort, so this should be more exact.
+dft_demo %<>% 
+  mutate(
+    `Year of birth` = birth_year,
+    `Year of diagnosis` = round(birth_year + `Age at dx (years)`)
+  ) %>%
+  select(-birth_year) %>%
+  relocate(`Year of birth`, `Year of diagnosis`,
+           .before = `Age at dx (years)`) 
 ```
 
 
@@ -170,7 +186,13 @@ In the following table ECOG scores are only reported if captured near diagnosis/
 ```{r, tab_r1_1a, include = T}
 dft_demo %>%
   select(-record_id) %>%
-  gtsummary::tbl_summary(data = .) 
+  gtsummary::tbl_summary(
+    data = .,
+    digits = list(
+      `Year of birth` ~ 0,
+      `Year of diagnosis` ~ 0
+    )
+  ) 
 ```
 
 ### R1.1b: Characteristics at dx (by site)
@@ -178,7 +200,14 @@ dft_demo %>%
 ```{r, tab_r1_1b, include = T}
 dft_demo %>%
   select(-record_id) %>%
-  gtsummary::tbl_summary(data = ., by = Institution) 
+  gtsummary::tbl_summary(
+    data = ., 
+    digits = list(
+      `Year of birth` ~ 0,
+      `Year of diagnosis` ~ 0
+    ),
+    by = Institution
+  ) 
 ```
 
 ### R1.2: Characteristics at metastasis
