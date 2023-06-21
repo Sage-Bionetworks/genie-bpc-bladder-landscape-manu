@@ -212,7 +212,18 @@ dft_demo %>%
 
 ### R1.2: Characteristics at metastasis
 
-### R1.3: Timing plots (immortal time bias)
+
+
+
+
+```{r}
+# Gather up a dataframe of key event timing.  Starting with the anything goes setting (i.e. not limited to metastatic disease).
+dft_timing <- get_first_cpt(dft_ca_ind, dft_cpt)
+```
+
+### R1.3: Timing of key events
+
+
 
 
 
