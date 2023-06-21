@@ -44,6 +44,7 @@ library(glue)
 
 library(ggplot2)
 library(ggrepel)
+library(ggtext)
 
 library(gt)
 library(gtsummary)
@@ -162,7 +163,7 @@ dft_demo <- full_join(
 
 ## Content
 
-### Characteristics at dx
+### R1.1a: Characteristics at dx
 
 In the following table ECOG scores are only reported if captured near diagnosis/baseline.  I defined this (arbitrarily) as any measurement between 180 days before and 30 days after diagnosis.  Importantly, this leaves the majority of the cohort unobserved at baseline.
 
@@ -172,13 +173,144 @@ dft_demo %>%
   gtsummary::tbl_summary(data = .) 
 ```
 
-### Characteristics at dx (by site)
+### R1.1b: Characteristics at dx (by site)
 
 ```{r, tab_r1_1b, include = T}
 dft_demo %>%
   select(-record_id) %>%
   gtsummary::tbl_summary(data = ., by = Institution) 
 ```
+
+### R1.2: Characteristics at metastasis
+
+### R1.3: Timing plots (immortal time bias)
+
+
+
+
+
+
+
+```{r}
+dft_count_all <- make_obs_count_df(
+  med_onc_dat = dft_med_onc,
+  img_dat = dft_img,
+  reg_dat = dft_reg,
+  ca_ind_dat = dft_ca_ind
+)
+
+obs_type_levs <- c("Med Onc Notes",
+                   "Regimens",
+                   "Total Scans",
+                   "CT Scan",
+                   "MRI Scan",
+                   "PET or PET-CT")
+                   
+dft_count_long <- dft_count_all %>%
+  select(record_id, 
+         n_med_onc, 
+         n_scan_ct, 
+         n_scan_mri, 
+         n_scan_pet_or_pet_ct,
+         n_scan_total,
+         n_regimens) %>%
+  pivot_longer(cols = -record_id,
+               names_to = "type",
+               values_to = "n") %>%
+  mutate(
+    type_f = case_when(
+      type %in% "n_med_onc" ~ obs_type_levs[1],
+      type %in% "n_regimens" ~ obs_type_levs[2],
+      type %in% "n_scan_total" ~ obs_type_levs[3],
+      type %in% "n_scan_ct" ~ obs_type_levs[4],
+      type %in% "n_scan_mri" ~ obs_type_levs[5],
+      type %in% "n_scan_pet_or_pet_ct" ~ obs_type_levs[6]
+    ),
+    type_f = factor(type_f, levels = obs_type_levs)
+  )
+
+dft_count_quantiles <- dft_count_long %>%
+  nest(.by = type_f) %>%
+  mutate(res = purrr::map(.f = get_quantile_df,
+                          .x = data,
+                          var = "n")
+  ) %>%
+  select(type_f, res) %>%
+  unnest(res) 
+
+gg_count_ecdf <- ggplot(data = dft_count_long,
+                        aes(x = n)) + 
+  stat_ecdf(color = '#4477AA') + 
+  geom_text_repel(data = dft_count_quantiles,
+                  # yes, this is screwed up:
+                  aes(x = y, y = n, label = y),
+                  hjust = 0, nudge_x = 8, size = 2.5,
+                  direction = "x",
+                  segment.size = 0.15
+  ) + 
+  theme_bw() +
+  facet_wrap(vars(type_f), scales = "free", nrow = 2) + 
+  scale_y_continuous(
+    name = "Cohort fraction",
+    breaks = c(0, .5, 1),
+    labels = paste0(c(0, .5, 1)*100, "%")
+  ) + 
+  theme(
+    strip.text = element_text(hjust = 0)
+  )
+
+
+gg_count_hist_quan <- plot_count_hist_quan(
+  dat = dft_count_long,
+)
+
+
+
+```
+
+### R1.4a: Observations, histogram
+
+The following plot shows the number of people with X observations in our cohort.  The regimens are limited to only those for the index cancer (the other types of observations have no such designation).
+
+```{r, print_count_hist, include = T}
+gg_count_hist_quan
+```
+
+### R1.4b: Observations, eCDF
+
+Histograms are likely to be better understood by our clinical audience.  The following empirical cumulative distribution plot shows the same data in a way which might be appreciated by readers with computational backgrounds.  We probably don't need both:
+
+```{r, print_count_ecdf, include = T}
+gg_count_ecdf
+```
+
+
+
+
+
+
+```{r create_count_table, include = F}
+dfp_obs_count <- dft_count_all %>%
+  select(
+    Regimens = n_regimens,
+    `MedOnc Notes` = n_med_onc,
+    `CT` = n_scan_ct,
+    `MRI` = n_scan_mri,
+    `Bone Scans` = n_scan_bone,
+    `PET or PET-CT` = n_scan_pet_or_pet_ct,
+    `Total scans` = n_scan_total
+  ) %>% 
+  gtsummary::tbl_summary(data = ., digits = everything() ~ 0) %>%
+  modify_header(
+    label = '**Observation Type**'
+  )
+```
+
+
+
+
+
+
 
 
 
@@ -240,7 +372,7 @@ gg_top_drugs <- dft_top_drugs %>%
   
 ```
 
-### Drug regimens
+### R2.1a: Drug regimens
 
 The following table shows the proportion of participants who were exposed to each drug at any time during followup.  Only regimens associated with the index cancer are considered, and only the top 10 most used drugs are shown.
 
@@ -261,7 +393,7 @@ dft_sun_reg_all <- make_sunburst_input(
 )
 ```
 
-### Drug regimens (sunburst)
+### R2.2: Drug regimens (sunburst)
 
 The following plot shows the regimens used by the cohort which were associated with an index cancer.  The innermost ring is the first drug regimen reported after diagnosis.  The second ring shows the second drug regimen used after diagnosis, etc.
 
@@ -275,6 +407,9 @@ Places to go from here to get a more tractable display:
 - Look at the ordering of specific drugs of interest.
 - Examine the drugs used on/after an event of interest (distant metastasis, for example).
 
+
+
+## Notes
 
 ### Bladder specific variables (analysis TBD)
 
