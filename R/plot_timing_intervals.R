@@ -64,11 +64,9 @@ plot_timing_intervals <- function(
       strip.text.x = element_text(hjust = 0)
     ) + 
     scale_x_continuous(
+      name = time_var_lab,
       n.breaks = 8, 
       expand = expansion(add = 0, mult = c(0, 0.05))
-    ) + 
-    scale_y_continuous(
-      name = time_var_lab
     )
   
   return(gg)
