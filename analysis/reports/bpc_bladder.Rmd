@@ -306,6 +306,11 @@ dfp_obs_count <- dft_count_all %>%
   )
 ```
 
+### R1.4c: Observations, table
+
+```{r, include = T}
+dfp_obs_count
+```
 
 
 
