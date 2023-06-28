@@ -211,7 +211,7 @@ dft_demo %>%
 
 ### R1.2: Characteristics at metastasis
 
-**Placeholder.**  Please see the timing plots below, which answer most of the items we intended to put here.
+**Placeholder.**  Most of the information requested here is covered in the plots below.
 
 
 
@@ -246,7 +246,7 @@ dft_timing_long %<>%
     origin = case_when(
       str_detect(interval, "\\(from dx\\)$") ~ vec_origin_levs[1],
       str_detect(interval, "\\(from first regimen\\)$") ~ vec_origin_levs[2],
-      str_detect(interval, "\\(from metastasis\\)$") ~ vec_origin_levs[3],
+      str_detect(interval, "\\(from dmet\\)$") ~ vec_origin_levs[3],
     ),
     origin = factor(origin, levels = vec_origin_levs)
   )
@@ -261,9 +261,10 @@ gg_timing_comb_all <- cowplot::plot_grid(
   nrow = 1,
   rel_widths = c(0.7, 0.3)
 )
+
 ```
   
-### *R1.3: Timing of key events
+### *R1.3a: Event timing (whole cohort)
 
 The following plots show five time intervals in the entire cohort:
 
@@ -294,15 +295,60 @@ dft_timing_dmet <- make_grand_timing_df_dmet(
   reg_dat = dft_reg_dmet_s
 )
 
-dft_timing_dmet <- make_grand_timing_df_dmet(
-  pt_dat = dft_pt_dmet,
-  ca_ind_dat = dft_ca_ind_dmet,
-  cpt_dat = dft_cpt,
-  reg_dat = dft_reg
+dft_timing_dmet_long <- dft_timing_dmet %>% 
+  select(record_id, ca_seq, matches("^tt_")) %>%
+  select(-tt_dmet_dob_yrs) %>%
+  pivot_longer(
+    cols = matches("^tt_"),
+    names_to = "interval",
+    values_to = "years"
+  ) %>%
+  mutate(
+    interval = beautify_strings(
+      interval, 
+      dict = dict_timing_vars_dmet
+    )
+  ) 
+
+vec_origin_levs <- c("Diagnosis", "First Regimen", "Metastasis")
+
+dft_timing_dmet_long %<>% 
+  mutate(
+    origin = case_when(
+      str_detect(interval, "\\(from dx\\)$") ~ vec_origin_levs[1],
+      str_detect(interval, "\\(from first regimen\\)$") ~ vec_origin_levs[2],
+      str_detect(interval, "\\(from dmet\\)$") ~ vec_origin_levs[3],
+    ),
+    origin = factor(origin, levels = vec_origin_levs)
+  )
+
+gg_timing_dmet_dist_all <- plot_timing_intervals(dat = dft_timing_dmet_long) 
+gg_timing_dmet_ecdf_all <- plot_timing_ecdf(dft_timing_dmet_long)
+
+gg_timing_dmet_comb_all <- cowplot::plot_grid(
+  (gg_timing_dmet_dist_all + labs(title = "Density")),
+  (gg_timing_dmet_ecdf_all + labs(title = "eCDF")),
+  nrow = 1,
+  rel_widths = c(0.7, 0.3)
 )
-
-
 ```
+
+
+
+### *R1.3b: Event timing (from dmet)
+
+The following plot is the same, except that it indexes from the diagnosis of distant metastasis.  The cohort includes only those who were diagnosed with a metastasis at some point in followup.  These are the events shown:
+
+1. First NGS report date relative to the diagnosis of distant metastasis (years).
+2. First **post-metastasis** regimen start date, relative to the diagnosis of distant metastasis.  To be clear, regimens continued into the metastatic state are not counted here (open to change on this).
+3. Progression or censoring time relative to distant metastasis diagnosis.
+4. Survival or censoring time relative to distant metastasis.
+
+```{r, print_dmet_event_timing, include = T, fig.height = 6}
+gg_timing_dmet_comb_all
+```
+
+
 
 
 
@@ -558,10 +604,7 @@ Places to go from here to get a more tractable display:
 
 ### Todos
 
-- Add converted KPS scores to ECOG stats.
-- Add time from first regimen to first genomic sequence to figure R1.3.
 - Add swimmer plot.
-- Fill out table of metastatic disease state.
 
 
 ### Bladder specific variables (analysis TBD)

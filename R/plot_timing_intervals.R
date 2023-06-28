@@ -76,8 +76,8 @@ plot_timing_intervals <- function(
       n.breaks = 8, 
       expand = expansion(add = 0, mult = c(0, 0.05))
     ) +
-    scale_color_manual(values = violin_line) + 
-    scale_fill_manual(values = violin_fill)
+    scale_color_manual(values = violin_line, drop = F) + 
+    scale_fill_manual(values = violin_fill, drop = F)
   
   return(gg)
   

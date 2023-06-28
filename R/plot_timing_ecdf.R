@@ -36,7 +36,7 @@ plot_timing_ecdf <- function(
       labels = c("0%", "", "50%", "", "100%"),
       expand = expansion(add = 0, mult = 0.01)
     ) + 
-    scale_color_manual(values = pal_line)
+    scale_color_manual(values = pal_line, drop = F)
   
   return(gg)
 }
