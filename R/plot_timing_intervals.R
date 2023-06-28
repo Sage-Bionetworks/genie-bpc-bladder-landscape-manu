@@ -1,14 +1,18 @@
+# Old violin fill/line was cceeff and 225555
+# Fill colors below are washed out versions of paul tol high contrast (the lines)
+
 plot_timing_intervals <- function(
   dat, 
   time_var = "years",
   time_var_lab = "Years",
   facet_var = "interval",
+  color_var = "origin",
   label_digits = 1,
   label_size = 2.5,
   label_stat_color = "black",
-  violin_fill = "#cceeff",
-  violin_line = "#225555",
-  facet_scale = "free"
+  violin_fill = c("#a9c6e2", "#f6e3aa", "#f5c6d0", "gray80"),
+  violin_line = c("#004488", "#997700", "#994455", "gray20"),
+  facet_scale = "fixed"
 ) {
   
   ld <- label_digits # more concise
@@ -46,9 +50,11 @@ plot_timing_intervals <- function(
   gg <- ggplot(
     data = dat,
     aes(x = .data[[time_var]], y = 1)) + 
-    geom_vline(xintercept = 0, color = "#ee8866", size = 0.5) + 
-    geom_violin(fill = violin_fill, color = violin_line,
-                draw_quantiles = c(0.25, 0.5, 0.75)) + 
+    geom_vline(xintercept = 0, color = "black", size = 0.5) + 
+    geom_violin(
+      aes(fill = .data[[color_var]], color = .data[[color_var]]),
+      draw_quantiles = c(0.25, 0.5, 0.75)
+    ) + 
     geom_jitter(width = 0, height = 0.25, alpha = 0.2, size = 0.25) + 
     geom_richtext(
       aes(x = x_max*.95, y = 1.05, label = str_all),
@@ -62,13 +68,16 @@ plot_timing_intervals <- function(
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank(),
       axis.title.y = element_blank(),
-      strip.text.x = element_text(hjust = 0)
+      strip.text.x = element_text(hjust = 0),
+      legend.position = "none"
     ) + 
     scale_x_continuous(
       name = time_var_lab,
       n.breaks = 8, 
       expand = expansion(add = 0, mult = c(0, 0.05))
-    )
+    ) +
+    scale_color_manual(values = violin_line) + 
+    scale_fill_manual(values = violin_fill)
   
   return(gg)
   
