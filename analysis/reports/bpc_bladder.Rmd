@@ -284,13 +284,19 @@ gg_timing_comb_all
 
 
 ```{r}
-dft_dmet_timing <- make_dmet_status_block(dft_ca_ind) %>%
-  filter(dmet_status %in% "Distant Metastasis") %>%
-  select(record_id, ca_seq, dmet_time_yrs = dx_block_start)
+# Here we'll use the dmet filtered data for everything except for 
+#   the NGS test.  That is, only regimens which were started after
+#   distant metastasis, only people who had dmet, etc.
+dft_timing_dmet <- make_grand_timing_df_dmet(
+  pt_dat = dft_pt_dmet,
+  ca_ind_dat = dft_ca_ind_dmet,
+  cpt_dat = dft_cpt,
+  reg_dat = dft_reg_dmet_s
+)
 
-dft_timing <- make_grand_timing_df(
-  pt_dat = dft_pt,
-  ca_ind_dat = dft_ca_ind,
+dft_timing_dmet <- make_grand_timing_df_dmet(
+  pt_dat = dft_pt_dmet,
+  ca_ind_dat = dft_ca_ind_dmet,
   cpt_dat = dft_cpt,
   reg_dat = dft_reg
 )
