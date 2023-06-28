@@ -33,7 +33,8 @@ plot_timing_ecdf <- function(
     scale_y_continuous(
       position = "right", name = NULL,
       breaks = seq(0,1,by = 0.25),
-      labels = c("0%", "", "50%", "", "100%")
+      labels = c("0%", "", "50%", "", "100%"),
+      expand = expansion(add = 0, mult = 0.01)
     ) + 
     scale_color_manual(values = pal_line)
   

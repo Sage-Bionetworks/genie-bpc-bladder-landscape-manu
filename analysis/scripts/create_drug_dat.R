@@ -93,5 +93,5 @@ dft_drug %<>%
 
 readr::write_csv(
   x = dft_drug,
-  file = here('data', "drug.csv")
+  file = here('data', 'cohort', "drug.csv")
 )

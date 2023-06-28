@@ -71,42 +71,32 @@ theme_gtsummary_language("en", big.mark = "")
 
 ```{r, warning = T}
 read_wrap <- function(p) {
-  read_csv(file = here("data-raw", p), show_col_types = F)
+  read_csv(file = here("data", 'cohort', p), show_col_types = F)
 }
 
-dft_pt <- read_wrap("patient_level_dataset.csv")
-dft_ca_ind <- read_wrap("cancer_level_dataset_index.csv")
-dft_img <- read_wrap("imaging_level_dataset.csv")
-dft_med_onc <- read_wrap("med_onc_note_level_dataset.csv")
-dft_path <- read_wrap("pathology_report_level_dataset.csv")
-dft_reg <- read_wrap("regimen_cancer_level_dataset.csv")
+dft_pt <- read_wrap("pt.csv")
+dft_ca_ind <- read_wrap("ca_ind.csv")
+dft_img <- read_wrap("img.csv")
+dft_med_onc <- read_wrap("med_onc.csv")
+dft_path <- read_wrap("path.csv")
+dft_reg <- read_wrap("reg.csv")
 # dft_tm <- read_wrap("tm_level_dataset.csv")
-dft_cpt <- read_wrap("cancer_panel_test_level_dataset.csv")
+dft_cpt <- read_wrap("cpt.csv")
 
-# generally we'll just be interested in regimens associated with the index ca
-dft_reg <- inner_join(
-  dft_reg,
-  select(dft_ca_ind, record_id, ca_seq),
-  by = c("record_id", "ca_seq")
-)
-
-# A few sanity checks on the data:
-if ((dft_pt$record_id %>% duplicated %>% any)) {
-  stop("Duplicated records in patient level dataset.")
-}
-# At the time we started working there was only one index cancer per
-#  record id.  Double checking this as we go:
-if ((dft_ca_ind %>% 
-     count(record_id, ca_seq, sort = T) %>%
-     pull(n) %>% is_greater_than(1) %>% any)) {
-  stop("Some patients have >1 index cancer - adjust as needed.")
-}
 ```
 
 ```{r, load_derived_data}
 dft_drug <- read_csv(file = here("data", 'drug.csv'))
 # The drug data is already filtered down to index cancer cases. 
 # We don't have do the step done for regimens above.
+
+read_wrap_dmet <- read_wrap <- function(p) {
+  read_csv(file = here("data", 'dmet', p), show_col_types = F)
+}
+
+dft_pt_dmet <- read_wrap_dmet("pt_dmet.csv")
+dft_ca_ind <- read_wrap_dmet("ca_ind_dmet.csv")
+dft_reg_dmet_s <- read_wrap_dmet("reg_start_gte_dmet.csv")
 ```
 
 
@@ -221,7 +211,7 @@ dft_demo %>%
 
 ### R1.2: Characteristics at metastasis
 
-**Placeholder.**
+**Placeholder.**  Please see the timing plots below, which answer most of the items we intended to put here.
 
 
 
@@ -254,79 +244,59 @@ vec_origin_levs <- c("Diagnosis", "First Regimen", "Metastasis")
 dft_timing_long %<>% 
   mutate(
     origin = case_when(
-      str_detect(interval, "\\(from dx\\)$") ~ origin_levs[1],
-      str_detect(interval, "\\(from first regimen\\)$") ~ origin_levs[2],
-      str_detect(interval, "\\(from metastasis\\)$") ~ origin_levs[3],
+      str_detect(interval, "\\(from dx\\)$") ~ vec_origin_levs[1],
+      str_detect(interval, "\\(from first regimen\\)$") ~ vec_origin_levs[2],
+      str_detect(interval, "\\(from metastasis\\)$") ~ vec_origin_levs[3],
     ),
     origin = factor(origin, levels = vec_origin_levs)
   )
 
-gg_timing_all <-  plot_timing_intervals(
-  dat = dft_timing_long
+gg_timing_dist_all <- plot_timing_intervals(dat = dft_timing_long)
+
+gg_timing_ecdf_all <- plot_timing_ecdf(dft_timing_long)
+
+gg_timing_comb_all <- cowplot::plot_grid(
+  (gg_timing_dist_all + labs(title = "Density")),
+  (gg_timing_ecdf_all + labs(title = "eCDF")),
+  nrow = 1,
+  rel_widths = c(0.7, 0.3)
 )
-
-plot_timing_ecdf <- function(
-  dat, 
-  time_var = "years",
-  time_var_lab = "Years",
-  facet_var = "interval",
-  color_var = "origin",
-  pal_line = c("#004488", "#997700", "#994455", "gray20"),
-  facet_scale = "fixed"
-) {
-  
-  gg <- ggplot(
-    data = dat,
-    aes(x = .data[[time_var]], y = 1)) + 
-    geom_vline(xintercept = 0, color = "gray70", size = 0.5) + 
-    stat_ecdf(
-      pad = F,
-      aes(color = .data[[color_var]])
-    ) + 
-    facet_wrap(vars(interval), ncol = 1, scales = facet_scale) + 
-    theme_bw() + 
-    theme(
-      strip.text.x = element_text(hjust = 0),
-      legend.position = "none"
-    ) + 
-    scale_x_continuous(
-      name = time_var_lab,
-      n.breaks = 8, 
-      expand = expansion(add = 0, mult = c(0, 0.05))
-    ) +
-    scale_y_continuous(
-      position = "right", name = NULL,
-      breaks = seq(0,1,by = 0.25),
-      labels = c("0%", "", "50%", "", "100%")
-    ) + 
-    scale_color_manual(values = pal_line)
-  
-  return(gg)
-}
-
-plot_timing_ecdf(dft_timing_long)
 ```
   
 ### *R1.3: Timing of key events
 
 The following plots show five time intervals in the entire cohort:
 
-1. Time (years) from diagnosis to the first next generation sequencing test **report date**.
-2. Time (years) from diagnosis to the start of the first regimen.
+1. Time (years) from diagnosis to the start of the first regimen.
+2. Time (years) from diagnosis to the first next generation sequencing test **report date**.
 3. Time (years) from first regimen to the first NGS report date.
-3. Time (years) from diagnosis to the first note of distant metastasis (some are diagnosed at Stage IV, implying a time of zero years).
-4. Time (years) that the participant was followed for survival.  Follow-up ends with censoring or death.
+4. Time (years) from diagnosis to the first note of distant metastasis (some are diagnosed at Stage IV, implying a time of zero years).
+5. Time (years) that the participant was followed for survival.  Follow-up ends with censoring or death.
 
-These are violin plots, which show the density of observations.  Each individual observation is plotted in light opacity these density representations.  Summary statistics for each interval are printed on the rigth hand side.
+On the left violin plots are shown, which approximate the density of observations (similar to a histogram).  Summary statistics are also shown in the top right of these plots.  At right, similar information is shown in an empirical cumulative distribution plot.  An eCDF shows the proportion of the cohort (Y) with a value less than or equal to each duration in years (X).
 
 ```{r, include = T, fig.height = 6}
-gg_timing_all
+gg_timing_comb_all
 ```
 
 
 
 
 
+```{r}
+dft_dmet_timing <- make_dmet_status_block(dft_ca_ind) %>%
+  filter(dmet_status %in% "Distant Metastasis") %>%
+  select(record_id, ca_seq, dmet_time_yrs = dx_block_start)
+
+dft_timing <- make_grand_timing_df(
+  pt_dat = dft_pt,
+  ca_ind_dat = dft_ca_ind,
+  cpt_dat = dft_cpt,
+  reg_dat = dft_reg
+)
+
+
+```
 
 
 
