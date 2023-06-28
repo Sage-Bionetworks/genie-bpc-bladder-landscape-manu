@@ -1,4 +1,4 @@
-output_synid <- "syn51536061" #2023-04-17-PrCa-landscape-paper-outputs
+output_synid <- "syn51536061" 
 
 library(synapser)
 library(magrittr)

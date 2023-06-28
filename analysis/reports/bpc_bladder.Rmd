@@ -45,6 +45,7 @@ library(glue)
 library(ggplot2)
 library(ggrepel)
 library(ggtext)
+library(cowplot)
 
 library(gt)
 library(gtsummary)
@@ -144,14 +145,22 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
     `Pathologic N Stage` = ca_path_n_stage # describes spread to lymph nodes
   ) 
 
-dft_med_onc_dx <- dft_med_onc %>%
-  filter(md_ecog != "Not documented in note") %>%
-  mutate(md_ecog = format_md_ecog(md_ecog)) %>%
+dft_med_onc_dx <- augment_med_onc_imputed_ecog(dft_med_onc)
+
+dft_med_onc_dx %<>%
+  filter(md_ecog_imputed != "Not documented in note") %>%
+  mutate(md_ecog_imputed = format_md_ecog(md_ecog_imputed)) %>%
+  group_by(record_id) %>%
   filter(dx_md_visit_days < 30 & dx_md_visit_days > -180) %>%
   mutate(abs_days = abs(dx_md_visit_days)) %>%
   arrange(abs_days) %>% 
-  select(record_id, `ECOG (med oncologist)` =  md_ecog)
-
+  slice(1) %>%
+  ungroup(.) %>%
+  select(
+    record_id, 
+    `ECOG (or Karnofsky)` =  md_ecog_imputed,
+    `ECOG scale source` = md_ecog_imp_source,
+  )
 
 dft_demo <- full_join(
   dft_pt_baseline_sub,
@@ -179,7 +188,7 @@ dft_demo %<>%
 
 ## Content
 
-### R1.1a: Characteristics at dx
+### *R1.1a: Characteristics at dx
 
 In the following table ECOG scores are only reported if captured near diagnosis/baseline.  I defined this (arbitrarily) as any measurement between 180 days before and 30 days after diagnosis.  Importantly, this leaves the majority of the cohort unobserved at baseline.
 
@@ -195,7 +204,7 @@ dft_demo %>%
   ) 
 ```
 
-### R1.1b: Characteristics at dx (by site)
+### *R1.1b: Characteristics at dx (by site)
 
 ```{r, tab_r1_1b, include = T}
 dft_demo %>%
@@ -212,18 +221,21 @@ dft_demo %>%
 
 ### R1.2: Characteristics at metastasis
 
+**Placeholder.**
 
 
 
 
 ```{r}
-
 dft_timing <- make_grand_timing_df(
   pt_dat = dft_pt,
   ca_ind_dat = dft_ca_ind,
   cpt_dat = dft_cpt,
   reg_dat = dft_reg
 )
+
+dft_timing %<>% 
+  mutate(tt_seq_first_reg_yrs = tt_seq_dx_yrs - tt_first_reg_dx_yrs)
 
 gg_timing_all <- dft_timing %>% 
   select(record_id, ca_seq, matches("^tt_")) %>%
@@ -233,7 +245,9 @@ gg_timing_all <- dft_timing %>%
     names_to = "interval",
     values_to = "years"
   ) %>%
-  mutate(interval = beautify_strings(interval, dict = dict_timing_vars)) %>%
+  mutate(
+    interval = beautify_strings(interval, 
+                                dict = dict_timing_vars)) %>%
   plot_timing_intervals(
     dat = .,
     facet_scale = "fixed"
@@ -241,12 +255,13 @@ gg_timing_all <- dft_timing %>%
   
 ```
   
-### R1.3: Timing of key events
+### *R1.3: Timing of key events
 
-The following plots show four time intervals relative to the diagnosis date in the entire cohort:
+The following plots show five time intervals in the entire cohort:
 
-1. Time (years) from diagnosis to the first next generation sequencing test.
+1. Time (years) from diagnosis to the first next generation sequencing test **report date**.
 2. Time (years) from diagnosis to the start of the first regimen.
+3. Time (years) from first regimen to the first NGS report date.
 3. Time (years) from diagnosis to the first note of distant metastasis (some are diagnosed at Stage IV, implying a time of zero years).
 4. Time (years) that the participant was followed for survival.  Follow-up ends with censoring or death.
 
@@ -341,7 +356,7 @@ gg_count_hist_quan <- plot_count_hist_quan(
 
 ```
 
-### R1.4a: Observations, histogram
+### *R1.4a: Observations, histogram
 
 The following plot shows the number of people with X observations in our cohort.  The regimens are limited to only those for the index cancer (the other types of observations have no such designation).
 
@@ -349,7 +364,7 @@ The following plot shows the number of people with X observations in our cohort.
 gg_count_hist_quan
 ```
 
-### R1.4b: Observations, eCDF
+### *R1.4b: Observations, eCDF
 
 Histograms are likely to be better understood by our clinical audience.  The following empirical cumulative distribution plot shows the same data in a way which might be appreciated by readers with computational backgrounds.  We probably don't need both:
 
@@ -379,7 +394,7 @@ dfp_obs_count <- dft_count_all %>%
   )
 ```
 
-### R1.4c: Observations, table
+### *R1.4c: Observations, table
 
 ```{r, include = T}
 dfp_obs_count
@@ -393,6 +408,8 @@ dfp_obs_count
 
 
 ```{r}
+set.seed(2398) # color sampling below.
+
 dft_drug %>% 
   count(record_id, drug, sort = T) %>%
   count(drug)
@@ -408,54 +425,71 @@ dft_top_drugs %<>%
 
 n_bladder_cohort <- dft_ca_ind %>% nrow()
 
-set.seed(3890)
-gg_top_drugs <- dft_top_drugs %>%
-  select(drug, n) %>%
-  mutate(
-    prop = n/n_bladder_cohort,
-    str = glue("n={n} ({formatC(prop*100, digits = 1, format = 'f')}%)")
-  ) %>%
-  mutate(drug = forcats::fct_inorder(drug)) %>%
-  ggplot(data = .,
-         aes(x = prop, y = drug, fill = drug)) +
-  geom_col() + 
-  annotate(
-    geom = 'rect', 
-    xmin = 1, xmax = 1.5, ymin = -2, ymax = 15,
-    color = "gray80", fill = "gray80"
-  ) + 
-  geom_text(size = 2.5, 
-            nudge_x = .05, 
-            hjust = 0, 
-            aes(label = str)) + 
-  scale_fill_manual(
-    values = sample(make_sun_pal(10))
-  ) + 
-  scale_x_continuous(
-    name = "Proportion of cohort",
-    breaks = seq(0, 1, by = .2),
-    labels = paste(seq(0, 1, by = .2)*100, "%"),
-    expand = expansion(mult = c(0,0), add = c(0,0))
-  ) + 
-  scale_y_discrete(limits = rev) + 
-  coord_cartesian(xlim = c(0,1), ylim = c(0.9, 10.1)) + 
-  theme_bw() +
-  theme(
-    axis.title.y = element_blank(),
-    legend.position = "none",
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    plot.margin = unit(c(5,15,5,5), "pt")
+gg_top_drugs <- plot_drug_prop(
+  drug_dat = dft_top_drugs,
+  cohort_n = n_bladder_cohort,
+  sample(viridisLite::magma(n = 10, begin = 0.2, end = 0.8)),
+  plot_title = glue("Drugs started any time (n={n_bladder_cohort})")
+)
+
+
+# Now repeat the calculation above for CRPC regimens only.
+
+dft_dmet_block <- make_dmet_status_block(dft_ca_ind)
+  
+n_bladder_dmet <- dft_dmet_block %>% 
+  filter(dmet_status %in% "Distant Metastasis") %>%
+  nrow
+
+dft_drug_dmet <- dft_dmet_block %>%
+  filter(dmet_status %in% "Distant Metastasis") %>%
+  mutate(dmet_days = dx_block_start * 365.25) %>%
+  select(record_id, dmet_days) %>%
+  inner_join(
+    dft_drug, 
+    ., 
+    by = "record_id",
+    relationship = "many-to-one"
   )
+
+dft_drug_dmet %<>% 
+  # dx_drug_start_int is the number of days from dx to start of drug.
+  filter(dx_drug_start_int >= dmet_days)
+
+# Same processing from here:
+dfp_top_drugs_dmet <- dft_drug_dmet %>%
+  group_by(record_id, drug) %>%
+  summarize(observed = 1, .groups = "drop") %>%
+  group_by(drug) %>%
+  summarize(n = sum(observed)) %>%
+  arrange(desc(n)) %>%
+  head(10) %>%
+  mutate(drug = str_replace(drug, "\\(.*\\)", ""))
+
+gg_top_drugs_dmet <- plot_drug_prop(
+  drug_dat = dfp_top_drugs_dmet,
+  cohort_n = n_bladder_dmet,
+  pal = sample(viridisLite::viridis(n = 10, begin = 0.2, end = 0.8)),
+  plot_title = glue("Drugs started in metastatic setting (n={n_bladder_dmet})")
+)
+
+gg_top_drug_comb <- cowplot::plot_grid(
+  gg_top_drugs, gg_top_drugs_dmet,
+  ncol = 1
+)
+
+
+
+
   
 ```
 
-### R2.1a: Drug regimens
+### *R2.1a: Drug regimens
 
 The following table shows the proportion of participants who were exposed to each drug at any time during followup.  Only regimens associated with the index cancer are considered, and only the top 10 most used drugs are shown.
 
-```{r, output_top_drug_plot, include = T, fig.height = 3, fig.width = 7}
-gg_top_drugs
+```{r, output_top_drug_plot, include = T, fig.height = 6, fig.width = 7}
+gg_top_drug_comb
 ```
 
 
@@ -471,9 +505,9 @@ dft_sun_reg_all <- make_sunburst_input(
 )
 ```
 
-### R2.2: Drug regimens (sunburst)
+### R2.2a: Drug regimens (sunburst)
 
-The following plot shows the regimens used by the cohort which were associated with an index cancer.  The innermost ring is the first drug regimen reported after diagnosis.  The second ring shows the second drug regimen used after diagnosis, etc.
+The following plot (a "sunburst" plot) shows the regimens used by the cohort which were associated with an index cancer.  The innermost ring is the first drug regimen reported after diagnosis.  The second ring shows the second drug regimen used after diagnosis, etc.
 
 ```{r, include = T}
 sun_wrap(dft_sun_reg_all, seed = 238)
@@ -486,8 +520,21 @@ Places to go from here to get a more tractable display:
 - Examine the drugs used on/after an event of interest (distant metastasis, for example).
 
 
+### R2.2b: Drug regimens (metastatic setting)
+
+**Placeholder.**
+
 
 ## Notes
+
+
+### Todos
+
+- Add converted KPS scores to ECOG stats.
+- Add time from first regimen to first genomic sequence to figure R1.3.
+- Add swimmer plot.
+- Fill out table of metastatic disease state.
+
 
 ### Bladder specific variables (analysis TBD)
 

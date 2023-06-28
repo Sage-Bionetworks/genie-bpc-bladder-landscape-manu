@@ -46,6 +46,7 @@ plot_timing_intervals <- function(
   gg <- ggplot(
     data = dat,
     aes(x = .data[[time_var]], y = 1)) + 
+    geom_vline(xintercept = 0, color = "#ee8866", size = 0.5) + 
     geom_violin(fill = violin_fill, color = violin_line,
                 draw_quantiles = c(0.25, 0.5, 0.75)) + 
     geom_jitter(width = 0, height = 0.25, alpha = 0.2, size = 0.25) + 
