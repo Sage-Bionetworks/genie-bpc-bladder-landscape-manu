@@ -95,7 +95,7 @@ read_wrap_dmet <- read_wrap <- function(p) {
 }
 
 dft_pt_dmet <- read_wrap_dmet("pt_dmet.csv")
-dft_ca_ind <- read_wrap_dmet("ca_ind_dmet.csv")
+dft_ca_ind_dmet <- read_wrap_dmet("ca_ind_dmet.csv")
 dft_reg_dmet_s <- read_wrap_dmet("reg_start_gte_dmet.csv")
 ```
 
@@ -180,7 +180,10 @@ dft_demo %<>%
 
 ### *R1.1a: Characteristics at dx
 
-In the following table ECOG scores are only reported if captured near diagnosis/baseline.  I defined this (arbitrarily) as any measurement between 180 days before and 30 days after diagnosis.  Importantly, this leaves the majority of the cohort unobserved at baseline.
+Table of characteristics at diagnosis.  A few notes:
+
+- If Karnofsky scale is reported, we convert that to ECOG and use it in this table.
+- ECOG scores are only reported if captured near diagnosis/baseline.  I defined this (arbitrarily) as any measurement up to 180 days before and 30 days after diagnosis.  
 
 ```{r, tab_r1_1a, include = T}
 dft_demo %>%
@@ -196,6 +199,8 @@ dft_demo %>%
 
 ### *R1.1b: Characteristics at dx (by site)
 
+The previous table, broken down by site.
+
 ```{r, tab_r1_1b, include = T}
 dft_demo %>%
   select(-record_id) %>%
@@ -208,6 +213,8 @@ dft_demo %>%
     by = Institution
   ) 
 ```
+
+**Observation:** The only site with KPS scores available to convert to ECOG was MSK.  While this table only shows information near diagnosis, this is generally the case that MSK is the only site with subtantial KPS reporting.
 
 ### R1.2: Characteristics at metastasis
 
@@ -271,12 +278,12 @@ The following plots show five time intervals in the entire cohort:
 1. Time (years) from diagnosis to the start of the first regimen.
 2. Time (years) from diagnosis to the first next generation sequencing test **report date**.
 3. Time (years) from first regimen to the first NGS report date.
-4. Time (years) from diagnosis to the first note of distant metastasis (some are diagnosed at Stage IV, implying a time of zero years).
+4. Time (years) from diagnosis to the first note of distant metastasis.  For those diagnosed at Stage IV, this implies a time of zero years.
 5. Time (years) that the participant was followed for survival.  Follow-up ends with censoring or death.
 
 On the left violin plots are shown, which approximate the density of observations (similar to a histogram).  Summary statistics are also shown in the top right of these plots.  At right, similar information is shown in an empirical cumulative distribution plot.  An eCDF shows the proportion of the cohort (Y) with a value less than or equal to each duration in years (X).
 
-```{r, include = T, fig.height = 6}
+```{r, include = T, fig.height = 7.5}
 gg_timing_comb_all
 ```
 
@@ -337,7 +344,7 @@ gg_timing_dmet_comb_all <- cowplot::plot_grid(
 
 ### *R1.3b: Event timing (from dmet)
 
-The following plot is the same, except that it indexes from the diagnosis of distant metastasis.  The cohort includes only those who were diagnosed with a metastasis at some point in followup.  These are the events shown:
+The following plot is similar to the previous, except that times are indexed from the diagnosis of distant metastasis.  The cohort includes only those who were diagnosed with a metastasis at some point in followup.  These are the events shown:
 
 1. First NGS report date relative to the diagnosis of distant metastasis (years).
 2. First **post-metastasis** regimen start date, relative to the diagnosis of distant metastasis.  To be clear, regimens continued into the metastatic state are not counted here (open to change on this).
@@ -440,7 +447,7 @@ gg_count_hist_quan
 
 ### *R1.4b: Observations, eCDF
 
-Histograms are likely to be better understood by our clinical audience.  The following empirical cumulative distribution plot shows the same data in a way which might be appreciated by readers with computational backgrounds.  We probably don't need both:
+Histograms are likely to be better understood by our clinical audience.  The following empirical cumulative distribution plot shows the same data in a way which might be appreciated by readers with computational backgrounds.
 
 ```{r, print_count_ecdf, include = T}
 gg_count_ecdf
@@ -469,6 +476,8 @@ dfp_obs_count <- dft_count_all %>%
 ```
 
 ### *R1.4c: Observations, table
+
+Simplest representation of the number of observations:  A table with median, first quartile, third quartile.
 
 ```{r, include = T}
 dfp_obs_count
@@ -605,14 +614,7 @@ Places to go from here to get a more tractable display:
 ### Todos
 
 - Add swimmer plot.
+- Fill in drug regimens sunburst plot.
 
 
-### Bladder specific variables (analysis TBD)
 
-Titles copied from data guide or abbreviated from there:
-
-- Pathology Report With Indication That Bladder Cancer Invades the Muscularis Propria (Yes/no//unknown)
-- Muscularis propria invasion by specimen.
-- Medical Oncologist Assessment of Eastern Cooperative Oncology Group (ECOG) Performance Status
-  - That is - other times of interest?  Show by stage?
-- Medical Oncologist Assessment of Karnofsky Performance Status

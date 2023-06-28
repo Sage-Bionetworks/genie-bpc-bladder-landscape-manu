@@ -30,9 +30,9 @@ plot_timing_intervals <- function(
       .groups = "drop"
     ) %>%
     mutate(
-      str_mean = glue("Mean (SD): {form_f(m, ld)} ({form_f(std_dev, ld)})"),
-      str_med = glue("Median (IQR): {form_f(med, ld)} ({form_f(fqt, ld)}, {form_f(tqt, ld)})"),
-      str_miss = glue("Missing (%): {miss_n} ({form_f(miss_prop*100, label_digits)}%)"),
+      str_mean = glue("Mean  (SD): {form_f(m, ld)} ({form_f(std_dev, ld)})"),
+      str_med = glue("Median  (IQR): {form_f(med, ld)} ({form_f(fqt, ld)}, {form_f(tqt, ld)})"),
+      str_miss = glue("Missing  (%): {miss_n} ({form_f(miss_prop*100, label_digits)}%)"),
       str_all = paste(str_mean, "<br>", str_med, "<br>", str_miss)
     )
   dft_sum <- select(dft_sum, all_of(facet_var), str_all)
