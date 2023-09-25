@@ -29,74 +29,49 @@ k_dpi <- 150
 
 
 ```{r}
-library(cli)
-library(readr)
-library(here)
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(rlang)
-library(magrittr)
-library(janitor)
-library(stringr)
-library(vctrs)
-library(glue)
-
-library(ggplot2)
-library(ggrepel)
-library(ggtext)
-library(cowplot)
-
-library(gt)
-library(gtsummary)
-library(sunburstR)
-library(huxtable)
-
-
-as_list(here("R", dir(here("R"))))
-
-# Source everything in the "R" folder - just functions, no scripts.
-purrr::walk(.x = here("R", dir(here("R"))), .f = source)
+library(purrr); library(fs); library(here);
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 ```
 
 
 ```{r, set_gtsummary_theme}
 theme_gtsummary_compact(font_size = 12)
-# A bit of a hack:  I don't want commas in my years.  As it happens,
-#   I don't have any numbers bigger than 1000 otherwise, so I'm 
-#   just making a global change.
 theme_gtsummary_language("en", big.mark = "") 
 ```
 
 
 ```{r, warning = T}
 read_wrap <- function(p) {
-  read_csv(file = here("data", 'cohort', p), show_col_types = F)
+  read_rds(
+    file = here("data", 'cohort', paste0(p, '.rds'))
+  )
 }
 
-dft_pt <- read_wrap("pt.csv")
-dft_ca_ind <- read_wrap("ca_ind.csv")
-dft_img <- read_wrap("img.csv")
-dft_med_onc <- read_wrap("med_onc.csv")
-dft_path <- read_wrap("path.csv")
-dft_reg <- read_wrap("reg.csv")
+dft_pt <- read_wrap("pt")
+dft_ca_ind <- read_wrap("ca_ind")
+dft_img <- read_wrap("img")
+dft_med_onc <- read_wrap("med_onc")
+dft_path <- read_wrap("path")
+dft_reg <- read_wrap("reg")
 # dft_tm <- read_wrap("tm_level_dataset.csv")
-dft_cpt <- read_wrap("cpt.csv")
+dft_cpt <- read_wrap("cpt")
 
 ```
 
 ```{r, load_derived_data}
-dft_drug <- read_csv(file = here("data", 'drug.csv'))
+dft_drug <- read_rds(file = here("data", 'cohort', 'drug.rds'))
 # The drug data is already filtered down to index cancer cases. 
 # We don't have do the step done for regimens above.
 
 read_wrap_dmet <- read_wrap <- function(p) {
-  read_csv(file = here("data", 'dmet', p), show_col_types = F)
+  read_rds(
+    file = here("data", 'dmet', p)
+  )
 }
 
-dft_pt_dmet <- read_wrap_dmet("pt_dmet.csv")
-dft_ca_ind_dmet <- read_wrap_dmet("ca_ind_dmet.csv")
-dft_reg_dmet_s <- read_wrap_dmet("reg_start_gte_dmet.csv")
+dft_pt_dmet <- read_wrap_dmet("pt_dmet.rds")
+dft_ca_ind_dmet <- read_wrap_dmet("ca_ind_dmet.rds")
+dft_reg_dmet_s <- read_wrap_dmet("reg_start_gte_dmet.rds")
 ```
 
 
@@ -603,9 +578,22 @@ Places to go from here to get a more tractable display:
 - Examine the drugs used on/after an event of interest (distant metastasis, for example).
 
 
+```{r}
+dft_sun_reg_dmet <- make_sunburst_input(
+  dat = dft_reg_dmet_s,
+  var = "regimen_drugs",
+  order_var = "regimen_number",
+  max_depth = 3
+)
+```
+
+
 ### R2.2b: Drug regimens (metastatic setting)
 
-**Placeholder.**
+```{r, include = T}
+sun_wrap(dft_sun_reg_dmet, seed = 238)
+```
+
 
 
 ## Notes
@@ -614,7 +602,6 @@ Places to go from here to get a more tractable display:
 ### Todos
 
 - Add swimmer plot.
-- Fill in drug regimens sunburst plot.
 
 
 

@@ -12,10 +12,9 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 ############
 source(here('analysis', 'script', 'folder_setup.R'))
 source(here('analysis', 'script', 'get_raw_data.R'))
-# Create cohort data
-# Create drug data
-# Create dmet data
-# Need to fill this in still.
+source(here('analysis', 'script', 'create_cohort_data.R'))
+source(here('analysis', 'script', 'create_drug_dat.R'))
+source(here('analysis', 'script', 'create_dmet_data.R'))
 
 
 

@@ -1,19 +1,15 @@
-library(dplyr)
-library(tidyr)
-library(vctrs)
-library(readr)
-library(rlang)
-library(magrittr)
-library(here)
-
+library(purrr); library(fs); library(here);
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 read_wrap <- function(p) {
-  read_csv(file = here("data-raw", p), show_col_types = F)
+  read_rds(
+    file = here("data", 'cohort', paste0(p, ".rds"))
+  )
 }
 
-dft_pt <- read_wrap("patient_level_dataset.csv")
-dft_ca_ind <- read_wrap("cancer_level_dataset_index.csv")
-dft_regimens <- read_wrap("regimen_cancer_level_dataset.csv")
+dft_pt <- read_wrap("pt")
+dft_ca_ind <- read_wrap("ca_ind")
+dft_regimens <- read_wrap("reg")
 
 dft_drug <- dft_ca_ind %>%
   select(record_id, ca_seq) %>%
@@ -91,7 +87,7 @@ dft_drug <-
 dft_drug %<>%
   filter(!is.na(drug))
 
-readr::write_csv(
+readr::write_rds(
   x = dft_drug,
-  file = here('data', 'cohort', "drug.csv")
+  file = here('data', 'cohort', "drug.rds")
 )

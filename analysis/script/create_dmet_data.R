@@ -1,12 +1,14 @@
 # Description: Create versions of the datasets filtered down to events after metastasis.
 
 read_wrap <- function(p) {
-  read_csv(file = here("data", 'cohort', p), show_col_types = F)
+  read_rds(
+    file = here("data", 'cohort', paste0(p, ".rds"))
+  )
 }
 
-dft_pt <- read_wrap("pt.csv")
-dft_ca_ind <- read_wrap("ca_ind.csv")
-dft_reg <- read_wrap("reg.csv")
+dft_pt <- read_wrap("pt")
+dft_ca_ind <- read_wrap("ca_ind")
+dft_reg <- read_wrap("reg")
 
 dft_dmet_timing <- make_dmet_status_block(dft_ca_ind) %>%
   filter(dmet_status %in% "Distant Metastasis") %>%
@@ -37,14 +39,17 @@ dft_reg_dmet_s <- left_join(
 
 
 
-fs::dir_create('data', 'dmet')
+
 
 write_wrap <- function(obj, file_name) {
-  readr::write_csv(x = obj, file = here('data', 'dmet', file_name))
+  readr::write_rds(
+    x = obj, 
+    file = here('data', 'dmet', paste0(file_name, '.rds'))
+  )
 }
 
-write_wrap(dft_pt_dmet, file_name = "pt_dmet.csv")
-write_wrap(dft_ca_ind_dmet, file_name = "ca_ind_dmet.csv")
-write_wrap(dft_reg_dmet_s, file_name = "reg_start_gte_dmet.csv")
+write_wrap(dft_pt_dmet, file_name = "pt_dmet")
+write_wrap(dft_ca_ind_dmet, file_name = "ca_ind_dmet")
+write_wrap(dft_reg_dmet_s, file_name = "reg_start_gte_dmet")
 
 
