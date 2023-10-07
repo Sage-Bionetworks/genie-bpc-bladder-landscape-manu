@@ -16,10 +16,14 @@ library(vctrs)
 library(forcats)
 library(glue)
 
+library(survival)
+library(tranSurv)
+
 library(ggplot2)
 library(ggrepel)
 library(ggtext)
 library(cowplot)
+library(ggsurvfit)
 
 library(gt)
 library(gtsummary)

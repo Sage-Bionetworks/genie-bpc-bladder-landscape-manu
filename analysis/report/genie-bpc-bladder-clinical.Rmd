@@ -605,3 +605,51 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 
+```{r, output_for_clinicians, eval = F}
+# This needs to be manually run, it's just output files 
+# for the unique regimens and drugs.
+reg_sum <- dft_reg %>%
+  select(record_id, ca_seq, regimen_drugs) %>%
+  group_by(regimen_drugs) %>%
+  summarize(
+    n_reg = n(),
+    n_pts = length(unique(record_id))
+  )
+
+drug_sum <- dft_reg %>%
+  select(record_id, ca_seq, regimen_number, matches("^drugs_drug_")) %>%
+  pivot_longer(
+    cols = matches("^drugs_drug_"),
+    names_to = "drug_number",
+    values_to = "drug"
+  ) %>%
+  filter(!is.na(drug)) %>%
+  group_by(drug) %>%
+  summarize(
+    n_uses = n(),
+    n_pts = length(unique(record_id))
+  ) %>%
+  # just a start!
+  mutate(
+    class = case_when(
+      str_detect(drug, "Cisplatin") ~ "platinum-based chemo",
+      str_detect(drug, "Paclitaxel") ~ "taxane",
+      T ~ NA_character_
+    )
+  )
+      
+
+readr::write_csv(
+  x = reg_sum,
+  file = here('output', 'other', 'unique_regimens.csv'),
+  na = ''
+)
+
+readr::write_csv(
+  x = drug_sum,
+  file = here('output', 'other', 'unique_drugs.csv'),
+  na = ''
+)
+  
+```
+

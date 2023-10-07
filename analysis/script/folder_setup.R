@@ -7,4 +7,8 @@ purrr::walk(.x = fs::dir_ls('R'), .f = source)
 dir_create(here("data", "genomic"))
 dir_create(here("data-raw", "genomic"))
 dir_create('data', 'dmet')
+dir_create('output', 'report')
+dir_create('output', 'fig')
+dir_create('output', 'other')
+
 
