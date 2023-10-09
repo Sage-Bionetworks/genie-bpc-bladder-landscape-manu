@@ -12,7 +12,8 @@ plot_timing_intervals <- function(
   label_stat_color = "black",
   violin_fill = c("#a9c6e2", "#f6e3aa", "#f5c6d0", "gray80"),
   violin_line = c("#004488", "#997700", "#994455", "gray20"),
-  facet_scale = "fixed"
+  facet_scale = "fixed",
+  facet_cols = 1
 ) {
   
   ld <- label_digits # more concise
@@ -27,13 +28,21 @@ plot_timing_intervals <- function(
       tqt = quantile(.data[[time_var]], na.rm = T, probs = c(0.75)),
       miss_n = sum(is.na(.data[[time_var]]), na.rm = T),
       miss_prop = mean(is.na(.data[[time_var]]), na.rm = T),
+      nonneg_n = sum(.data[[time_var]] >= 0, na.rm = T),
+      nonneg_prop = mean(.data[[time_var]] >= 0, na.rm = T),
       .groups = "drop"
     ) %>%
     mutate(
       str_mean = glue("Mean  (SD): {form_f(m, ld)} ({form_f(std_dev, ld)})"),
       str_med = glue("Median  (IQR): {form_f(med, ld)} ({form_f(fqt, ld)}, {form_f(tqt, ld)})"),
       str_miss = glue("Missing  (%): {miss_n} ({form_f(miss_prop*100, label_digits)}%)"),
-      str_all = paste(str_mean, "<br>", str_med, "<br>", str_miss)
+      str_nonneg = glue("Non-negative if obs. (%): {nonneg_n} ({form_f(nonneg_prop*100, label_digits)}%)"),
+      str_all = paste(
+        str_mean, "<br>", 
+        str_med, "<br>", 
+        str_miss, "<br>",
+        str_nonneg
+      )
     )
   dft_sum <- select(dft_sum, all_of(facet_var), str_all)
   
@@ -62,7 +71,7 @@ plot_timing_intervals <- function(
       color = label_stat_color,
       label.color = NA, label.padding = grid::unit(rep(0,4),"pt")
     ) + 
-    facet_wrap(vars(interval), ncol = 1, scales = facet_scale) + 
+    facet_wrap(vars(.data[[facet_var]]), ncol = facet_cols, scales = facet_scale) + 
     theme_bw() + 
     theme(
       axis.text.y = element_blank(),

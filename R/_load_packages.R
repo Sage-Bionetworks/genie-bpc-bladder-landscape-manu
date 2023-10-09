@@ -27,5 +27,6 @@ library(ggsurvfit)
 
 library(gt)
 library(gtsummary)
+library(flextable)
 library(sunburstR)
 library(huxtable)

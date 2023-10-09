@@ -15,7 +15,6 @@ editor_options:
 knitr::opts_chunk$set(echo = F, include = F,
                       warning = F, message = F,
                       fig.width = 7, fig.height = 5)
-k_dpi <- 150
 ```
 
 
@@ -37,6 +36,10 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 ```{r, set_gtsummary_theme}
 theme_gtsummary_compact(font_size = 12)
 theme_gtsummary_language("en", big.mark = "") 
+flextable::set_flextable_defaults(
+  font.size = 10,
+  text.align = "left"
+)
 ```
 
 
@@ -55,6 +58,8 @@ dft_path <- read_wrap("path")
 dft_reg <- read_wrap("reg")
 # dft_tm <- read_wrap("tm_level_dataset.csv")
 dft_cpt <- read_wrap("cpt")
+
+n_bladder_cohort <- dft_ca_ind %>% nrow()
 
 ```
 
@@ -98,13 +103,15 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
     ca_dx_how = format_ca_dx_how(ca_dx_how),
     ca_hist_adeno_squamous = format_ca_hist_adeno_squamous(ca_hist_adeno_squamous),
     stage_dx = format_stage_dx(stage_dx),
+    ca_dmets_yn = format_ca_dmets_yn(ca_dmets_yn),
     ca_path_n_stage = format_ca_path_n_stage(ca_path_n_stage)
   ) %>%
   select(
     record_id,
     `Age at dx (years)` = dob_ca_dx_yrs,
     `Stage at dx` = stage_dx,
-    `Source of dx` = ca_dx_how,
+    `Source of dx date` = ca_dx_how,
+    `Mets among Stage IV` = ca_dmets_yn,
     # Update May 5:  Removed histology (unimportant)
     # `Histology` = ca_hist_adeno_squamous, # at dx?
     `Pathologic N Stage` = ca_path_n_stage # describes spread to lymph nodes
@@ -153,7 +160,7 @@ dft_demo %<>%
 
 ## Content
 
-### *R1.1a: Characteristics at dx
+### R1.1a: Characteristics at dx
 
 Table of characteristics at diagnosis.  A few notes:
 
@@ -172,7 +179,9 @@ dft_demo %>%
   ) 
 ```
 
-### *R1.1b: Characteristics at dx (by site)
+**Comment:** "Mets among Stage IV" and "Stage at dx" could be combined into one classification scheme (just dividing the Stage IV category further).  The main disadvantage of doing this is deviating from clear mapping to PRISSMM.
+
+### R1.1b: Characteristics at dx (by site)
 
 The previous table, broken down by site.
 
@@ -191,9 +200,6 @@ dft_demo %>%
 
 **Observation:** The only site with KPS scores available to convert to ECOG was MSK.  While this table only shows information near diagnosis, this is generally the case that MSK is the only site with subtantial KPS reporting.
 
-### R1.2: Characteristics at metastasis
-
-**Placeholder.**  Most of the information requested here is covered in the plots below.
 
 
 
@@ -246,7 +252,7 @@ gg_timing_comb_all <- cowplot::plot_grid(
 
 ```
   
-### *R1.3a: Event timing (whole cohort)
+### R1.3a: Event timing (whole cohort)
 
 The following plots show five time intervals in the entire cohort:
 
@@ -317,7 +323,7 @@ gg_timing_dmet_comb_all <- cowplot::plot_grid(
 
 
 
-### *R1.3b: Event timing (from dmet)
+### R1.3b: Event timing (from dmet)
 
 The following plot is similar to the previous, except that times are indexed from the diagnosis of distant metastasis.  The cohort includes only those who were diagnosed with a metastasis at some point in followup.  These are the events shown:
 
@@ -412,7 +418,7 @@ gg_count_hist_quan <- plot_count_hist_quan(
 
 ```
 
-### *R1.4a: Observations, histogram
+### R1.4a: Observations, histogram
 
 The following plot shows the number of people with X observations in our cohort.  The regimens are limited to only those for the index cancer (the other types of observations have no such designation).
 
@@ -420,7 +426,7 @@ The following plot shows the number of people with X observations in our cohort.
 gg_count_hist_quan
 ```
 
-### *R1.4b: Observations, eCDF
+### R1.4b: Observations, eCDF
 
 Histograms are likely to be better understood by our clinical audience.  The following empirical cumulative distribution plot shows the same data in a way which might be appreciated by readers with computational backgrounds.
 
@@ -450,13 +456,201 @@ dfp_obs_count <- dft_count_all %>%
   )
 ```
 
-### *R1.4c: Observations, table
+### R1.4c: Observations, table
 
 Simplest representation of the number of observations:  A table with median, first quartile, third quartile.
 
 ```{r, include = T}
 dfp_obs_count
 ```
+
+
+
+
+
+
+
+
+
+
+```{r}
+dft_ca_ind %>%
+  select(contains("abdomen"))
+
+vec_met_loc <- c("abdomen", "bone", "brain", "breast", "extremity",
+                  "head_neck", "liver", "pelvis", "thorax")
+vec_met_regex <- paste(vec_met_loc, collapse = "|")
+
+dft_met_loc <- dft_ca_ind %>% 
+  # variables that describe distant metastasis at/after dx.
+  select(
+    record_id,
+    matches(glue("^dmets_({vec_met_regex})")),
+    matches("^dx_to_dmets_.+_yrs$")
+  ) 
+
+dft_met_loc %<>%
+  pivot_longer(
+    cols = -record_id,
+    names_to = "var",
+    values_to = "value"
+  ) %>%
+  mutate(
+    met_loc = stringr::str_extract(var, vec_met_regex),
+    var = if_else(str_detect(var, "yrs"),
+                   "dx_to_dmet_yrs",
+                   "had_met")
+  ) %>%
+  pivot_wider(
+    names_from = "var",
+    values_from = "value"
+  )
+
+dft_met_loc %<>% 
+  mutate(
+    at_dx = case_when(
+      had_met %in% 1 & dx_to_dmet_yrs %in% 0 ~ 1,
+      had_met %in% 1 & !is.na(dx_to_dmet_yrs) ~ 0,
+      T ~ NA_real_
+    )
+  )
+
+dft_met_loc %<>%
+  mutate(
+    met_loc = stringr::str_replace(met_loc, "dmets_", ""),
+    met_loc = stringr::str_replace(met_loc, "_", "+"),
+    met_loc = stringr::str_to_title(met_loc)
+  )
+
+dft_met_sum_simple <- dft_met_loc %>%
+  group_by(met_loc, at_dx) %>%
+  summarize(
+    n = sum(had_met, na.rm = T),
+    .groups= "drop"
+  ) %>%
+  filter(!is.na(at_dx)) %>%
+  mutate(
+    at_dx = if_else(at_dx %in% 1,
+                    "at_dx",
+                    "post_dx")
+  ) %>%
+  pivot_wider(
+    names_from = at_dx,
+    values_from = n
+  ) %>%
+  mutate(
+    across(
+      .cols = -met_loc,
+      .fns = \(x){ if_else(is.na(x), 0, x) }
+    )
+  ) %>%
+  mutate(
+    Anytime = at_dx + post_dx
+  ) 
+
+dft_met_sum_simple %<>%
+  mutate(
+    across(
+      .cols = -met_loc,
+      # no idea why glue is failing here but it is: 
+      .fns = (function(x) 
+        paste0(x, " (", form_f((x/n_bladder_cohort)*100), "%)")
+      )
+    )
+  )
+
+dft_met_sum_simple %<>%
+  select(
+    Location = met_loc,
+    `At dx` = at_dx,
+    `Post dx` = post_dx,
+    Anytime
+  )
+```
+
+### R1.6a: Metastasis location
+
+The following table counts the number of participants who had a metastasis at diagnosis,
+
+```{r, include = T}
+dft_met_sum_simple %>%
+  flextable(.) %>%
+  flextable::theme_booktabs(.) %>%
+  autofit(.)
+```
+
+
+
+
+
+
+```{r}
+dft_met_loc_co <- dft_met_loc %>%
+  select(record_id, met_loc, had_met) %>%
+  pivot_wider(
+    names_from = met_loc,
+    values_from = had_met
+  ) 
+
+upset_met_loc <- dft_met_loc %>%
+  select(record_id, met_loc, had_met) %>%
+  pivot_wider(
+    names_from = met_loc,
+    values_from = had_met
+  )  %>%
+  as.data.frame(.) %>%
+  UpSetR::upset(
+    data = .,
+    order.by = "freq",
+    mainbar.y.label = "Participants with combination",
+    nsets = 15,
+    nintersects = 50,
+    set_size.show = T
+  )
+```
+
+
+### R1.6b: Co-occurrence of metastatic locations
+
+The following upset plot shows the combinations of metastatic sites, ordered by the number of people with that combination.  The metastastases here are at any point over the followup period, so they may occur at different times.
+
+```{r, include = T}
+upset_met_loc
+```
+
+**Comment:** To me this plot is overwhelming.  It may be better to show plots that show the co-occurence with <X> metatstatic site.  For example, the upper plot above shows
+
+
+
+
+
+
+```{r}
+gg_met_loc_timing <- dft_met_loc %>%
+  select(
+    record_id, met_loc, dx_to_dmet_yrs
+  ) %>%
+  filter(met_loc != "Breast") %>% # too few.
+  mutate(flat_color = "1") %>%
+  mutate(met_loc = forcats::fct_inorder(met_loc)) %>%
+  plot_timing_intervals(
+    time_var = "dx_to_dmet_yrs",
+    time_var_lab = "Years from dx to dmet",
+    facet_var = "met_loc",
+    color_var = "flat_color",
+    facet_cols = 2
+  )
+
+```
+
+### R1.6c: Timing of metastasis by site
+
+As a first pass, I am re-using my function for timing intervals, so some of these summary statistics (e.g. non-negative if observed) don't make sense.  We can optimize the plot if it's considered for manuscript inclusion.
+
+```{r, include = T, fig.height = 8}
+gg_met_loc_timing
+```
+
 
 
 
@@ -481,7 +675,6 @@ dft_top_drugs <- dft_drug %>%
 dft_top_drugs %<>%
   mutate(drug = str_replace(drug, "\\(.*\\)", ""))
 
-n_bladder_cohort <- dft_ca_ind %>% nrow()
 
 gg_top_drugs <- plot_drug_prop(
   drug_dat = dft_top_drugs,
@@ -542,7 +735,7 @@ gg_top_drug_comb <- cowplot::plot_grid(
   
 ```
 
-### *R2.1a: Drug regimens
+### R2.1a: Drug regimens
 
 The following table shows the proportion of participants who were exposed to each drug at any time during followup.  Only regimens associated with the index cancer are considered, and only the top 10 most used drugs are shown.
 
@@ -596,8 +789,50 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Notes
 
+### Issues
+
+#### Stage IV vs Metastatic at diagnosis
+
+Just a note:  The variable `ca_dmets_yn` is only populated for participants who are stage IV at diagnosis.  Here is a cross tabulation of this variable with `stage_dx` (columns):
+
+```{r, include = T}
+dft_ca_ind %>% tabyl(ca_dmets_yn, stage_dx_iv)
+```
+
+
+#### Pathologic N stage
+
+On Sept 25, 2023 we discussed pathologic N stage and that it may only make sense for participants who have had surgery.  The sticking point here is I don't know if we have that information in our dataset.  If anyone with the appropriate clinical knowledge would be willing to search that data guide that may help.
+
+Additionally, here is what the data guide tells us for the variable used to report Pathologic N stage (`ca_path_n_stage`):
+
+> Description
+> - Curated pathologic N stage
+> - N describes spread of cancer to nearby lymph nodes • Populated only if:
+> - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
+> - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
+
+It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
 
 ### Todos
 
