@@ -37,7 +37,7 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 theme_gtsummary_compact(font_size = 12)
 theme_gtsummary_language("en", big.mark = "") 
 flextable::set_flextable_defaults(
-  font.size = 10,
+  font.size = 8,
   text.align = "left"
 )
 ```
@@ -160,7 +160,7 @@ dft_demo %<>%
 
 ## Content
 
-### R1.1a: Characteristics at dx
+### *R1.1a: Characteristics at dx
 
 Table of characteristics at diagnosis.  A few notes:
 
@@ -181,7 +181,7 @@ dft_demo %>%
 
 **Comment:** "Mets among Stage IV" and "Stage at dx" could be combined into one classification scheme (just dividing the Stage IV category further).  The main disadvantage of doing this is deviating from clear mapping to PRISSMM.
 
-### R1.1b: Characteristics at dx (by site)
+### *R1.1b: Characteristics at dx (by site)
 
 The previous table, broken down by site.
 
@@ -201,6 +201,9 @@ dft_demo %>%
 **Observation:** The only site with KPS scores available to convert to ECOG was MSK.  While this table only shows information near diagnosis, this is generally the case that MSK is the only site with subtantial KPS reporting.
 
 
+### R1.2 (placeholder)
+
+Placeholder.
 
 
 
@@ -568,14 +571,15 @@ dft_met_sum_simple %<>%
   )
 ```
 
-### R1.6a: Metastasis location
+### *R1.6a: Metastasis location
 
-The following table counts the number of participants who had a metastasis at diagnosis,
+The following table counts the number of participants who had a metastasis at diagnosis, post diagnosis and anytime for each site category in the data.
 
 ```{r, include = T}
 dft_met_sum_simple %>%
   flextable(.) %>%
   flextable::theme_booktabs(.) %>%
+  flextable::fontsize(size = 8) %>%
   autofit(.)
 ```
 
@@ -585,13 +589,6 @@ dft_met_sum_simple %>%
 
 
 ```{r}
-dft_met_loc_co <- dft_met_loc %>%
-  select(record_id, met_loc, had_met) %>%
-  pivot_wider(
-    names_from = met_loc,
-    values_from = had_met
-  ) 
-
 upset_met_loc <- dft_met_loc %>%
   select(record_id, met_loc, had_met) %>%
   pivot_wider(
@@ -599,28 +596,60 @@ upset_met_loc <- dft_met_loc %>%
     values_from = had_met
   )  %>%
   as.data.frame(.) %>%
-  UpSetR::upset(
-    data = .,
-    order.by = "freq",
-    mainbar.y.label = "Participants with combination",
-    nsets = 15,
-    nintersects = 50,
-    set_size.show = T
-  )
+  plot_upset(.)
+
+upset_met_loc_abdomen <- dft_met_loc %>%
+  select(record_id, met_loc, had_met) %>%
+  pivot_wider(
+    names_from = met_loc,
+    values_from = had_met
+  )  %>%
+  filter(Abdomen %in% 1) %>%
+  as.data.frame(.) %>%
+  plot_upset(.)
+
+cp_upset_abdomen <- convert_upset_to_cowplot(upset_met_loc_abdomen)
+  
+upset_met_loc_extremity <- dft_met_loc %>%
+  select(record_id, met_loc, had_met) %>%
+  pivot_wider(
+    names_from = met_loc,
+    values_from = had_met
+  )  %>%
+  filter(Extremity %in% 1) %>%
+  as.data.frame(.) %>%
+  plot_upset(.)
+
+cp_upset_extremity <- convert_upset_to_cowplot(upset_met_loc_extremity)
+
+upset_separate_demo <- plot_grid(
+  cp_upset_abdomen,
+  cp_upset_extremity,
+  ncol = 1,
+  labels = c("Abdomen", "Extremity"),
+  scale = 0.9
+)
+  
 ```
 
 
-### R1.6b: Co-occurrence of metastatic locations
+### *R1.6b: Co-occurrence of metastatic locations
 
 The following upset plot shows the combinations of metastatic sites, ordered by the number of people with that combination.  The metastastases here are at any point over the followup period, so they may occur at different times.
+
+*Note:* In each of these plots the tail is truncated (only the ~50 most common combinations are shown).
 
 ```{r, include = T}
 upset_met_loc
 ```
 
-**Comment:** To me this plot is overwhelming.  It may be better to show plots that show the co-occurence with <X> metatstatic site.  For example, the upper plot above shows
+**Comment:** To me this plot is overwhelming.  It may be better to show plots that show the co-occurence in the cohort of people with a specific metatstatic site.  For example, the top plot shows co-occurence for people with abdomen metastasis and the bottom plot shows co-occurrence for extremity metastasis.  This could be repeated over all the sites if it's valuable.
 
+```{r, include = T}
+upset_separate_demo
+```
 
+Still overwhelming but at maybe a valuable reference if you wanted information on a certain type of metastasis.
 
 
 
@@ -643,7 +672,7 @@ gg_met_loc_timing <- dft_met_loc %>%
 
 ```
 
-### R1.6c: Timing of metastasis by site
+### *R1.6c: Timing of metastasis by site
 
 As a first pass, I am re-using my function for timing intervals, so some of these summary statistics (e.g. non-negative if observed) don't make sense.  We can optimize the plot if it's considered for manuscript inclusion.
 
@@ -735,7 +764,7 @@ gg_top_drug_comb <- cowplot::plot_grid(
   
 ```
 
-### R2.1a: Drug regimens
+### R2.1a: Drug exposure
 
 The following table shows the proportion of participants who were exposed to each drug at any time during followup.  Only regimens associated with the index cancer are considered, and only the top 10 most used drugs are shown.
 
@@ -781,7 +810,7 @@ dft_sun_reg_dmet <- make_sunburst_input(
 ```
 
 
-### R2.2b: Drug regimens (metastatic setting)
+### R2.2b: Drug regimens, metastatic (sunburst)
 
 ```{r, include = T}
 sun_wrap(dft_sun_reg_dmet, seed = 238)
@@ -789,6 +818,172 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 
+```{r}
+
+dft_reg_met <- dft_reg_dmet_s %>%
+  filter(str_detect(regimen_drugs, "Investigational", negate = T))
+dft_reg_no_invest <- dft_reg %>%
+  filter(str_detect(regimen_drugs, "Investigational", negate = T))
+dft_reg_non_met <- anti_join(
+  dft_reg_no_invest,
+  dft_reg_dmet_s,
+  by = c("record_id", "ca_seq", "regimen_number")
+)
+
+chk_reg_split <- nrow(dft_reg_no_invest) - 
+  nrow(dft_reg_non_met) - 
+  nrow(dft_reg_met)
+if (!(chk_reg_split %in% 0)) {
+  cli::cli_abort("Splitting the regimen dataset into met and non-met cases did not result in the expected number of rows.")
+}
+
+# For the metastatic version we will add in time variables from metastasis.
+dft_met_timing <- dft_timing %>% 
+  select(record_id, ca_seq, tt_dmet_dx_yrs) %>%
+  filter(!is.na(tt_dmet_dx_yrs))
+dft_reg_met <- left_join(
+  dft_reg_met,
+  dft_met_timing,
+  by = c("record_id", "ca_seq")
+)
+
+dft_reg_met %<>%
+  mutate(
+    dmet_reg_start_int_yrs = dx_reg_start_int_yrs - tt_dmet_dx_yrs,
+    dmet_reg_end_any_int_yrs = dx_reg_end_any_int_yrs - tt_dmet_dx_yrs,
+    dmet_reg_end_all_int_yrs = dx_reg_end_all_int_yrs - tt_dmet_dx_yrs
+  )
+    
+dft_lot_met <- get_lot_stats(
+  dft_reg_met,
+  time_vars = c(
+    "dx_reg_start_int_yrs", 
+    "dx_reg_end_all_int_yrs",
+    "dmet_reg_start_int_yrs", 
+    "dmet_reg_end_all_int_yrs"
+    )
+) 
+
+dfp_lot_met <- dft_lot_met %>%
+  reshape_lot_stats(
+    n_denom = nrow(dft_ca_ind_dmet)
+  )
+
+dfp_lot_met %<>%
+  mutate( 
+    Quantity = case_when(
+      Quantity %in% "dx_reg_start_int_yrs" ~ "Dx -> Regimen start (yrs)",
+      
+      Quantity %in% "dx_reg_end_all_int_yrs" ~ "Dx -> End of all drugs (yrs)",
+      Quantity %in% "dmet_reg_start_int_yrs" ~ "Met -> Regimen start (yrs)",
+      Quantity %in% "dmet_reg_end_all_int_yrs" ~ "Met -> End of all drugs (yrs)",
+      T ~ Quantity
+    )
+  )
+
+dfp_lot_met %<>% rename(` ` = Quantity)
+
+```
+
+### *R2.3a LoT, stats
+
+The following table addresses only drug regimens which were started on or after a diagnosis of metastasis (either de novo or after followup).  We are defining first line therapy ("First") as the first regimen following this event.  "Second" is the second regimen, etc.  For all timing variables we show the median (first quartile, third quartile).  The denominator shown for n is the number of participants who developed metastatic cancer in the cohort.
+
+```{r, include = T}
+dfp_lot_met %>%
+  flextable %>%
+  fontsize(., size = 8) %>%
+  autofit(.)
+```
+
+
+
+
+
+```{r}
+
+dfp_lot_common_met <- dft_reg_met %>%
+  get_lot_most_common(.) %>%
+  display_lot_most_common(.)
+
+dfp_lot_common_met %<>% rename(` ` = common)
+
+```
+
+
+### *R2.3b LoT, most common
+
+The following table shows the most common first, second, third, regimen used in the metastatic setting.
+
+```{r, include = T}
+dfp_lot_common_met %>%
+  flextable %>%
+  fontsize(., size = 8) %>%
+  autofit(.)
+```
+
+
+
+```{r}
+dft_lot_non_met <- get_lot_stats(
+  dft_reg_non_met,
+  time_vars = c(
+    "dx_reg_start_int_yrs", 
+    "dx_reg_end_all_int_yrs"
+  )
+) 
+
+dfp_lot_non_met <- dft_lot_non_met %>%
+  reshape_lot_stats(.)
+
+dfp_lot_non_met %<>%
+  mutate( 
+    Quantity = case_when(
+      Quantity %in% "dx_reg_start_int_yrs" ~ "Dx -> Regimen start (yrs)",
+      
+      Quantity %in% "dx_reg_end_all_int_yrs" ~ "Dx -> End of all drugs (yrs)",
+      T ~ Quantity
+    )
+  )
+
+dfp_lot_non_met %<>% rename(` ` = Quantity)
+```
+
+### *R2.4a Pre-met regimens, stats
+
+Here we describe regimens started before a diagnosis of metastasis (including participants who never developed metastasis).  Some participants are represented in both tables.  For example, a subject who developed metastasis at year 2 but had regimens during years 1 and 3 would appear in both.
+
+```{r, include = T}
+dfp_lot_non_met %>%
+  flextable %>%
+  fontsize(., size = 8) %>%
+  autofit(.)
+```
+
+
+
+
+
+```{r}
+
+dfp_lot_common_non_met <- dft_reg_non_met %>%
+  get_lot_most_common(.) %>%
+  display_lot_most_common(.)
+
+dfp_lot_common_non_met %<>% rename(` ` = common)
+```
+
+
+### *R2.4b Pre-met regimens, most common
+
+The following table shows the most common first, second, third, regimen used in the metastatic setting.
+
+```{r, include = T}
+dfp_lot_common_non_met %>%
+  flextable %>%
+  fontsize(., size = 8) %>%
+  autofit(.)
+```
 
 
 
@@ -811,7 +1006,7 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 ### Issues
 
-#### Stage IV vs Metastatic at diagnosis
+#### *Stage IV vs Metastatic at diagnosis
 
 Just a note:  The variable `ca_dmets_yn` is only populated for participants who are stage IV at diagnosis.  Here is a cross tabulation of this variable with `stage_dx` (columns):
 
@@ -820,17 +1015,19 @@ dft_ca_ind %>% tabyl(ca_dmets_yn, stage_dx_iv)
 ```
 
 
-#### Pathologic N stage
+#### *Pathologic N stage
 
 On Sept 25, 2023 we discussed pathologic N stage and that it may only make sense for participants who have had surgery.  The sticking point here is I don't know if we have that information in our dataset.  If anyone with the appropriate clinical knowledge would be willing to search that data guide that may help.
 
 Additionally, here is what the data guide tells us for the variable used to report Pathologic N stage (`ca_path_n_stage`):
 
 > Description
+> 
 > - Curated pathologic N stage
-> - N describes spread of cancer to nearby lymph nodes • Populated only if:
-> - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
-> - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
+> - N describes spread of cancer to nearby lymph nodes 
+> - Populated only if:
+>     - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
+>     - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
 
 It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
 

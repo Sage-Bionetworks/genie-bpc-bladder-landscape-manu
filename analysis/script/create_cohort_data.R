@@ -74,7 +74,7 @@ dft_cpt %<>%
   mutate(
     sample_type_simple_f = case_when(
       is.na(sample_type) ~ NA_character_,
-      sample_type %in% "Local recurrence" ~ lev_st_simple[3],
+      sample_type %in% "Local recurrence" ~ lev_st_simple[1],
       sample_type %in% "Lymph node metastasis" ~ lev_st_simple[2],
       sample_type %in% "Metastasis site unspecified" ~ lev_st_simple[2],
       sample_type %in% "Not applicable or hematologic malignancy" ~ lev_st_simple[3],

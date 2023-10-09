@@ -81,7 +81,7 @@ dft_ngs_pp <- dft_cpt %>%
   group_by(record_id) %>%
   summarize(
     All = n(),
-    Primary = sum(sample_type_simple_f %in% "Primary tumor"),
+    Primary = sum(sample_type_simple_f %in% c("Primary tumor")),
     Metastatic = sum(sample_type_simple_f %in% "Metastatic")
   ) 
 
@@ -136,7 +136,7 @@ n_gte_2_met <- dft_ngs_pp %>%
 ```
 
 
-### R2.1.1 NGS tests per person
+### *R2.1.1 NGS tests per person
 
 This table uses the "Specimen Sample Type" variable from the Cancer Panel Test dataset.  We simplified this slightly (`coded_as`) to avoid small categories of tumors:
 
@@ -146,8 +146,6 @@ dfp_sample_type_expl %>%
   huxtable::set_align(value = "left") %>%
   theme_compact(.)
 ```
-
-**Discussion question:** Is there a reasonable way to group local recurrences with larger categories?
 
 The following plot shows histograms of the number of tests per participant.  This is repeated for all tests (Primary, Metastatic, Other) and separately for Primary and Metastatic tumors.
 
@@ -161,8 +159,7 @@ Observations:
 - About 400 people have no primary tumor tests at all.
 - `r n_prim_met_pair` people have at least one primary and at least one metastatic tumor.
 - Only `r n_gte_2_prim` participants have more than one primary tumor test.
-- There are `r n_gte_2_met` with more than one metastatic test, overwhelmingly from MSK.
-
+- There are `r n_gte_2_met` with more than one metastatic test.
 
 
 
