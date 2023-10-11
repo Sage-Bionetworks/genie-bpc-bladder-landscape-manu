@@ -434,3 +434,12 @@ Observations:
 ### OncoKB Unknowns
 
 In the prostate cohort we had some initial debate about whether it possibly correct that the majority of mutations have unknown oncogenic impact.  The answer to this was **Yes** from team members with a background at MSK (experienced with OncoKB), because at the end of the day OncoKB is people reading papers and inputting interesting things.  Negative (neutral impact) findings usually don't rate as interesting, so those don't end up in the data.
+
+
+## Analysis ideas for future work
+
+This section contains analyses that were too complex or involved or we just didn't have time to get to which came up and might make interesting papers in the future.
+
+- (Vincent Xu) Out of the different NGS panels used, do they do a good job of prioritizing the genes with likely oncogenic mutations in bladder cancer?
+    - Are genes with oncogenic mutations (per OncoKB) more likely to be covered in gene panels, versus genes without oncogenic mutations?
+    - Are there any frequently mutated oncogenic drivers that are missing from certain panels vs others?
