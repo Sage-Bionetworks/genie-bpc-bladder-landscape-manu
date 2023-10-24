@@ -1082,6 +1082,45 @@ readr::write_csv(
   file = here('output', 'other', 'unique_drugs.csv'),
   na = ''
 )
+```
+
+
+```{r, output_for_clinicians_2, eval = F}
+# Update:  Also need a reg-sum dataset which is just for the ponteitally
+#   neoadjuvant treatments.  Potentially neoadjuvant is a made up term meaning
+#   that the regimen was started before treatment.
+reg_sum_pre_met <- dft_reg_non_met %>% # see above for this derivation
+  select(record_id, ca_seq, regimen_drugs) %>%
+  group_by(regimen_drugs) %>%
+  summarize(
+    n_reg = n(),
+    n_pts = length(unique(record_id))
+  ) %>%
+  arrange(desc(n_pts)) 
+
+# Filling in a few that we discussed during the meeting just to start us off:
+reg_sum_pre_met %<>%
+  mutate(
+    valid_neoadjuvant = case_when(
+      regimen_drugs %in% c("BCG Vaccine", "BCG Solution") ~ "no",
+      str_detect(regimen_drugs, "Carboplatin|Cisplatin") ~ "yes",
+      T ~ NA_character_
+    )
+  )
+      
+readr::write_csv(
+  x = reg_sum_pre_met,
+  file = here('output', 'other', 'potential_neoadjuvant_regimens.csv'),
+  na = ''
+)
+
+reg_sum_pre_met %>% 
+  pull(regimen_drugs) 
+
   
 ```
 
+## Analysis ideas for future work
+
+- Suggested on Oct 09, 2023:  Can we analyze whether people with common patterns of metastasis (for exmaple, primary -> lymph -> bone) have better outcomes?
+  - This is complicated because we have to deal with the potential for bias in people who drop out (due to death or censoring) before they can develop a longer chain of metastatic locations.  Probably requires a time-varying model which would be a lot to bite off for this particular paper.
