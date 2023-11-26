@@ -15,6 +15,8 @@ source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'create_cohort_data.R'))
 source(here('analysis', 'script', 'create_drug_dat.R'))
 source(here('analysis', 'script', 'create_dmet_data.R'))
+# There is a point of non-reproducibility here:  The file needs to be tracked by git.
+source(here('analysis', 'script', 'create_neoadj_dat.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-clinical.rmd'),
   output_file = 'genie-bpc-bladder-01-clinical.html',
