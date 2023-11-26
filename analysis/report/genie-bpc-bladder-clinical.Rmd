@@ -901,7 +901,6 @@ dfp_lot_met %>%
 
 
 ```{r}
-
 dfp_lot_common_met <- dft_reg_met %>%
   get_lot_most_common(.) %>%
   display_lot_most_common(.)

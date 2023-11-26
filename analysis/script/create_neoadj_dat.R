@@ -127,7 +127,7 @@ dft_reg_neo %<>%
 
 readr::write_rds(
   dft_reg_neo,
-  file = here('data', 'cohort', 'neoadjuvant_status_case.rds')
+  file = here('data', 'dmet', 'neoadjuvant_status_reg.rds')
 )
 
 # The case labels are similar, just need to update the last one:
@@ -147,7 +147,7 @@ dft_reg_neo_cases <- dft_reg_neo %<>%
 
 readr::write_rds(
   dft_reg_neo_cases,
-  file = here('data', 'cohort', 'neoadjuvant_status_case.rds')
+  file = here('data', 'dmet', 'neoadjuvant_status_case.rds')
 )
       
 
