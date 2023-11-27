@@ -56,6 +56,11 @@ dft_variation_classes <- tribble(
   1, 'Carboplatin, Gemcitabine Hydrochloride'
 )
 
+readr::write_rds(
+  x = dft_variation_classes,
+  file = here('data', 'dmet', 'lines_of_therapy', 'variation_classes.rds')
+)
+
 dft_reg_dmet_s %<>%
   left_join(
     .,
@@ -63,63 +68,12 @@ dft_reg_dmet_s %<>%
     by = 'regimen_drugs'
   )
 
-# It is assumed this has already been given a column 'var_classes'.
-assign_lot <- function(
-    dat_reg
-) {
-  if (!('var_class' %in% colnames(dft_reg_dmet_s))) {
-    dat_reg %<>% 
-      mutate(var_class = NA_character_)
-  }
-  
-  dat_reg %<>%
-    arrange(record_id, ca_seq, regimen_number)
-  
-  dat_reg %<>%
-    group_by(record_id, ca_seq) %>%
-    mutate(
-      line_therapy = lot_helper_one_case(
-        var_class = var_class
-      )
-    ) %>%
-    ungroup(.)
-  
-  return(dat_reg)
-  
-}
+dft_lot <- dft_reg_dmet_s %<>%
+  assign_lot(.) 
 
-dft_reg_dmet_s %>%
-  assign_lot(.) %>%
-  filter(record_id %in% "GENIE-DFCI-003553") %>%
-  select(regimen_drugs, line_therapy)
+readr::write_rds(
+  x = dft_lot,
+  here('data', 'dmet' , 'lines_of_therapy', 'lot.rds')
+)
 
 
-
-
-lot_helper_one_case <- function(var_class) {
-  lot <- c()
-  observed_var_classes <- c()
-  lot_iter <- 0L
-  # for loop horror:
-  for (i in 1:length(var_class)) {
-    if (var_class[i] %in% observed_var_classes) {
-      lot[i] <- NA_real_
-    } else {
-      lot_iter <- lot_iter + 1L
-      lot[i] <- lot_iter
-      if (!is.na(var_class[i])) { 
-        observed_var_classes <- c(observed_var_classes, var_class[i])
-      }
-    }
-  }
-  return(lot)
-}
-
-dft_reg_dmet_s %>% 
-  filter(record_id %in% "GENIE-DFCI-003553") %>% 
-  # mutate(var_class = NA_character_) %>%
-  pull(var_class) %>%
-  lot_helper_one_case(.)
-
-
-# Todo: Declare equivalent classes of drugs, maybe start with GemCis and GemCarbo.

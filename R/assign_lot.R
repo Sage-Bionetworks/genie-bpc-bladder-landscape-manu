@@ -1,6 +1,7 @@
 # It is assumed this has already been given a column 'var_class'.
 assign_lot <- function(
-    dat_reg
+    dat_reg,
+    remove_repeats = T
 ) {
   if (!('var_class' %in% colnames(dft_reg_dmet_s))) {
     dat_reg %<>% 
@@ -10,6 +11,15 @@ assign_lot <- function(
   dat_reg %<>%
     arrange(record_id, ca_seq, regimen_number)
   
+  if (remove_repeats) {
+    dft_reg <- dft_reg %>%
+      group_by(record_id, ca_seq) %>%
+      mutate(
+        is_repeat = lag(regimen_drugs) == regimen_drugs
+      ) %>%
+      ungroup(.)
+  }
+        
   dat_reg %<>%
     group_by(record_id, ca_seq) %>%
     mutate(
@@ -18,6 +28,13 @@ assign_lot <- function(
       )
     ) %>%
     ungroup(.)
+  
+  # Only a few of these make any sense to keep:
+  dat_reg %<>%
+    select(
+      record_id, ca_seq, regimen_number, 
+      regimen_drugs, line_therapy
+    )
   
   return(dat_reg)
   

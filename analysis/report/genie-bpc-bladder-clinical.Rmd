@@ -36,10 +36,13 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 ```{r, set_gtsummary_theme}
 theme_gtsummary_compact(font_size = 12)
 theme_gtsummary_language("en", big.mark = "") 
-flextable::set_flextable_defaults(
+gdtools::register_gfont('Roboto')
+set_flextable_defaults(
   font.size = 8,
-  text.align = "left"
+  theme_fun = theme_booktabs,
+  font.family = 'Roboto'
 )
+
 ```
 
 
@@ -58,6 +61,7 @@ dft_path <- read_wrap("path")
 dft_reg <- read_wrap("reg")
 # dft_tm <- read_wrap("tm_level_dataset.csv")
 dft_cpt <- read_wrap("cpt")
+dft_drug <- read_wrap("drug")
 
 n_bladder_cohort <- dft_ca_ind %>% nrow()
 
@@ -77,6 +81,17 @@ read_wrap_dmet <- read_wrap <- function(p) {
 dft_pt_dmet <- read_wrap_dmet("pt_dmet.rds")
 dft_ca_ind_dmet <- read_wrap_dmet("ca_ind_dmet.rds")
 dft_reg_dmet_s <- read_wrap_dmet("reg_start_gte_dmet.rds")
+
+
+vec_lot_excluded_drugs <- readr::read_rds(
+  here('data', 'dmet', 'lines_of_therapy', 'excluded_drugs.rds')
+)
+dft_var_class <- readr::read_rds(
+  here('data', 'dmet', 'lines_of_therapy', 'variation_classes.rds')
+)
+dft_lot <- readr::read_rds(
+  here('data', 'dmet', 'lines_of_therapy', 'lot.rds')
+)
 ```
 
 
@@ -160,7 +175,7 @@ dft_demo %<>%
 
 ## Content
 
-### *R1.1a: Characteristics at dx
+### R1.1a: Characteristics at dx
 
 Table of characteristics at diagnosis.  A few notes:
 
@@ -181,7 +196,7 @@ dft_demo %>%
 
 **Comment:** "Mets among Stage IV" and "Stage at dx" could be combined into one classification scheme (just dividing the Stage IV category further).  The main disadvantage of doing this is deviating from clear mapping to PRISSMM.
 
-### *R1.1b: Characteristics at dx (by site)
+### R1.1b: Characteristics at dx (by site)
 
 The previous table, broken down by site.
 
@@ -571,7 +586,7 @@ dft_met_sum_simple %<>%
   )
 ```
 
-### *R1.6a: Metastasis location
+### R1.6a: Metastasis location
 
 The following table counts the number of participants who had a metastasis at diagnosis, post diagnosis and anytime for each site category in the data.
 
@@ -633,7 +648,7 @@ upset_separate_demo <- plot_grid(
 ```
 
 
-### *R1.6b: Co-occurrence of metastatic locations
+### R1.6b: Co-occurrence of metastatic locations
 
 The following upset plot shows the combinations of metastatic sites, ordered by the number of people with that combination.  The metastastases here are at any point over the followup period, so they may occur at different times.
 
@@ -672,7 +687,7 @@ gg_met_loc_timing <- dft_met_loc %>%
 
 ```
 
-### *R1.6c: Timing of metastasis by site
+### R1.6c: Timing of metastasis by site
 
 As a first pass, I am re-using my function for timing intervals, so some of these summary statistics (e.g. non-negative if observed) don't make sense.  We can optimize the plot if it's considered for manuscript inclusion.
 
@@ -818,7 +833,19 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 
+### R2.3 Regimen timing
+
+
+
+
+
+
 ```{r}
+
+
+
+
+
 
 dft_reg_met <- dft_reg_dmet_s %>%
   filter(str_detect(regimen_drugs, "Investigational", negate = T))
@@ -885,7 +912,130 @@ dfp_lot_met %<>% rename(` ` = Quantity)
 
 ```
 
-### *R2.3a LoT, stats
+### *R2.4a Lines of therapy - strategy
+
+We define lines of therapy as a regimen of drugs started on or after the diagnosis of metastatic cancer.  This is similar to the concept of regimens as used in GENIE BPC with three important differences:
+
+- **Excluded drugs:** Regimens containing select drugs are excluded from being considered a line of therapy.  The drugs on the exclusion list are: `r paste(paste0('"', vec_lot_excluded_drugs, '"'), collapse = ", ")`.
+- **Repeat regimens:** Exact repeats of regimens are excluded from being considered a new line.  For example, if GemCis follows GemCis, GemCis is not considered a second regimen.
+- **Variation classes:** Some regimens are considered to be variants on others.  For example, if GemCis follows GemCarbo, then GemCis is not considered a second regimen, but ignored as a variant of the first.
+
+The following table shows the current list of variation classes (see appendix for GemCis class comment):
+
+```{r, include = T}
+dft_var_class %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+
+
+```{r, include = F}
+dft_drug %<>%
+  rename(
+    agent = drug
+  ) 
+
+dft_drug %<>%
+  mutate(
+    agent = str_replace_all(agent, "\\(.*", "")
+  )
+
+
+# Finding the GemCis and GemCarbo cases I want:
+temp_ex1 <- dft_lot %>%
+  group_by(record_id, ca_seq) %>%
+  summarize(
+    has_carbo = any(str_detect(regimen_drugs, "Carboplatin") &
+                          str_detect(regimen_drugs, "Gemcitabine")),
+    has_cis = any(str_detect(regimen_drugs, "Cisplatin") &
+                          str_detect(regimen_drugs, "Gemcitabine")),
+    n = n(),
+    .groups = 'drop'
+  ) %>%
+  filter(has_carbo & has_cis) 
+
+temp_ex1 <- left_join(
+  temp_ex1, 
+  dft_met_timing,
+  by = c('record_id', 'ca_seq')
+) %>%
+  arrange(tt_dmet_dx_yrs, desc(n))
+  
+
+
+# Finding BCG vaccines:
+dft_reg_dmet_s %>% 
+  group_by(record_id, ca_seq) %>%
+  summarize(
+    has_bcg = any(str_detect(regimen_drugs, "BCG Vaccine")),
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  filter(has_bcg) %>%
+  left_join(
+    .,
+    dft_met_timing,
+    by = c('record_id', 'ca_seq')
+  ) %>%
+  arrange(tt_dmet_dx_yrs, desc(n))
+
+plt_lot_ex1 <- dft_drug %>%
+  filter(record_id %in% 'GENIE-DFCI-007779' & ca_seq %in% 0) %>% 
+  plot_drug(., return_plotly = T)
+
+plt_lot_ex2 <- dft_drug %>%
+  filter(record_id %in% 'GENIE-MSK-P-0017313' & ca_seq %in% 0) %>% 
+  plot_drug(., return_plotly = T)
+
+```
+
+#### Example 1
+
+We will show one example to demonstrate our algorithm for LoT.  The following figure show all the drugs used in a participant who was diagnosed with metastatic cancer (so all regimens are eligible based on timing).  This plot is interactive (on hover).
+
+```{r, include = T}
+plt_lot_ex1
+```
+
+The lines of therapy, following our rules, are:
+
+```{r, include = T}
+dft_lot %>% 
+  filter(record_id %in% 'GENIE-DFCI-007779' & !is.na(line_therapy)) %>%
+  select(line_therapy, regimen_number, regimen_drugs) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+GemCarbo is considered a variation on GemCis, so it is not included as a line.
+
+#### Example 2
+
+Another simple example of ignoring the BCG Vaccine as a potential line.  This person was also diagnosed metastatic.
+
+```{r, include = T}
+plt_lot_ex2
+```
+
+The lines of therapy, following our rules, are:
+
+```{r, include = T}
+dft_lot %>% 
+  filter(record_id %in% 'GENIE-MSK-P-0017313' & !is.na(line_therapy)) %>%
+  select(line_therapy, regimen_number, regimen_drugs) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+
+
+
+
+
+
+
+
 
 The following table addresses only drug regimens which were started on or after a diagnosis of metastasis (either de novo or after followup).  We are defining first line therapy ("First") as the first regimen following this event.  "Second" is the second regimen, etc.  For all timing variables we show the median (first quartile, third quartile).  The denominator shown for n is the number of participants who developed metastatic cancer in the cohort.
 
@@ -910,7 +1060,7 @@ dfp_lot_common_met %<>% rename(` ` = common)
 ```
 
 
-### *R2.3b LoT, most common
+### *R2.4b LoT, most common
 
 The following table shows the most common first, second, third, regimen used in the metastatic setting.
 
@@ -948,7 +1098,7 @@ dfp_lot_non_met %<>%
 dfp_lot_non_met %<>% rename(` ` = Quantity)
 ```
 
-### *R2.4a Pre-met regimens, stats
+### *R2.5a Pre-met regimens, stats
 
 Here we describe regimens started before a diagnosis of metastasis (including participants who never developed metastasis).  Some participants are represented in both tables.  For example, a subject who developed metastasis at year 2 but had regimens during years 1 and 3 would appear in both.
 
@@ -973,7 +1123,7 @@ dfp_lot_common_non_met %<>% rename(` ` = common)
 ```
 
 
-### *R2.4b Pre-met regimens, most common
+### *R2.5b Pre-met regimens, most common
 
 The following table shows the most common first, second, third, regimen used in the metastatic setting.
 
@@ -1005,7 +1155,7 @@ dfp_lot_common_non_met %>%
 
 ### Issues
 
-#### *Stage IV vs Metastatic at diagnosis
+#### Stage IV vs Metastatic at diagnosis
 
 Just a note:  The variable `ca_dmets_yn` is only populated for participants who are stage IV at diagnosis.  Here is a cross tabulation of this variable with `stage_dx` (columns):
 
@@ -1014,7 +1164,7 @@ dft_ca_ind %>% tabyl(ca_dmets_yn, stage_dx_iv)
 ```
 
 
-#### *Pathologic N stage
+#### Pathologic N stage
 
 On Sept 25, 2023 we discussed pathologic N stage and that it may only make sense for participants who have had surgery.  The sticking point here is I don't know if we have that information in our dataset.  If anyone with the appropriate clinical knowledge would be willing to search that data guide that may help.
 
@@ -1029,6 +1179,45 @@ Additionally, here is what the data guide tells us for the variable used to repo
 >     - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
 
 It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
+
+#### *Variation class for GemCis
+
+We have the following variation class defined:
+
+```{r, include = T}
+dft_var_class %>%
+  filter(var_class %in% 1) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+```{r}
+dft_var_class_one_similar <- dft_reg_dmet_s %>% 
+  filter(!str_detect(regimen_drugs, "Investigational Drug")) %>%
+  select(record_id, ca_seq, regimen_drugs) %>%
+  mutate(
+    has_carbo = str_detect(regimen_drugs, "Carboplatin"),
+    has_cis = str_detect(regimen_drugs, "Cisplatin")
+  ) %>%
+  filter(has_carbo | has_cis) %>%
+  count(regimen_drugs, sort = T) %>%
+  filter(
+    !(regimen_drugs %in% pull(filter(dft_var_class, var_class %in% 1), regimen_drugs))
+  ) %>%
+  rename(
+    n_reg = n
+  )
+```
+
+**Question:** Should we additionally include any of these regimens in this class of regimens?  `n_reg` is the number of regimens which have a given drug combination and were started on/after metastasis.
+
+```{r}
+dft_var_class_one_similar %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+
 
 ### Todos
 
