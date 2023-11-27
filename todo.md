@@ -4,4 +4,4 @@
     over from the off label manuscript paper.
 - update the manuscript sections to have 3 tables.
 - remove repeats in the tables if not already done.
-- remove same-class regimens in the table (e.g. carboplatin and cisplatin)
+- add a note to have people review the equivalence classes with carbo and cis in the regimen

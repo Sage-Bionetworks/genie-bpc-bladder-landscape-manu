@@ -102,37 +102,61 @@ dft_reg_neo %<>%
     )
   )
 
+dft_multi_neo <- dft_reg_neo %>% 
+  filter(is_neoadjuvant) %>% 
+  count(record_id, ca_seq, sort = T) %>%
+  filter(n > 1) 
+if (nrow(dft_multi_neo)) {
+  cli::cli_alert_info(
+    "Cases with multiple neoadjuvant regimens:"
+  )
+  print(dft_multi_neo)
+}
+
+
+
+
+
 lev_met_neoadj <- c(
-  "Neoadjuvant, ended <=6 months prior to met",
-  "Neoadjuvant, ended >6 months prior to met",
+  "Neoadjuvant, started <=6 months prior to met",
+  "Neoadjuvant, started >6 months prior to met",
   "Not neoadjuvant treatment"
 )
 
 dft_reg_neo %<>%
   mutate(
-    is_gt_6mo = tt_met_reg_end_yrs > 0.5,
-    is_lte_6mo = tt_met_reg_end_yrs <= 0.5,
+    is_gt_6mo = tt_met_reg_start_yrs > 0.5,
+    is_lte_6mo = tt_met_reg_start_yrs <= 0.5,
     met_neoadj_f = case_when(
       is.na(is_neoadjuvant) ~ lev_met_neoadj[3],
       !is_neoadjuvant ~ lev_met_neoadj[3],
       is_neoadjuvant & is_gt_6mo ~ lev_met_neoadj[2],
       is_neoadjuvant & is_lte_6mo ~ lev_met_neoadj[1],
-      # These are backup designations. If we don't have the end date, we go
-      #   with what the start date tells us.
-      is_neoadjuvant & (tt_met_reg_start_yrs <= 0.5) ~ lev_met_neoadj[1],
-      T ~ lev_met_neoadj[2], # definitely debatable.
+      T ~ NA_character_ # hopefully none.
     ),
     met_neoadj_f = factor(met_neoadj_f, levels = lev_met_neoadj)
   )
+chk_met_neoadj_f <- dft_reg_neo %>% 
+  filter(is.na(met_neoadj_f)) %>%
+  nrow(.)
+
+if (chk_met_neoadj_f > 0) {
+  cli::cli_abort("There are regimens that were not categorized for 'met_neoadj_f' column.")
+}
+
+
 
 readr::write_rds(
   dft_reg_neo,
   file = here('data', 'dmet', 'neoadjuvant_status_reg.rds')
 )
 
-# The case labels are similar, just need to update the last one:
-lev_met_neoadj_cases <- lev_met_neoadj
-lev_met_neoadj_cases[3] <- "No neoadjuvant treatment"
+
+lev_met_neoadj_cases <- lev_met_neoadj <- c(
+  "Neoadjuvant, some started <=6 months prior to met",
+  "Neoadjuvant, all started >6 months prior to met",
+  "No neoadjuvant treatment"
+)
 
 dft_reg_neo_cases <- dft_reg_neo %<>%
   group_by(record_id, ca_seq) %>%
