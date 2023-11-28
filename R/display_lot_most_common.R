@@ -7,16 +7,16 @@ display_lot_most_common <- function(
       str = glue("[{round(n_drug/n_with_reg_number*100)}%] {regimen_drugs}")
     ) %>%
     select(
-      common, line_of_therapy, str
+      common, line_therapy_txt, str
     ) %>%
     mutate(
-      line_of_therapy = paste(
-        str_to_sentence(line_of_therapy),
+      line_therapy_txt = paste(
+        str_to_sentence(line_therapy_txt),
         "LoT"
       )
     ) %>%
     pivot_wider(
-      names_from = line_of_therapy,
+      names_from = line_therapy_txt,
       values_from = str
     ) %>%
     mutate(common = str_to_sentence(common))

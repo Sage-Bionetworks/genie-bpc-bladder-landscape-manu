@@ -16,6 +16,7 @@ library(vctrs)
 library(forcats)
 library(english)
 library(glue)
+library(lubridate)
 
 library(survival)
 library(tranSurv)

@@ -6,7 +6,7 @@ reshape_lot_stats <- function(
 ) {
   rtn <- dat_lot %>%
     pivot_longer(
-      cols = -line_of_therapy
+      cols = -line_therapy_txt
     ) %>%
     separate(
       col = name,
@@ -31,7 +31,7 @@ reshape_lot_stats <- function(
   )
   
   rtn %<>%
-    select(line_of_therapy, name, str)
+    select(line_therapy_txt, name, str)
   
   if (!is.null(n_denom)) {
     # Show the percentage relative to the denominator if true.
@@ -48,7 +48,7 @@ reshape_lot_stats <- function(
   
   rtn %<>%
     pivot_wider(
-      names_from = line_of_therapy,
+      names_from = line_therapy_txt,
       values_from = str
     ) %>%
     rename(quantity = name) %>% 

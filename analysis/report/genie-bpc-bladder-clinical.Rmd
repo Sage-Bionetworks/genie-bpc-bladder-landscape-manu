@@ -63,6 +63,8 @@ dft_reg <- read_wrap("reg")
 dft_cpt <- read_wrap("cpt")
 dft_drug <- read_wrap("drug")
 
+dft_reg_yr_est <- read_wrap('reg_yr_estimates')
+
 n_bladder_cohort <- dft_ca_ind %>% nrow()
 
 ```
@@ -833,84 +835,54 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 
-### R2.3 Regimen timing
-
-
-
-
-
-
 ```{r}
-
-
-
-
-
-
-dft_reg_met <- dft_reg_dmet_s %>%
-  filter(str_detect(regimen_drugs, "Investigational", negate = T))
-dft_reg_no_invest <- dft_reg %>%
-  filter(str_detect(regimen_drugs, "Investigational", negate = T))
-dft_reg_non_met <- anti_join(
-  dft_reg_no_invest,
-  dft_reg_dmet_s,
-  by = c("record_id", "ca_seq", "regimen_number")
-)
-
-chk_reg_split <- nrow(dft_reg_no_invest) - 
-  nrow(dft_reg_non_met) - 
-  nrow(dft_reg_met)
-if (!(chk_reg_split %in% 0)) {
-  cli::cli_abort("Splitting the regimen dataset into met and non-met cases did not result in the expected number of rows.")
-}
-
-# For the metastatic version we will add in time variables from metastasis.
-dft_met_timing <- dft_timing %>% 
-  select(record_id, ca_seq, tt_dmet_dx_yrs) %>%
-  filter(!is.na(tt_dmet_dx_yrs))
-dft_reg_met <- left_join(
-  dft_reg_met,
-  dft_met_timing,
-  by = c("record_id", "ca_seq")
-)
-
-dft_reg_met %<>%
-  mutate(
-    dmet_reg_start_int_yrs = dx_reg_start_int_yrs - tt_dmet_dx_yrs,
-    dmet_reg_end_any_int_yrs = dx_reg_end_any_int_yrs - tt_dmet_dx_yrs,
-    dmet_reg_end_all_int_yrs = dx_reg_end_all_int_yrs - tt_dmet_dx_yrs
+gg_reg_yr <- ggplot(
+  dft_reg_yr_est,
+  aes(x = event_yr, group = 1)
+) + 
+  geom_ribbon(
+    fill = "#6699cc",
+    aes(ymin = lcb_n, ymax = ucb_n)
+  ) + 
+  geom_line(
+    color = "#004488",
+    aes(y = median_n)
+  ) +
+  theme_bw() + 
+  labs(
+    x = "Year of regimen start",
+    y = NULL,
+    title = "Number of regimens per year",
+    subtitle = "Ribbons estimated by multiple imputation on birthdates"
+  ) + 
+  theme(
+    plot.title.position = "plot"
   )
-    
-dft_lot_met <- get_lot_stats(
-  dft_reg_met,
-  time_vars = c(
-    "dx_reg_start_int_yrs", 
-    "dx_reg_end_all_int_yrs",
-    "dmet_reg_start_int_yrs", 
-    "dmet_reg_end_all_int_yrs"
-    )
-) 
-
-dfp_lot_met <- dft_lot_met %>%
-  reshape_lot_stats(
-    n_denom = nrow(dft_ca_ind_dmet)
-  )
-
-dfp_lot_met %<>%
-  mutate( 
-    Quantity = case_when(
-      Quantity %in% "dx_reg_start_int_yrs" ~ "Dx -> Regimen start (yrs)",
-      
-      Quantity %in% "dx_reg_end_all_int_yrs" ~ "Dx -> End of all drugs (yrs)",
-      Quantity %in% "dmet_reg_start_int_yrs" ~ "Met -> Regimen start (yrs)",
-      Quantity %in% "dmet_reg_end_all_int_yrs" ~ "Met -> End of all drugs (yrs)",
-      T ~ Quantity
-    )
-  )
-
-dfp_lot_met %<>% rename(` ` = Quantity)
-
 ```
+
+### *R2.3 Regimen year
+
+Vincent suggested we look at the distribution of the year in which regimens happened.  In GENIE we don't have exact dates, so this ends up being an exercise in estimation.  We have the following information for each participant:
+
+- Birth year.
+- Time from birth to diagnosis.
+- Time from diagnosis to regimen start.
+
+The missing information is month and day of birth.  To estimate regimen start year with this in mind, we can use multiple imputation on the missing information.  If we assume that birth dates are approximately evenly distributed, we can assume random birth dates for the participants.  Each time we do this, calculate a number of regimens which took place in each year.  By doing this thousands of times and taking the quantiles, we get a min/max (ribbon) and median number of regimens (dark blue line) for each year.  The following chart shows this:
+
+```{r, include = T}
+gg_reg_yr
+```
+
+**Observations:**
+
+- We might simplify this by saying most regimens are between 2012 and 2019.  
+- A more exact figure, like "X% of regimens most likely occured between 2012 and 2019" could be obtained by estimating the most likely year for each regimen.
+- Iterations on this are not too hard.  For example, year of first regimen.
+
+
+
+
 
 ### *R2.4a Lines of therapy - strategy
 
@@ -940,9 +912,15 @@ dft_drug %<>%
   mutate(
     agent = str_replace_all(agent, "\\(.*", "")
   )
+```
 
 
-# Finding the GemCis and GemCarbo cases I want:
+```{r, include = F, eval = F}
+# This block is temporrary - just designed to find example cases.
+dft_met_timing <- dft_timing %>% 
+  select(record_id, ca_seq, tt_dmet_dx_yrs) %>%
+  filter(!is.na(tt_dmet_dx_yrs))
+
 temp_ex1 <- dft_lot %>%
   group_by(record_id, ca_seq) %>%
   summarize(
@@ -979,7 +957,10 @@ dft_reg_dmet_s %>%
     by = c('record_id', 'ca_seq')
   ) %>%
   arrange(tt_dmet_dx_yrs, desc(n))
+```
 
+
+```{r, include = F}
 plt_lot_ex1 <- dft_drug %>%
   filter(record_id %in% 'GENIE-DFCI-007779' & ca_seq %in% 0) %>% 
   plot_drug(., return_plotly = T)
@@ -1031,127 +1012,106 @@ dft_lot %>%
 
 
 
-
-
-
-
-
-
-The following table addresses only drug regimens which were started on or after a diagnosis of metastasis (either de novo or after followup).  We are defining first line therapy ("First") as the first regimen following this event.  "Second" is the second regimen, etc.  For all timing variables we show the median (first quartile, third quartile).  The denominator shown for n is the number of participants who developed metastatic cancer in the cohort.
-
-```{r, include = T}
-dfp_lot_met %>%
-  flextable %>%
-  fontsize(., size = 8) %>%
-  autofit(.)
-```
-
-
-
-
-
 ```{r}
-dfp_lot_common_met <- dft_reg_met %>%
-  get_lot_most_common(.) %>%
+dfp_lot_common_met <- dft_lot %>% 
+  get_lot_most_common_2(., max_line = 3) %>%
   display_lot_most_common(.)
-
-dfp_lot_common_met %<>% rename(` ` = common)
-
 ```
 
 
-### *R2.4b LoT, most common
+### *R2.4b Lines of therapy - most common
 
-The following table shows the most common first, second, third, regimen used in the metastatic setting.
+The following table shows the most common first, second and third line of therapy used in the metastatic setting according to the rules in R2.4a.
 
 ```{r, include = T}
 dfp_lot_common_met %>%
   flextable %>%
-  fontsize(., size = 8) %>%
   autofit(.)
 ```
 
 
 
-```{r}
-dft_lot_non_met <- get_lot_stats(
-  dft_reg_non_met,
+```{r, eval = T}
+# Regimen dataset, joined with and limited to lines of therapy.
+dft_reg_lot <- dft_reg_dmet_s %>%
+  left_join(
+    ., 
+    select(dft_lot, record_id, ca_seq, regimen_number, line_therapy),
+    by = c('record_id', 'ca_seq', 'regimen_number')
+  ) %>%
+  filter(!is.na(line_therapy))
+
+dft_met_timing <- dft_timing %>% 
+  select(record_id, ca_seq, tt_dmet_dx_yrs) %>%
+  filter(!is.na(tt_dmet_dx_yrs))
+
+dft_reg_lot <- left_join(
+  dft_reg_lot,
+  dft_met_timing,
+  by = c("record_id", "ca_seq")
+)
+dft_reg_lot %<>%
+  mutate(
+    dmet_reg_start_int_yrs = dx_reg_start_int_yrs - tt_dmet_dx_yrs,
+    dmet_reg_end_any_int_yrs = dx_reg_end_any_int_yrs - tt_dmet_dx_yrs,
+    dmet_reg_end_all_int_yrs = dx_reg_end_all_int_yrs - tt_dmet_dx_yrs
+  )
+```
+
+
+```{r, eval = T}
+dft_lot_stats <- get_lot_stats_2(
+  dft_reg_lot,
   time_vars = c(
     "dx_reg_start_int_yrs", 
-    "dx_reg_end_all_int_yrs"
+    "dx_reg_end_all_int_yrs",
+    "dmet_reg_start_int_yrs", 
+    "dmet_reg_end_all_int_yrs"
   )
 ) 
 
-dfp_lot_non_met <- dft_lot_non_met %>%
-  reshape_lot_stats(.)
+dfp_lot_stats <-  reshape_lot_stats(
+  dft_lot_stats,
+  n_denom = n_bladder_dmet
+)
 
-dfp_lot_non_met %<>%
+dfp_lot_stats %<>%
   mutate( 
     Quantity = case_when(
       Quantity %in% "dx_reg_start_int_yrs" ~ "Dx -> Regimen start (yrs)",
       
       Quantity %in% "dx_reg_end_all_int_yrs" ~ "Dx -> End of all drugs (yrs)",
+      Quantity %in% "dmet_reg_start_int_yrs" ~ "Met -> Regimen start (yrs)",
+      Quantity %in% "dmet_reg_end_all_int_yrs" ~ "Met -> End of all drugs (yrs)",
       T ~ Quantity
     )
   )
 
-dfp_lot_non_met %<>% rename(` ` = Quantity)
+dfp_lot_stats %<>% rename(` ` = Quantity)
 ```
 
-### *R2.5a Pre-met regimens, stats
 
-Here we describe regimens started before a diagnosis of metastasis (including participants who never developed metastasis).  Some participants are represented in both tables.  For example, a subject who developed metastasis at year 2 but had regimens during years 1 and 3 would appear in both.
+### *R2.4c Lines of therapy - time stats
+
+Time statistics for lines of therapy from both diagnosis (dx) and metastasis (met):
 
 ```{r, include = T}
-dfp_lot_non_met %>%
-  flextable %>%
-  fontsize(., size = 8) %>%
+dfp_lot_stats %>%
+  flextable(.) %>%
   autofit(.)
 ```
 
+### R2.4d Lines of therapy - people stats 
+
+Work in progress - statistics on those participants who did not get a first line, second line, etc.
 
 
 
 
-```{r}
-
-dfp_lot_common_non_met <- dft_reg_non_met %>%
-  get_lot_most_common(.) %>%
-  display_lot_most_common(.)
-
-dfp_lot_common_non_met %<>% rename(` ` = common)
-```
+a
 
 
-### *R2.5b Pre-met regimens, most common
-
-The following table shows the most common first, second, third, regimen used in the metastatic setting.
-
-```{r, include = T}
-dfp_lot_common_non_met %>%
-  flextable %>%
-  fontsize(., size = 8) %>%
-  autofit(.)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Notes
+## Appendices
 
 ### Issues
 
@@ -1211,7 +1171,7 @@ dft_var_class_one_similar <- dft_reg_dmet_s %>%
 
 **Question:** Should we additionally include any of these regimens in this class of regimens?  `n_reg` is the number of regimens which have a given drug combination and were started on/after metastasis.
 
-```{r}
+```{r, include = T}
 dft_var_class_one_similar %>%
   flextable(.) %>%
   autofit(.)
@@ -1222,7 +1182,9 @@ dft_var_class_one_similar %>%
 ### Todos
 
 - Add swimmer plot.
-
+- Categorize drugs in therapy lines by class?
+- Parse lymph node metastases as a separate group from 'thorax' or 'abdomne'.  Underweigh effort by MSK teams - Neil checking on use.
+- People stats on lines of therapy.
 
 
 ```{r, output_for_clinicians, eval = F}
