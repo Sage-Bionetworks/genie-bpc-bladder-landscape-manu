@@ -118,18 +118,22 @@ if (nrow(dft_multi_neo)) {
 
 
 lev_met_neoadj <- c(
-  "Neoadjuvant, started <=6 months prior to met",
-  "Neoadjuvant, started >6 months prior to met",
+  "Neoadjuvant, ended <=6 months prior to met",
+  "Neoadjuvant, ended >6 months prior to met",
   "Not neoadjuvant treatment"
 )
 
 dft_reg_neo %<>%
   mutate(
-    is_gt_6mo = tt_met_reg_start_yrs > 0.5,
-    is_lte_6mo = tt_met_reg_start_yrs <= 0.5,
+    is_gt_6mo = tt_met_reg_end_yrs > 0.5,
+    is_lte_6mo = tt_met_reg_end_yrs <= 0.5,
+    
     met_neoadj_f = case_when(
       is.na(is_neoadjuvant) ~ lev_met_neoadj[3],
       !is_neoadjuvant ~ lev_met_neoadj[3],
+      # judgement call here
+      # if the end date is unspecified we assume it could have been within 6 months of met.
+      is.na(is_gt_6mo) ~ lev_met_neoadj[1],
       is_neoadjuvant & is_gt_6mo ~ lev_met_neoadj[2],
       is_neoadjuvant & is_lte_6mo ~ lev_met_neoadj[1],
       T ~ NA_character_ # hopefully none.
@@ -152,9 +156,9 @@ readr::write_rds(
 )
 
 
-lev_met_neoadj_cases <- lev_met_neoadj <- c(
-  "Neoadjuvant, some started <=6 months prior to met",
-  "Neoadjuvant, all started >6 months prior to met",
+lev_met_neoadj_cases <- c(
+  "Neoadjuvant, some ended <=6 months prior to met",
+  "Neoadjuvant, all ended >6 months prior to met",
   "No neoadjuvant treatment"
 )
 
@@ -167,6 +171,9 @@ dft_reg_neo_cases <- dft_reg_neo %<>%
       T ~ lev_met_neoadj_cases[3]
     ),
     .groups = "drop"
+  ) %>%
+  mutate(
+    met_neoadj_case_f = factor(met_neoadj_case_f, levels = lev_met_neoadj_cases)
   )
 
 readr::write_rds(

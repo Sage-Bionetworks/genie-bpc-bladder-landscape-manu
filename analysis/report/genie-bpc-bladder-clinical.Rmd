@@ -83,6 +83,7 @@ read_wrap_dmet <- read_wrap <- function(p) {
 dft_pt_dmet <- read_wrap_dmet("pt_dmet.rds")
 dft_ca_ind_dmet <- read_wrap_dmet("ca_ind_dmet.rds")
 dft_reg_dmet_s <- read_wrap_dmet("reg_start_gte_dmet.rds")
+dft_reg_neo_cases <- read_wrap_dmet("neoadjuvant_status_case.rds")
 
 
 vec_lot_excluded_drugs <- readr::read_rds(
@@ -93,6 +94,11 @@ dft_var_class <- readr::read_rds(
 )
 dft_lot <- readr::read_rds(
   here('data', 'dmet', 'lines_of_therapy', 'lot.rds')
+)
+
+# We also need the key of neoadjuvant therapies to state those in the report:
+dft_neoadj_therapy_key <- readr::read_rds(
+  here('data', 'drug_mapping', 'neoadjuvant_reg_key.rds')
 )
 ```
 
@@ -1013,7 +1019,13 @@ dft_lot %>%
 
 
 ```{r}
-dfp_lot_common_met <- dft_lot %>% 
+dft_lot <- left_join(
+  dft_lot,
+  dft_reg_neo_cases,
+  by = c('record_id', 'ca_seq')
+)
+
+dfp_lot_common_met <- dft_lot %>%
   get_lot_most_common_2(., max_line = 3) %>%
   display_lot_most_common(.)
 ```
@@ -1107,11 +1119,30 @@ Work in progress - statistics on those participants who did not get a first line
 
 
 
+### R2.5a Neoadjuvant therapy groups
 
-a
+We define neoadjuvant therapy as any regimen which was 
+
+1. Received before diagnosis of distant metastasis.
+2. A drug on a list, mostly including platinum based chemotherapies (see appnedix to this report for full list).
+
+While neoadjuvant therapy is often defined relative to a primary surgery, a limitation in the BPC data is that we cannot tell the difference between transurethral bladder tumor resection (TURBT) and radical cystectomy.  This motivates the use of distant metastasis as a marker.
 
 
 ## Appendices
+
+### *Neoadjuvant therapies list
+
+As explained in some of the sections above, we define neoadjuvant therapy as therapy that occurred prior to **metastasis** and the drugs used in the regimen.  The drugs which we counted are mostly platinum-based chemotherapies.  The complete list of regimens which we counted as neoadjuvant iff they occurred before metastasis includes the following:
+
+```{r, include = T}
+dft_neoadj_therapy_key %>%
+  filter(valid_neoadjuvant) %>%
+  select(regimen_drugs)
+```
+
+This list was arrived at by listing all the drugs administered before metastasis and deciding in a meeting which ones would or would not count.  The general goal was to adhere to well-known neoadjuvant therapies.
+
 
 ### Issues
 
@@ -1178,13 +1209,11 @@ dft_var_class_one_similar %>%
 ```
 
 
-
 ### Todos
 
 - Add swimmer plot.
 - Categorize drugs in therapy lines by class?
-- Parse lymph node metastases as a separate group from 'thorax' or 'abdomne'.  Underweigh effort by MSK teams - Neil checking on use.
-- People stats on lines of therapy.
+- Parse lymph node metastases as a separate group from 'thorax' or 'abdomen'.  Underweigh effort by MSK teams - Neil checking on our ability to  use.
 
 
 ```{r, output_for_clinicians, eval = F}
