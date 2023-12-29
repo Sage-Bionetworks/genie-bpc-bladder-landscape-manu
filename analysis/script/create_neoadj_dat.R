@@ -86,6 +86,11 @@ dft_reg_neo <- left_join(
   by = c("record_id", "ca_seq")
 )
 
+# Update:  This table makes little to no sense for people who never reached
+#  metastatic disease.  We filter to avoid confusion.
+dft_reg_neo %<>%
+  filter(!is.na(dmet_time_yrs))
+
 dft_reg_neo %<>%
   filter(!str_detect(regimen_drugs, "Investigational Drug")) %>%
   mutate(
@@ -94,7 +99,7 @@ dft_reg_neo %<>%
     is_neoadjuvant = case_when(
       is.na(dmet_time_yrs) ~ NA,
       # this can still be NA for regimens that appeared only after met
-      #. (these regimens were never presented to physicians for review)
+      #  (these regimens were never presented to research team for review)
       is.na(valid_neoadjuvant) ~ NA,
       # small tolerance here - half a day - for rounding errors.
       valid_neoadjuvant %in% T & tt_met_reg_start_yrs >= -(0.5/365.25) ~ T,
@@ -102,10 +107,10 @@ dft_reg_neo %<>%
     )
   )
 
-dft_multi_neo <- dft_reg_neo %>% 
-  filter(is_neoadjuvant) %>% 
+dft_multi_neo <- dft_reg_neo %>%
+  filter(is_neoadjuvant) %>%
   count(record_id, ca_seq, sort = T) %>%
-  filter(n > 1) 
+  filter(n > 1)
 if (nrow(dft_multi_neo)) {
   cli::cli_alert_info(
     "Cases with multiple neoadjuvant regimens:"
@@ -171,7 +176,21 @@ dft_reg_neo_cases <- dft_reg_neo %<>%
       T ~ lev_met_neoadj_cases[3]
     ),
     .groups = "drop"
-  ) %>%
+  )
+
+# One more thing needs to be done here to make this more sensible:  We need to 
+#   add back in the people who had zero regimens before met.  Then they will be 
+#   correctly added as having no neoadjuvant therapy. 
+
+dft_no_reg_addins <- dft_dmet_timing %>%
+  filter(!(record_id %in% dft_reg_neo_cases$record_id)) %>%
+  select(record_id, ca_seq) %>%
+  mutate(
+    met_neoadj_case_f = lev_met_neoadj_cases[3]
+  )
+
+dft_reg_neo_cases %<>%
+  bind_rows(., dft_no_reg_addins) %>%
   mutate(
     met_neoadj_case_f = factor(met_neoadj_case_f, levels = lev_met_neoadj_cases)
   )
@@ -182,7 +201,3 @@ readr::write_rds(
 )
       
 
-# Todo:
-#  - update the manuscript sections to have 3 tables.
-#  - remove repeats in the tables if not already done.
-#  - remove same-class regimens in the table (e.g. carboplatin and cisplatin)

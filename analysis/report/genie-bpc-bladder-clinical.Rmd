@@ -1124,9 +1124,46 @@ Work in progress - statistics on those participants who did not get a first line
 We define neoadjuvant therapy as any regimen which was 
 
 1. Received before diagnosis of distant metastasis.
-2. A drug on a list, mostly including platinum based chemotherapies (see appnedix to this report for full list).
+2. A drug on a list, mostly including platinum based chemotherapies (see appnedix to this report for full list of regimens we settled on).
 
-While neoadjuvant therapy is often defined relative to a primary surgery, a limitation in the BPC data is that we cannot tell the difference between transurethral bladder tumor resection (TURBT) and radical cystectomy.  This motivates the use of distant metastasis as a marker.
+While neoadjuvant therapy is often defined relative to a primary surgery, a limitation in the BPC data is that we cannot tell the difference between transurethral bladder tumor resection (TURBT) and radical cystectomy, only that there was a surgical procedure.  This motivates the use of distant metastasis as a marker - it's something we can readily identifiable and it often aligns with the surgery time in practice.
+
+Neoadjuvant therapy is further split into two groups based on whether the last dose of neoadjuvant therapy was given more or less than 6 months prior to distant metastasis.  The following table shows how many participants fall into each group:
+
+```{r, include = T}
+gtsummary::tbl_summary(
+  select(
+    dft_reg_neo_cases,
+    `Neoadjuvant Treatment` = met_neoadj_case_f
+  )
+)
+```
+
+The denominator for the above table (`r nrow(dft_reg_neo_cases)`) is the number of participants who had a distant metastasis.  The numbers for those who also have at least one valid line of therapy (post-metastasis) are as follows:
+
+```{r, include = T}
+dft_lot %>%
+  # by taking everyone's first line we limit to one per person.
+  filter(line_therapy %in% 1) %>%
+  select(
+    `Neoadjuvant Treatment` = met_neoadj_case_f
+  ) %>%
+  gtsummary::tbl_summary(.)
+```
+
+
+```{r}
+# Will have to redo the split - not a huge deal.
+```
+
+
+### R2.5b Lines w.r.t neoadjuvant therapy groups
+
+```{r}
+# Print the split therapies here.
+```
+
+
 
 
 ## Appendices
@@ -1205,7 +1242,7 @@ dft_var_class_one_similar <- dft_reg_dmet_s %>%
 ```{r, include = T}
 dft_var_class_one_similar %>%
   flextable(.) %>%
-  autofit(.)
+  autofit(.) 
 ```
 
 
@@ -1214,6 +1251,7 @@ dft_var_class_one_similar %>%
 - Add swimmer plot.
 - Categorize drugs in therapy lines by class?
 - Parse lymph node metastases as a separate group from 'thorax' or 'abdomen'.  Underweigh effort by MSK teams - Neil checking on our ability to  use.
+- People stats for lines of therapy - time to death and mets and all that.
 
 
 ```{r, output_for_clinicians, eval = F}
