@@ -18,8 +18,17 @@ dft_reg_dmet_s %<>%
     by = c("record_id", "ca_seq")
   )
 
+# Update from Dec 2023:  Keep the investigational drugs but label them 
+#   ALL as "investigational regimen"
 dft_reg_dmet_s %<>%
-  filter(!str_detect(regimen_drugs, "Investigational Drug"))
+  mutate(
+    regimen_drugs = if_else(
+      str_detect(regimen_drugs, "Investigational"),
+      "Investigational Regimen",
+      regimen_drugs
+    )
+  )
+    
 
 excluded_drug_strings <- c(
   "BCG Vaccine",

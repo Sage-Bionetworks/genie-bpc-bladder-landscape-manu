@@ -866,7 +866,7 @@ gg_reg_yr <- ggplot(
   )
 ```
 
-### *R2.3 Regimen year
+### R2.3 Regimen year
 
 Vincent suggested we look at the distribution of the year in which regimens happened.  In GENIE we don't have exact dates, so this ends up being an exercise in estimation.  We have the following information for each participant:
 
@@ -892,8 +892,9 @@ gg_reg_yr
 
 ### *R2.4a Lines of therapy - strategy
 
-We define lines of therapy as a regimen of drugs started on or after the diagnosis of metastatic cancer.  This is similar to the concept of regimens as used in GENIE BPC with three important differences:
+We define lines of therapy as a regimen of drugs started on or after the diagnosis of metastatic cancer.  This is similar to the concept of regimens as used in GENIE BPC with four important differences:
 
+- **Investigational Regimen:** Any regimen with an "Investigational drug" entry 
 - **Excluded drugs:** Regimens containing select drugs are excluded from being considered a line of therapy.  The drugs on the exclusion list are: `r paste(paste0('"', vec_lot_excluded_drugs, '"'), collapse = ", ")`.
 - **Repeat regimens:** Exact repeats of regimens are excluded from being considered a new line.  For example, if GemCis follows GemCis, GemCis is not considered a second regimen.
 - **Variation classes:** Some regimens are considered to be variants on others.  For example, if GemCis follows GemCarbo, then GemCis is not considered a second regimen, but ignored as a variant of the first.
@@ -1105,7 +1106,9 @@ dfp_lot_stats %<>% rename(` ` = Quantity)
 
 ### *R2.4c Lines of therapy - time stats
 
-Time statistics for lines of therapy from both diagnosis (dx) and metastasis (met):
+Time statistics for lines of therapy from both diagnosis (dx) and metastasis (met).  
+
+**Note:** The statistics for end of regimen timing are now flawed since our decision to include all investigational agents.  This is because investigational agents have a (junk) length of one day, so the statistics show a smaller number than reality.  I have left them in for now, but recommend we not report them.
 
 ```{r, include = T}
 dfp_lot_stats %>%
@@ -1113,9 +1116,81 @@ dfp_lot_stats %>%
   autofit(.)
 ```
 
-### R2.4d Lines of therapy - people stats 
 
-Work in progress - statistics on those participants who did not get a first line, second line, etc.
+
+
+
+
+```{r}
+dft_highest_line <- dft_lot %>%
+  group_by(record_id, ca_seq) %>%
+  summarize(
+    highest_line = max(line_therapy, na.rm = T),
+    .groups = "drop"
+  )
+    
+dft_stats_by_line <- dft_ca_ind_dmet %>%
+  left_join(
+    .,
+    dft_met_timing,
+    by = c('record_id', 'ca_seq')
+  ) %>%
+  mutate(
+    tt_os_dmet_yrs = tt_os_dx_yrs - tt_dmet_dx_yrs
+  ) %>%
+  select(record_id, ca_seq, tt_os_dmet_yrs)
+
+dft_stats_by_line %<>%
+  left_join(
+    .,
+    dft_highest_line,
+    by = c('record_id', 'ca_seq'),
+    relationship = 'one-to-one'
+  ) 
+
+lev_high_line <- c(
+  "Zero",
+  "One",
+  "Two",
+  "Three+"
+)
+
+dft_stats_by_line %<>%
+  mutate(
+    lines_received_f = case_when(
+      is.na(highest_line) ~ lev_high_line[1],
+      highest_line %in% 1:2 ~ lev_high_line[highest_line + 1],
+      highest_line >= 3 ~ lev_high_line[4]
+    ),
+    lines_received_f = factor(lines_received_f, levels = lev_high_line)
+  ) %>%
+  rename(`Follow-up time` = tt_os_dmet_yrs) # without status indicator that's basically what it is.
+```
+
+
+### *R2.4d Lines of therapy - people stats 
+
+The following table shows the followup time for those who received exactly zero, one, two, or three+ lines of therapy according to our definition.
+
+```{r}
+gtsummary::tbl_summary(
+  select(
+    dft_stats_by_line, 
+    lines_received_f,
+    `Follow-up time`
+  ),
+  by = lines_received_f
+)
+  
+```
+
+**Notes:**
+
+- Our hypothesis previously was that people who received fewer lines of therapy probably had less followup time.
+- This appears to be broadly true, except for those with zero lines of therapy, who had a greater amount of followup than any other group.
+- One possibility is that those who have regimens started before metastasis continue them afterward.  The way we count lines currently only includes regimens started on or after metastasis.  Support for this explanation ca be found below in the neoadjuvant therapy group breakdowns (R2.5a), where those with neoadjuvant therapy disappear after we limit to only those with one or more line.
+- This is not a survival statement and definitely is not causal (e.g. "those with three lines lived longer than those who stuck with one" is not in any way supported here).  The followup time is basically the observed time for overall survival, but we're completely ignoring whether the event ending followup was death or censoring (intentionally).  
+
 
 
 
@@ -1139,6 +1214,11 @@ gtsummary::tbl_summary(
 )
 ```
 
+**Notes:**
+
+- "some" and "all" refers to regimens above, which is just an attempt to be precise for people who had more than one qualifying neoadjuvant regimen (rare case).  For example, if someone had regimens ending 24 and 3 months prior to metastasis, they had "some" regimens which were within 6 months of metastasis.
+- For anyone with an unknown regimen end date on a qualifying neoadjuvant regimen, they were placed in group which had treatment <=6 months before metastasis.  Arbitrary decision to handle another rare case.
+
 The denominator for the above table (`r nrow(dft_reg_neo_cases)`) is the number of participants who had a distant metastasis.  The numbers for those who also have at least one valid line of therapy (post-metastasis) are as follows:
 
 ```{r, include = T}
@@ -1152,23 +1232,88 @@ dft_lot %>%
 ```
 
 
+
+
+
+
+
+
+
+
 ```{r}
-# Will have to redo the split - not a huge deal.
+# split here indicates that it's split into sub-tables for met_neoadj_case_f
+dft_lot_split <- dft_lot %>%
+  tidyr::nest(
+    .data = .,
+    .by = "met_neoadj_case_f",
+    .key = "lot" # just renames the nested column
+  )
+
+# Do the same steps we did above for the list-column of separated tables:
+dft_lot_split %<>%
+  mutate(
+    lot_common = purrr::map(
+      .x = lot,
+      .f = \(x) {
+          get_lot_most_common_2(x, max_line = 3) 
+      }
+    ),
+    lot_common_disp = purrr::map(
+      .x = lot_common,
+      .f = (\(x) display_lot_most_common(x))
+    ),
+    lot_common_ft = purrr::map(
+      .x = lot_common_disp,
+      .f = (\(x) {
+        x %>%
+          rename(` ` = 1) %>%
+          flextable %>%
+          autofit
+      })
+    )
+  )
+
+heading_helper <- function(row_id) {
+  paste0(
+    as.character(dft_lot_split[[row_id, "met_neoadj_case_f"]]), " (n=",
+    nrow(count(dft_lot_split[[row_id, "lot"]][[1]], record_id)), ")"
+  )
+}
+
+neoadj_heading_1 <- heading_helper(1)
+neoadj_heading_2 <- heading_helper(2)
+neoadj_heading_3 <- heading_helper(3)
+
 ```
 
 
 ### R2.5b Lines w.r.t neoadjuvant therapy groups
 
-```{r}
-# Print the split therapies here.
+The following tables are the same as above, just split into three tables based on neoadjuvant treatment history.
+
+#### `r neoadj_heading_1`
+
+```{r, include = T}
+dft_lot_split[[1, "lot_common_ft"]][[1]]
 ```
 
+#### `r neoadj_heading_2`
 
+```{r, include = T}
+dft_lot_split[[2, "lot_common_ft"]][[1]]
+```
 
+#### `r neoadj_heading_3`
+
+```{r, include = T}
+dft_lot_split[[3, "lot_common_ft"]][[1]]
+```
 
 ## Appendices
 
-### *Neoadjuvant therapies list
+### Details
+
+#### *Neoadjuvant therapies list
 
 As explained in some of the sections above, we define neoadjuvant therapy as therapy that occurred prior to **metastasis** and the drugs used in the regimen.  The drugs which we counted are mostly platinum-based chemotherapies.  The complete list of regimens which we counted as neoadjuvant iff they occurred before metastasis includes the following:
 
@@ -1181,34 +1326,22 @@ dft_neoadj_therapy_key %>%
 This list was arrived at by listing all the drugs administered before metastasis and deciding in a meeting which ones would or would not count.  The general goal was to adhere to well-known neoadjuvant therapies.
 
 
-### Issues
 
-#### Stage IV vs Metastatic at diagnosis
 
-Just a note:  The variable `ca_dmets_yn` is only populated for participants who are stage IV at diagnosis.  Here is a cross tabulation of this variable with `stage_dx` (columns):
 
-```{r, include = T}
-dft_ca_ind %>% tabyl(ca_dmets_yn, stage_dx_iv)
+```{r}
+n_erdafitinib <- dft_reg %>% 
+  filter(str_detect(tolower(regimen_drugs), "erdafitinib")) %>%
+  pull(record_id) %>%
+  unique %>%
+  length
 ```
 
+#### *Erdafitinib
 
-#### Pathologic N stage
+In our Dec 2023 Maria asked if there are any patients who received Erdafitinib.  The answer is yes, but only `r n_erdafitinib`, all from MSK, which probably leaves us with too few for most analyses.
 
-On Sept 25, 2023 we discussed pathologic N stage and that it may only make sense for participants who have had surgery.  The sticking point here is I don't know if we have that information in our dataset.  If anyone with the appropriate clinical knowledge would be willing to search that data guide that may help.
-
-Additionally, here is what the data guide tells us for the variable used to report Pathologic N stage (`ca_path_n_stage`):
-
-> Description
-> 
-> - Curated pathologic N stage
-> - N describes spread of cancer to nearby lymph nodes 
-> - Populated only if:
->     - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
->     - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
-
-It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
-
-#### *Variation class for GemCis
+#### Variation class for GemCis
 
 We have the following variation class defined:
 
@@ -1244,6 +1377,38 @@ dft_var_class_one_similar %>%
   flextable(.) %>%
   autofit(.) 
 ```
+
+
+#### Stage IV vs Metastatic at diagnosis
+
+Just a note:  The variable `ca_dmets_yn` is only populated for participants who are stage IV at diagnosis.  Here is a cross tabulation of this variable with `stage_dx` (columns):
+
+```{r, include = T}
+dft_ca_ind %>% tabyl(ca_dmets_yn, stage_dx_iv)
+```
+
+
+### Issues
+
+#### Pathologic N stage
+
+On Sept 25, 2023 we discussed pathologic N stage and that it may only make sense for participants who have had surgery.  The sticking point here is I don't know if we have that information in our dataset.  If anyone with the appropriate clinical knowledge would be willing to search that data guide that may help.
+
+Additionally, here is what the data guide tells us for the variable used to report Pathologic N stage (`ca_path_n_stage`):
+
+> Description
+> 
+> - Curated pathologic N stage
+> - N describes spread of cancer to nearby lymph nodes 
+> - Populated only if:
+>     - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
+>     - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
+
+It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
+
+#### *Regimen length + investigational regimens
+
+Including investigational regimens means we cannot have accurate time statistics because investigational regimens all have a coded length of 1 day.  We can still report intervals from diagnosis/met to regimen start without issue.
 
 
 ### Todos
