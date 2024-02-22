@@ -32,8 +32,7 @@ dft_reg_dmet_s %<>%
 excluded_drug_strings <- c(
   "BCG Vaccine",
   "BCG Solution",
-  "Mitomycin",
-  "Mitomycin, Fluorouracil"
+  "Mitomycin"
 )
 # Report those out so they can go in a report section:
 readr::write_rds(
@@ -55,6 +54,17 @@ dft_reg_dmet_s %<>%
       paste0(excluded_drug_strings, collapse = "|")
     )
   ) 
+
+# We will also exclude those with any non-standard administration method.
+# Currently this is empirically limited to intravesicular administration,
+#   which is most common with the BCG vaccine, so this is almost fully redundant
+#   with the above.
+dft_reg_dmet_s %<>%
+  filter(
+    is.na(drugs_admin) # NA = standard in PRISSMM.
+  )
+
+
 
 # Variation classes are (in this context) drug regimens that would not constitute
 #   a new regimen.  For example, carboplatin + gemcitabine is in the same class
