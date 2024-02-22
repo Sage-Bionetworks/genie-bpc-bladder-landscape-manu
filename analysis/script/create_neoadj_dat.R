@@ -15,7 +15,7 @@ dft_reg <- readr::read_rds(
 # This file was created by going through the list of regimens at a meeting 
 #   one day.  It's totally preference of the team working on this paper.
 dft_neoadj <- readr::read_csv(
-  here('data', 'drug_mapping', 'neoadjuvant_regimens_2023_11_06.csv')
+  here('data', 'drug_mapping', 'neoadjuvant_regimens_2024_02_21.csv')
 )
 
 # Ensure all entries are 'yes' or 'no' only.
@@ -27,6 +27,8 @@ chk_neoadj_col <- dft_neoadj %>%
 if (!chk_neoadj_col) {
   cli::cli_abort("Invalid entries in the input neoadjuvant CSV (valid_neoadjuvant column)")
 }
+
+
 
 # Make sure all regimens are in the data - i.e. no typos or corrupt regimens.
 chk_reg_drug_col <- dft_neoadj %>%
