@@ -1374,6 +1374,7 @@ dft_var_class %>%
   autofit(.)
 ```
 
+
 ```{r}
 dft_var_class_one_similar <- dft_reg_dmet_s %>% 
   filter(!str_detect(regimen_drugs, "Investigational Drug")) %>%

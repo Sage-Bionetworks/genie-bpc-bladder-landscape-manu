@@ -64,6 +64,22 @@ dft_reg_dmet_s %<>%
     is.na(drugs_admin) # NA = standard in PRISSMM.
   )
 
+# Temporary note to help me find PD1 and PDL1 inhibitors.
+dft_reg_dmet_s %>% 
+  filter(str_detect(tolower(regimen_drugs), paste(
+    c("pembrolizumab",
+      "nivolumab",
+      "cemiplimab",
+      "dostarlimab",
+      "retifanlimab",
+      "toripalimab",
+      "atezolizumab",
+      "avelumab",
+      "durvalumab"
+    ),
+    collapse = "|"
+  ))) %>%
+  tabyl(regimen_drugs)
 
 
 # Variation classes are (in this context) drug regimens that would not constitute
@@ -72,9 +88,23 @@ dft_reg_dmet_s %<>%
 #   we don't count GemCis as a second line of therapy, it's a variation on the first.
 dft_variation_classes <- tribble(
   ~var_class, ~regimen_drugs,
+  # Class 1:  Platinum chemo with gemcitabine
   1, 'Cisplatin, Gemcitabine Hydrochloride',
-  1, 'Carboplatin, Gemcitabine Hydrochloride'
+  1, 'Carboplatin, Gemcitabine Hydrochloride',
+  # Class 2: PD1 and PDL1 inhibitors without chemo
+  2, "Atezolizumab", 
+  2, "Avelumab",
+  2, "Durvalumab",
+  2, "Enfortumab Vedotin, Pembrolizumab",
+  2, "Ipilimumab, Nivolumab",
+  2, "Nivolumab",
+  2, "Pembrolizumab"
 )
+
+if (!all( dft_variation_classes$regimen_drugs %in% dft_reg_dmet_s$regimen_drugs) ) {
+  cli_abort("Variation class declaration error - 1+ not found in regimen data (typo likely)")
+}
+
 
 readr::write_rds(
   x = dft_variation_classes,
