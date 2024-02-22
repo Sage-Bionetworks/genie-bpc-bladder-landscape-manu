@@ -64,24 +64,6 @@ dft_reg_dmet_s %<>%
     is.na(drugs_admin) # NA = standard in PRISSMM.
   )
 
-# Temporary note to help me find PD1 and PDL1 inhibitors.
-dft_reg_dmet_s %>% 
-  filter(str_detect(tolower(regimen_drugs), paste(
-    c("pembrolizumab",
-      "nivolumab",
-      "cemiplimab",
-      "dostarlimab",
-      "retifanlimab",
-      "toripalimab",
-      "atezolizumab",
-      "avelumab",
-      "durvalumab"
-    ),
-    collapse = "|"
-  ))) %>%
-  tabyl(regimen_drugs)
-
-
 # Variation classes are (in this context) drug regimens that would not constitute
 #   a new regimen.  For example, carboplatin + gemcitabine is in the same class
 #   as cisplatin + gemcitabine.  So if we see GemCis after GemCarbo then 
