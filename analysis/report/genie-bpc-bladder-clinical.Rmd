@@ -896,6 +896,7 @@ We define lines of therapy as a regimen of drugs started on or after the diagnos
 
 - **Investigational Regimen:** Any regimen with an "Investigational drug" entry 
 - **Excluded drugs:** Regimens containing select drugs are excluded from being considered a line of therapy.  The drugs on the exclusion list are: `r paste(paste0('"', vec_lot_excluded_drugs, '"'), collapse = ", ")`.
+  - We also exclude any drug with a "non-standard" administration route.  At the time of writing this is almost exclusively BCG vaccines administered intravesicularly, so this is mostly redundant with the above.
 - **Repeat regimens:** Exact repeats of regimens are excluded from being considered a new line.  For example, if GemCis follows GemCis, GemCis is not considered a second regimen.
 - **Variation classes:** Some regimens are considered to be variants on others.  For example, if GemCis follows GemCarbo, then GemCis is not considered a second regimen, but ignored as a variant of the first.
 
