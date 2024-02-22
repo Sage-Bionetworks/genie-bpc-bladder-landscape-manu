@@ -12,7 +12,7 @@ assign_lot <- function(
     arrange(record_id, ca_seq, regimen_number)
   
   if (remove_repeats) {
-    dft_reg <- dft_reg %>%
+    dat_reg <- dat_reg %>%
       group_by(record_id, ca_seq) %>%
       mutate(
         is_repeat = lag(regimen_drugs) == regimen_drugs

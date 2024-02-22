@@ -976,6 +976,25 @@ plt_lot_ex2 <- dft_drug %>%
   filter(record_id %in% 'GENIE-MSK-P-0017313' & ca_seq %in% 0) %>% 
   plot_drug(., return_plotly = T)
 
+gg_lot_ex1 <- dft_drug %>%
+  filter(record_id %in% 'GENIE-DFCI-007779' & ca_seq %in% 0) %>% 
+  plot_drug(., return_plotly = F)
+
+gg_lot_ex2 <- dft_drug %>%
+  filter(record_id %in% 'GENIE-MSK-P-0017313' & ca_seq %in% 0) %>% 
+  plot_drug(., return_plotly = F)
+
+gg_lot_ex3 <- dft_drug %>%
+  filter(!agent %in% "Investigational Drug") %>%
+  filter(record_id %in% 'GENIE-MSK-P-0025120' & ca_seq %in% 0) %>% 
+  plot_drug(., return_plotly = F)
+
+gg_lot_ex4 <- dft_drug %>%
+  filter(!agent %in% "Investigational Drug") %>%
+  filter(record_id %in% 'GENIE-DFCI-003553' & ca_seq %in% 2) %>% 
+  plot_drug(., return_plotly = F)
+
+
 ```
 
 #### Example 1
@@ -1038,8 +1057,10 @@ The following table shows the most common first, second and third line of therap
 
 ```{r, include = T}
 dfp_lot_common_met %>%
+  rename(` ` = common) %>%
   flextable %>%
-  autofit(.)
+  autofit(.) %>%
+  flextable::width(j = 1, width = 1.75)
 ```
 
 
@@ -1172,7 +1193,7 @@ dft_stats_by_line %<>%
 
 The following table shows the followup time for those who received exactly zero, one, two, or three+ lines of therapy according to our definition.
 
-```{r}
+```{r, include = T}
 gtsummary::tbl_summary(
   select(
     dft_stats_by_line, 
@@ -1506,3 +1527,12 @@ reg_sum_pre_met %>%
 
 - Suggested on Oct 09, 2023:  Can we analyze whether people with common patterns of metastasis (for exmaple, primary -> lymph -> bone) have better outcomes?
   - This is complicated because we have to deal with the potential for bias in people who drop out (due to death or censoring) before they can develop a longer chain of metastatic locations.  Probably requires a time-varying model which would be a lot to bite off for this particular paper.
+  
+## Temp
+
+```{r, include = T}
+gg_lot_ex2
+gg_lot_ex3
+gg_lot_ex4
+```
+

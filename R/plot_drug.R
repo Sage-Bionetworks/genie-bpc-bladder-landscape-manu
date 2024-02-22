@@ -76,7 +76,7 @@ plot_drug <- function(
   ) + 
     geom_rect(size = 2) +
     theme_bw() +
-    scale_fill_manual(values = pal, guide = 'none') + 
+    scale_fill_manual(values = pal) + 
     scale_x_continuous(
       minor_breaks = seq(0, 100, by = (1/6))
     ) + 

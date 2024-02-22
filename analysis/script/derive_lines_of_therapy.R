@@ -28,11 +28,12 @@ dft_reg_dmet_s %<>%
       regimen_drugs
     )
   )
-    
 
 excluded_drug_strings <- c(
   "BCG Vaccine",
-  "BCG Solution"
+  "BCG Solution",
+  "Mitomycin",
+  "Mitomycin, Fluorouracil"
 )
 # Report those out so they can go in a report section:
 readr::write_rds(
