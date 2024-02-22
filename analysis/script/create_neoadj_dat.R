@@ -18,6 +18,8 @@ dft_neoadj <- readr::read_csv(
   here('data', 'drug_mapping', 'neoadjuvant_regimens_2024_02_21.csv')
 )
 
+dft_neoadj %<>% select(regimen_drugs, valid_neoadjuvant) # leaves off comments
+
 # Ensure all entries are 'yes' or 'no' only.
 chk_neoadj_col <- dft_neoadj %>%
   pull(valid_neoadjuvant) %>%
@@ -58,6 +60,19 @@ readr::write_rds(
   x = dft_neoadj,
   file = here('data', 'drug_mapping', 'neoadjuvant_reg_key.rds')
 )
+
+
+
+# Todo: Update to the new definition of neoadjuvant.  Make sure it applies to
+#   all participants including those without mets.
+
+
+
+
+
+
+
+
 
 
 dft_reg_neo <- dft_reg %>% 
