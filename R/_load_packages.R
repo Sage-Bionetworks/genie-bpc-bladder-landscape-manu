@@ -26,6 +26,7 @@ library(ggrepel)
 library(ggtext)
 library(cowplot)
 library(ggsurvfit)
+library(plotly)
 
 library(gt)
 library(gtsummary)

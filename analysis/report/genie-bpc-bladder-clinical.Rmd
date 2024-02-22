@@ -1411,6 +1411,95 @@ dft_ca_ind %>% tabyl(ca_dmets_yn, stage_dx_iv)
 ```
 
 
+
+
+
+```{r}
+
+dft_reg_thru_met <- left_join(
+  select(
+    dft_reg,
+    record_id, ca_seq, regimen_drugs,
+    dx_reg_start_int,
+    dx_reg_end_all_int
+  ),
+  dft_met_timing,
+  by = c('record_id', 'ca_seq')
+)
+
+dft_reg_thru_met %<>%
+  filter(!is.na(tt_dmet_dx_yrs)) %>%
+  mutate(tt_dmet_dx_days = tt_dmet_dx_yrs * 365.25) %>%
+  # drug started before met with a half-day tolerance for rounding
+  filter(dx_reg_start_int < (tt_dmet_dx_days + 0.5)) %>%
+  # drug ended after met with a half-day tolerance for rounding
+  filter(dx_reg_end_all_int > (tt_dmet_dx_days - 0.5))
+
+dft_reg_thru_met %<>%
+  mutate(
+    dmet_reg_start_days = dx_reg_start_int - tt_dmet_dx_days,
+    dmet_reg_end_days = dx_reg_end_all_int - tt_dmet_dx_days
+  ) %>%
+  arrange(desc(dmet_reg_end_days)) %>%
+  mutate(
+    y_pos = 1:n(),\
+    # rounded to one digit here so I could see if there were odd things:
+    lab = glue(
+      "Record ID: {record_id},
+      Ca Seq: {ca_seq},
+      Regimen drugs: {regimen_drugs},
+      Start time (rel to met): {round(dmet_reg_start_days,1)} days,
+      End of all drugs (rel to met): {round(dmet_reg_end_days,1)} days"
+    )
+  )
+
+gg_reg_thru_met <- ggplot(
+  dft_reg_thru_met,
+  aes(
+    xmin = dmet_reg_start_days,
+    xmax = dmet_reg_end_days,
+    ymin = y_pos - 0.4,
+    ymax = y_pos + 0.4,
+    text = lab
+  )
+) + 
+  geom_rect(fill = "#3E6990") + 
+  theme_bw() +
+  labs(
+    title = "Cases where a regimen spans a metastatic diagnosis",
+    subtitle = "Hover for more info",
+    x = "Days relative to metastatic diagnosis"
+  ) + 
+  theme(
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank()
+  )
+
+plt_reg_thru_met <- ggplotly(gg_reg_thru_met, tooltip = "text")
+
+
+```
+
+#### *Therapies continued through met
+
+A subtle assumption in our methods above is that few therapies are continued through a metastatic diagnosis.  This follows because we define lines of therapy as only including regimens started on or after diagnosis.  Therefore, a regimen started before a met diagnosis and continued after would not show up in our LoT tables.
+
+A basic question on this subject is "How often does it happen that someone continues a regimen through a met diagnosis?".  We observe `r nrow(dft_reg_through_met)` occurences of this in our `r nrow(dft_met_timing)` metastatic cases.  The following figure displays more information about how this timing looks relative to met diagnosis for each:
+
+
+```{r, include = T}
+plt_reg_thru_met
+```
+
+Notes:
+
+- Several which are not a problem at all:  BCG vaccine or those stopped days after dx.
+- Mostly platinum-based chemo regimens otherwise.
+- Possible actions: (1) ignore them, default solution or (2) split  regimens at metastasis so they are counted in LoT tables.
+
+
+
+
 ### Issues
 
 #### Pathologic N stage
