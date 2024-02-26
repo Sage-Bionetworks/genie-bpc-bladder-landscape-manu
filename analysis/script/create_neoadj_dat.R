@@ -231,6 +231,14 @@ dft_reg_neo_cases %<>%
     neoadj_case_f = factor(neoadj_case_f, levels = lev_neoadj_case)
   )
 
+dft_reg_neo_cases %<>%
+  mutate(
+    neoadj_case_binary = case_when(
+      neoadj_case_f %in% lev_neoadj_case[1:2] ~ "Neoadj. exposure",
+      T ~ "No Neoadj. exposure"
+    )
+  )
+      
 readr::write_rds(
   dft_reg_neo_cases,
   file = here('data', 'dmet', 'neoadjuvant_status_case.rds')

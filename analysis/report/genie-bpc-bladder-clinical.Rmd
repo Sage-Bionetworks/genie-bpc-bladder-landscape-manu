@@ -1040,12 +1040,6 @@ dft_lot %>%
 
 
 ```{r}
-dft_lot <- left_join(
-  dft_lot,
-  dft_reg_neo_cases,
-  by = c('record_id', 'ca_seq')
-)
-
 dfp_lot_common_met <- dft_lot %>%
   get_lot_most_common_2(., max_line = 3) %>%
   display_lot_most_common(.)
@@ -1237,18 +1231,6 @@ gtsummary::tbl_summary(
   )
 )
 ```
-
-
-```{r, include = T}
-dft_lot %>%
-  # by taking everyone's first line we limit to one per person.
-  filter(line_therapy %in% 1) %>%
-  select(
-    `Neoadjuvant Treatment` = met_neoadj_case_f
-  ) %>%
-  gtsummary::tbl_summary(.)
-```
-
 
 
 
