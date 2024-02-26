@@ -1363,7 +1363,7 @@ dft_lot_split %<>%
 
 heading_helper <- function(row_id) {
   paste0(
-    as.character(dft_lot_split[[row_id, "met_neoadj_case_f"]]), " (n=",
+    as.character(dft_lot_split[[row_id, "neoadj_case_binary"]]), " (n=",
     nrow(count(dft_lot_split[[row_id, "lot"]][[1]], record_id)), ")"
   )
 }
@@ -1544,7 +1544,7 @@ plt_reg_thru_met <- ggplotly(gg_reg_thru_met, tooltip = "text")
 
 A subtle assumption in our methods above is that few therapies are continued through a metastatic diagnosis.  This follows because we define lines of therapy as only including regimens started on or after diagnosis.  Therefore, a regimen started before a met diagnosis and continued after would not show up in our LoT tables.
 
-A basic question on this subject is "How often does it happen that someone continues a regimen through a met diagnosis?".  We observe `r nrow(dft_reg_through_met)` occurences of this in our `r nrow(dft_met_timing)` metastatic cases.  The following figure displays more information about how this timing looks relative to met diagnosis for each:
+A basic question on this subject is "How often does it happen that someone continues a regimen through a met diagnosis?".  We observe `r nrow(dft_reg_thru_met)` occurences of this in our `r nrow(dft_met_timing)` metastatic cases.  The following figure displays more information about how this timing looks relative to met diagnosis for each:
 
 
 ```{r, include = T}
@@ -1582,6 +1582,11 @@ It may be that this is not important to report - I don't have a great reason for
 
 Including investigational regimens means we cannot have accurate time statistics because investigational regimens all have a coded length of 1 day.  We can still report intervals from diagnosis/met to regimen start without issue.
 
+#### *Name for "neoadjuvant" therapy
+
+We're currently using the term "neoadjuvant therapy" for platinum based chemotherapies which were started before metastatic diagnosis.  In our January 2024 meeting we discussed whether there might be a better term.  In particular, it was suggested that "perioperative" therapy might be a better term.
+
+I did not push this change through because we are currently not even looking at whether a person has a surgery at all, or whether they 
 
 ### Todos
 
