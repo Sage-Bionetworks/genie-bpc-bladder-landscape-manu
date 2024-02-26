@@ -1401,7 +1401,7 @@ As explained in some of the sections above, we define neoadjuvant therapy as the
 
 ```{r, include = T}
 dft_neoadj_therapy_key %>%
-  filter(valid_neoadjuvant) %>%
+  filter(valid_neoadjuvant_drug) %>%
   select(regimen_drugs)
 ```
 
@@ -1502,7 +1502,7 @@ dft_reg_thru_met %<>%
   ) %>%
   arrange(desc(dmet_reg_end_days)) %>%
   mutate(
-    y_pos = 1:n(),\
+    y_pos = 1:n(),
     # rounded to one digit here so I could see if there were odd things:
     lab = glue(
       "Record ID: {record_id},
@@ -1587,8 +1587,8 @@ Including investigational regimens means we cannot have accurate time statistics
 
 - Add swimmer plot.
 - Categorize drugs in therapy lines by class?
-- Parse lymph node metastases as a separate group from 'thorax' or 'abdomen'.  Underweigh effort by MSK teams - Neil checking on our ability to  use.
-- People stats for lines of therapy - time to death and mets and all that.
+- Parse lymph node metastases as a separate group from 'thorax' or 'abdomen'.  Underway effort by MSK teams - Neil checking on our ability to use.
+
 
 
 ```{r, output_for_clinicians, eval = F}
@@ -1679,11 +1679,3 @@ reg_sum_pre_met %>%
 - Suggested on Oct 09, 2023:  Can we analyze whether people with common patterns of metastasis (for exmaple, primary -> lymph -> bone) have better outcomes?
   - This is complicated because we have to deal with the potential for bias in people who drop out (due to death or censoring) before they can develop a longer chain of metastatic locations.  Probably requires a time-varying model which would be a lot to bite off for this particular paper.
   
-## Temp
-
-```{r, include = T}
-gg_lot_ex2
-gg_lot_ex3
-gg_lot_ex4
-```
-
