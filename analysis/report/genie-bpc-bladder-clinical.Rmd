@@ -1293,7 +1293,7 @@ gt_neo_compare_never_met <- dft_neoadj_compare %>%
   
 ```
 
-### R2.5b Comparison with PRISSMM neoadj
+### *R2.5b Comparison with PRISSMM neoadj
 
 PRISSMM has a variable which also addresses pathologic stage.  Here is the definition, pulled directly from the data guide:
 
@@ -1374,7 +1374,7 @@ neoadj_heading_2 <- heading_helper(2)
 ```
 
 
-### R2.5c Lines w.r.t neoadjuvant therapy groups
+### *R2.5c Lines w.r.t neoadjuvant therapy groups
 
 The following tables are the same as above, just split into three tables based on neoadjuvant treatment history.
 
@@ -1389,6 +1389,36 @@ dft_lot_split[[1, "lot_common_ft"]][[1]]
 ```{r, include = T}
 dft_lot_split[[2, "lot_common_ft"]][[1]]
 ```
+
+
+
+
+
+```{r}
+n_neoadj_met <- dft_reg_neo_cases %>%
+  filter(neoadj_case_f %in% 'Neoadjuvant, started >=3 months prior to met') %>%
+  nrow(.)
+```
+
+### *R2.5d Metastatic + neoadjuvant subgroups
+
+In the R2.5a we reported that there were `r n_neoadj_met` people who had neoadjuvant therapy which started at least 3 months before their metastatic diagnosis.  There was additional interest in subgroups for those who started therapy more or less than 1 year prior to the metastatic diagnosis.  Here are those numbers:
+
+```{r, include = T}
+dft_reg_neo_cases %>%
+  filter(neoadj_case_f %in% 'Neoadjuvant, started >=3 months prior to met') %>%
+  mutate(
+    tt_met_from_first_neoadjuvant = case_when(
+      tt_met_first_neoadj_start >= 1 ~ "More than one year",
+      tt_met_first_neoadj_start < 1 ~ "Less than one year"
+    )
+  ) %>%
+  select(tt_met_from_first_neoadjuvant) %>%
+  gtsummary::tbl_summary(.)
+```
+
+
+
 
 
 ## Appendices
