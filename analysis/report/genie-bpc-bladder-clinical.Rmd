@@ -1325,9 +1325,15 @@ Notes:
 ```{r}
 # split here indicates that it's split into sub-tables for met_neoadj_case_f
 dft_lot_split <- dft_lot %>%
+  left_join(
+    .,
+    select(dft_reg_neo_cases, record_id, ca_seq, neoadj_case_binary),
+    by = c("record_id", "ca_seq"),
+    relationship = "many-to-one"
+  )  %>%
   tidyr::nest(
     .data = .,
-    .by = "met_neoadj_case_f",
+    .by = "neoadj_case_binary",
     .key = "lot" # just renames the nested column
   )
 
@@ -1364,7 +1370,6 @@ heading_helper <- function(row_id) {
 
 neoadj_heading_1 <- heading_helper(1)
 neoadj_heading_2 <- heading_helper(2)
-neoadj_heading_3 <- heading_helper(3)
 
 ```
 
@@ -1385,11 +1390,6 @@ dft_lot_split[[1, "lot_common_ft"]][[1]]
 dft_lot_split[[2, "lot_common_ft"]][[1]]
 ```
 
-#### `r neoadj_heading_3`
-
-```{r, include = T}
-dft_lot_split[[3, "lot_common_ft"]][[1]]
-```
 
 ## Appendices
 
