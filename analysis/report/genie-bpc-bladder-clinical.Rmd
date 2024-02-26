@@ -890,7 +890,7 @@ gg_reg_yr
 
 
 
-### *R2.4a Lines of therapy - strategy
+### R2.4a Lines of therapy - strategy
 
 We define lines of therapy as a regimen of drugs started on or after the diagnosis of metastatic cancer.  This is similar to the concept of regimens as used in GENIE BPC with four important differences:
 
@@ -1046,7 +1046,7 @@ dfp_lot_common_met <- dft_lot %>%
 ```
 
 
-### *R2.4b Lines of therapy - most common
+### R2.4b Lines of therapy - most common
 
 The following table shows the most common first, second and third line of therapy used in the metastatic setting according to the rules in R2.4a.
 
@@ -1120,7 +1120,7 @@ dfp_lot_stats %<>% rename(` ` = Quantity)
 ```
 
 
-### *R2.4c Lines of therapy - time stats
+### R2.4c Lines of therapy - time stats
 
 Time statistics for lines of therapy from both diagnosis (dx) and metastasis (met).  
 
@@ -1184,7 +1184,7 @@ dft_stats_by_line %<>%
 ```
 
 
-### *R2.4d Lines of therapy - people stats 
+### R2.4d Lines of therapy - people stats 
 
 The following table shows the followup time for those who received exactly zero, one, two, or three+ lines of therapy according to our definition.
 
@@ -1210,7 +1210,7 @@ gtsummary::tbl_summary(
 
 
 
-### R2.5a Neoadjuvant therapy groups
+### *R2.5a Neoadjuvant therapy groups
 
 We define neoadjuvant therapy as any regimen which 
 
@@ -1235,7 +1235,89 @@ gtsummary::tbl_summary(
 
 
 
+```{r}
+dft_neoadj_compare <- dft_ca_ind %>% 
+  select(
+    record_id, ca_seq, ca_tx_pre_path_stage
+  ) %>%
+  mutate(
+    ca_tx_pre_path_stage = case_when(
+      ca_tx_pre_path_stage %in% c("Not Applicable", "Unknown") ~ NA_character_,
+      T ~ ca_tx_pre_path_stage
+    ),
+    ca_tx_pre_path_stage = factor(ca_tx_pre_path_stage, levels = c("Yes", "No"))
+  ) %>%
+  select(
+    record_id, ca_seq, ca_tx_pre_path_stage
+  )
 
+
+dft_ever_met_cases <- dft_dmet_block %>%
+  filter(dmet_status %in% "Distant Metastasis") %>%
+  select(record_id, ca_seq)
+
+dft_neoadj_compare <- full_join(
+  dft_neoadj_compare,
+  (dft_reg_neo_cases %>%
+    select(record_id, ca_seq, neoadj_case_binary)),
+  by = c('record_id', 'ca_seq'),
+  relationship = "one-to-one"
+)
+
+gt_neo_compare_all <- dft_neoadj_compare %>%
+  tbl_cross(
+    data = .,
+    row = neoadj_case_binary,
+    col = ca_tx_pre_path_stage
+  )
+
+gt_neo_compare_ever_met <- dft_neoadj_compare %>%
+  right_join(., dft_ever_met_cases, by = c("record_id", "ca_seq")) %>%
+  tbl_cross(
+    data = .,
+    row = neoadj_case_binary,
+    col = ca_tx_pre_path_stage
+  )
+
+gt_neo_compare_never_met <- dft_neoadj_compare %>%
+  anti_join(., dft_ever_met_cases, by = c("record_id", "ca_seq")) %>%
+  tbl_cross(
+    data = .,
+    row = neoadj_case_binary,
+    col = ca_tx_pre_path_stage
+  )
+
+
+
+  
+  
+```
+
+### R2.5b Comparison with PRISSMM neoadj
+
+PRISSMM has a variable which also addresses pathologic stage.  Here is the definition, pulled directly from the data guide:
+
+> **Neoadjuvant Chemotherapy or Radiation Therapy Before Pathologic Stage Diagnosis**
+> [ca_tx_pre_path_stage]
+> Description
+>     - Indicates whether patient received neoadjuvant chemotherapy or radiation therapy before pathologic stage diagnosis
+>.    - Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = “No”)
+
+There are enormous differences between our characterization and what's been done here.  Major differences: (1) the reference time is pathologic stage diagnosis (not met), (2) this includes radiation and (3) de novo metastatic patients are completely excluded from consideration.
+
+All the same, here is a 2x2 table for our variables of interest:
+
+```{r, include = T}
+gt_neo_compare_all
+```
+
+Notes:
+
+- Even though the definitions are wildly different there should be some correlation between the two variables and there is (on-diagonal terms clearly have greater numbers than off-diagonal).  
+- Here are some reasonable explanations for why we should expect people in the off-diagonal groups:
+  - *Neoadj. Exposure + No*:  Drugs used from pathologic dx to met (different index time) would count.
+  - *No neoadjuvant exposure + Yes*: Radiation therapy uses.
+  - Either one:  Different list of what qualifies as chemotherapy.
 
 
 
@@ -1287,7 +1369,7 @@ neoadj_heading_3 <- heading_helper(3)
 ```
 
 
-### R2.5b Lines w.r.t neoadjuvant therapy groups
+### R2.5c Lines w.r.t neoadjuvant therapy groups
 
 The following tables are the same as above, just split into three tables based on neoadjuvant treatment history.
 
@@ -1496,7 +1578,7 @@ Additionally, here is what the data guide tells us for the variable used to repo
 
 It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
 
-#### *Regimen length + investigational regimens
+#### Regimen length + investigational regimens
 
 Including investigational regimens means we cannot have accurate time statistics because investigational regimens all have a coded length of 1 day.  We can still report intervals from diagnosis/met to regimen start without issue.
 
