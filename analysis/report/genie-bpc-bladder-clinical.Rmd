@@ -1218,30 +1218,26 @@ gtsummary::tbl_summary(
 
 ### R2.5a Neoadjuvant therapy groups
 
-We define neoadjuvant therapy as any regimen which was 
+We define neoadjuvant therapy as any regimen which 
 
-1. Received before diagnosis of distant metastasis.
-2. A drug on a list, mostly including platinum based chemotherapies (see appnedix to this report for full list of regimens we settled on).
+1. Used agents on a list we specified, currently platinum based chemotherapies (see appendix for list).
+2. Meets one of the following two conditions:
+   a.  The regimen was started at least 3 months before metastatic diagnosis (for those who had a recorded metastasis).
+   b.  The regimen was taken by a participant without a recorded metastasis.
 
-While neoadjuvant therapy is often defined relative to a primary surgery, a limitation in the BPC data is that we cannot tell the difference between transurethral bladder tumor resection (TURBT) and radical cystectomy, only that there was a surgical procedure.  This motivates the use of distant metastasis as a marker - it's something we can readily identifiable and it often aligns with the surgery time in practice.
+While neoadjuvant therapy is sometimes defined relative to a primary surgery, a limitation in the BPC data is that we cannot tell the difference between transurethral bladder tumor resection (TURBT) and radical cystectomy, only that there was a surgical procedure.  This motivates the use of distant metastasis as a marker - it's something we can readily identify and it often aligns with the surgery time in practice.
 
-Neoadjuvant therapy is further split into two groups based on whether the last dose of neoadjuvant therapy was given more or less than 6 months prior to distant metastasis.  The following table shows how many participants fall into each group:
+The following table shows how many people fit into the subgroups for neaoadjuvant therapy:
 
 ```{r, include = T}
 gtsummary::tbl_summary(
   select(
     dft_reg_neo_cases,
-    `Neoadjuvant Treatment` = met_neoadj_case_f
+    `Neoadjuvant Treatment` = neoadj_case_f
   )
 )
 ```
 
-**Notes:**
-
-- "some" and "all" refers to regimens above, which is just an attempt to be precise for people who had more than one qualifying neoadjuvant regimen (rare case).  For example, if someone had regimens ending 24 and 3 months prior to metastasis, they had "some" regimens which were within 6 months of metastasis.
-- For anyone with an unknown regimen end date on a qualifying neoadjuvant regimen, they were placed in group which had treatment <=6 months before metastasis.  Arbitrary decision to handle another rare case.
-
-The denominator for the above table (`r nrow(dft_reg_neo_cases)`) is the number of participants who had a distant metastasis.  The numbers for those who also have at least one valid line of therapy (post-metastasis) are as follows:
 
 ```{r, include = T}
 dft_lot %>%
