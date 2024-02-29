@@ -494,6 +494,66 @@ dfp_obs_count
 
 
 
+```{r}
+
+set.seed(55)
+vec_swim_pt_subset <- dft_pt$record_id %>% 
+  unique %>% 
+  sample(x = ., size = 50, replace = F)
+
+dft_status_block <- make_dmet_musc_prop_status_block(dft_ca_ind)
+
+dft_event_swim <- make_event_df(
+  ca_ind_dat = dft_ca_ind,
+  cpt_dat = dft_cpt
+)
+
+dft_swim_lab <- dft_ca_ind %>% 
+  select(record_id, stage_dx)
+
+gg_swim <- plot_swim_block_status(
+  block_dat = dft_status_block,
+  block_var = "status",
+  event_dat = dft_event_swim,
+  event_var = "event",
+  label_dat = dft_swim_lab,
+  label_var = "stage_dx",
+  order_by_label = T,
+  pt_subset = vec_swim_pt_subset,
+  line_pal = viridis::magma(n = 3, begin = 0.2, end = 0.8, alpha = 0.5)
+) 
+  
+  
+```
+
+### *R1.5 Swimmer plot
+
+The following plot shows the status and major events for a random sample of participants.  Each participant is represented by one horizontal line.  The stage labeled on the Y axis is the stage at diagnosis.  The goal of this plot is describing survival in an intuitive way.
+
+```{r, include = T, fig.height = 6}
+gg_swim
+```
+
+Notes:
+
+- We're showing the report time (as opposed to order time) for the NGS test, which can be after death or censoring.
+- Showing "status" as a progression from non-invasive to invasive to metastatic is up for debate.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1300,6 +1360,7 @@ PRISSMM has a variable which also addresses pathologic stage.  Here is the defin
 > **Neoadjuvant Chemotherapy or Radiation Therapy Before Pathologic Stage Diagnosis**
 > [ca_tx_pre_path_stage]
 > Description
+>
 >     - Indicates whether patient received neoadjuvant chemotherapy or radiation therapy before pathologic stage diagnosis
 >.    - Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = “No”)
 
