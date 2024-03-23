@@ -87,3 +87,4 @@ renv/staging/
 # folders to ignore
 data
 data-raw
+analysis/report/.quarto

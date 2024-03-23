@@ -28,6 +28,10 @@ library(cowplot)
 library(ggsurvfit)
 library(plotly)
 
+library(knitr)
+library(quarto)
+library(rmarkdown)
+
 library(gt)
 library(gtsummary)
 library(flextable)

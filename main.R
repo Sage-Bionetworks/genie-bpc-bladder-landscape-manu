@@ -20,7 +20,7 @@ source(here('analysis', 'script', 'create_neoadj_dat.R'))
 source(here('analysis', 'script', 'derive_lines_of_therapy.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-clinical.rmd'),
-  output_file = 'genie-bpc-bladder-01-clinical.html',
+  output_file = '01-genie-bpc-bladder-clinical.html',
   output_dir = here('output', 'report')
 )
 
@@ -36,7 +36,7 @@ source(here('analysis', 'script', 'create_gene_panel_dat.R'))
 source(here('analysis', 'script', 'process_oncokb_output.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-genomic.rmd'),
-  output_file = 'genie-bpc-bladder-02-genomic.html',
+  output_file = '02-genie-bpc-bladder-genomic.html',
   output_dir = here('output', 'report')
 )
   
@@ -44,3 +44,14 @@ rmarkdown::render(
 #############################
 # Met classification report #
 #############################
+# I cannot get this to render using quarto_render(), frustrating.
+# Do:
+# 1. render analysis/report/genie-bpc-met-class.qmd.
+# 2. Run the following copy command:
+fs::file_move(
+  path = here('analysis', 'report', 'genie-bpc-bladder-met-class.html'),
+  new_path = here('output', 'report', '99-genie-bpc-bladder-met_class.html'),
+  over
+)
+
+
