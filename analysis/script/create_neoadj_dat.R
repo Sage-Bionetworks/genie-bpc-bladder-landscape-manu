@@ -16,7 +16,8 @@ dft_reg <- readr::read_rds(
 #   one day.  The list was expanded on Feb 21 using the method of statistician
 #   guesswork.
 dft_neoadj <- readr::read_csv(
-  here('data', 'drug_mapping', 'neoadjuvant_regimens_2024_02_21.csv')
+  here('data', 'drug_mapping', 'neoadjuvant_regimens_2024_02_21.csv'),
+  show_col_types = F
 )
 
 dft_neoadj %<>% select(regimen_drugs, valid_neoadjuvant) # leaves off comments
@@ -140,12 +141,12 @@ dft_multi_neo <- dft_reg_neo %>%
   filter(is_neoadjuvant) %>%
   count(record_id, ca_seq, sort = T) %>%
   filter(n > 1)
-if (nrow(dft_multi_neo)) {
-  cli::cli_alert_info(
-    "Cases with multiple neoadjuvant regimens:"
-  )
-  print(dft_multi_neo)
-}
+# if (nrow(dft_multi_neo)) {
+#   cli::cli_alert_info(
+#     "Cases with multiple neoadjuvant regimens:"
+#   )
+#   print(dft_multi_neo)
+# }
 
 
 
