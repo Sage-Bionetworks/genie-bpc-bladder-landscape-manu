@@ -1,5 +1,8 @@
 # Description: Create versions of the datasets filtered down to events after metastasis.
 
+library(purrr); library(here); library(fs)
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
+
 read_wrap <- function(p) {
   read_rds(
     file = here("data", 'cohort', paste0(p, ".rds"))
@@ -10,9 +13,8 @@ dft_pt <- read_wrap("pt")
 dft_ca_ind <- read_wrap("ca_ind")
 dft_reg <- read_wrap("reg")
 
-dft_dmet_timing <- make_dmet_status_block(dft_ca_ind) %>%
-  filter(dmet_status %in% "Distant Metastasis") %>%
-  select(record_id, ca_seq, dmet_time_yrs = dx_block_start)
+
+dft_dmet_timing <- get_dmet_time(dft_ca_ind)
 
 dft_pt_dmet <- dft_pt %>% filter(record_id %in% dft_dmet_timing$record_id)
 
@@ -21,8 +23,8 @@ dft_ca_ind_dmet <- left_join(
   dft_dmet_timing,
   by = c("record_id", "ca_seq")
 ) %>%
-  filter(!is.na(dmet_time_yrs)) %>%
-  select(-dmet_time_yrs)
+  filter(!is.na(dx_dmet_yrs)) %>%
+  select(-dx_dmet_yrs)
 
 # s = "Start of regimen after distant metastasis", which we will save as below.
 dft_reg_dmet_s <- left_join(
@@ -30,9 +32,9 @@ dft_reg_dmet_s <- left_join(
   dft_dmet_timing,
   by = c("record_id", "ca_seq")
 ) %>%
-  filter(!is.na(dmet_time_yrs)) %>%
-  filter(dx_reg_start_int_yrs >= dmet_time_yrs) %>%
-  select(-dmet_time_yrs)
+  filter(!is.na(dx_dmet_yrs)) %>%
+  filter(dx_reg_start_int_yrs >= dx_dmet_yrs) %>%
+  select(-dx_dmet_yrs)
 
 
 # Todo:  Move the drug code over here.
