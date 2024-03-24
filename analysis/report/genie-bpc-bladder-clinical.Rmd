@@ -1,7 +1,7 @@
 ---
 title: "GENIE BPC Bladder"
 author: "Alex Paynter"
-date: "May 2023"
+date: "Started May 2023"
 output: 
   html_document:
     toc: true
@@ -123,12 +123,12 @@ dft_pt_baseline_sub <- dft_pt %>%
 
 dft_ca_ind_baseline_sub <- dft_ca_ind %>%
   mutate(
+    mets_s4 = s4_met_helper(stage_dx_iv, ca_dmets_yn),
     ca_dx_how = format_ca_dx_how(ca_dx_how),
     ca_hist_adeno_squamous = format_ca_hist_adeno_squamous(ca_hist_adeno_squamous),
     stage_dx = format_stage_dx(stage_dx),
     ca_dmets_yn = format_ca_dmets_yn(ca_dmets_yn),
     ca_path_n_stage = format_ca_path_n_stage(ca_path_n_stage),
-    mets_s4 = s4_met_helper(stage_dx_iv, ca_dmets_yn)
   ) %>%
   select(
     record_id,
@@ -141,6 +141,7 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
     # Update Mar 23 2024:  remove this too (unimportant)
     # `Pathologic N Stage` = ca_path_n_stage # describes spread to lymph nodes
   ) 
+
 
 dft_med_onc_dx <- augment_med_onc_imputed_ecog(dft_med_onc)
 

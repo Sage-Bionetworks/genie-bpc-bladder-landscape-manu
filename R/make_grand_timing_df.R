@@ -27,14 +27,14 @@ make_grand_timing_df <- function(
       by = c("record_id")
     )
   
-  dft_timing <- make_dmet_status_block(ca_ind_dat = ca_ind_dat) %>%
-    filter(dmet_status %in% "Distant Metastasis") %>%
-    select(record_id, ca_seq, tt_dmet_dx_yrs = dx_block_start) %>%
+  dft_timing <- get_dmet_time(ca_ind_dat) %>%
+    # renaming variable to avoid downstream issues.
+    select(record_id, ca_seq, tt_dmet_dx_yrs = dx_dmet_yrs) %>%
     full_join(
       dft_timing, .,
       by = c("record_id", "ca_seq")
     )
-  
+
   dft_timing <- get_first_regimen(
     ca_ind_dat = ca_ind_dat,
     reg_dat = reg_dat
