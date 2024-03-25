@@ -801,7 +801,7 @@ gg_top_drugs <- plot_drug_prop(
 
 # Now repeat the calculation above for CRPC regimens only.
 
-# dft_dmet_block <- make_dmet_status_block(dft_ca_ind)
+dft_dmet_timing <- get_dmet_time(dft_ca_ind)
   
 n_bladder_dmet <- get_dmet_time(dft_ca_ind) %>% nrow
 
