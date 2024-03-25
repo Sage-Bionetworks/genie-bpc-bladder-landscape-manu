@@ -1275,8 +1275,7 @@ dft_neoadj_compare <- dft_ca_ind %>%
   )
 
 
-dft_ever_met_cases <- dft_dmet_block %>%
-  filter(dmet_status %in% "Distant Metastasis") %>%
+dft_ever_met_cases <- dft_dmet_timing %>%
   select(record_id, ca_seq)
 
 dft_neoadj_compare <- full_join(
@@ -1624,11 +1623,11 @@ Additionally, here is what the data guide tells us for the variable used to repo
 
 > Description
 > 
-> - Curated pathologic N stage
-> - N describes spread of cancer to nearby lymph nodes 
-> - Populated only if:
->     - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
->     - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
+>    - Curated pathologic N stage
+>    - N describes spread of cancer to nearby lymph nodes 
+>    - Populated only if:
+>    - Cancer diagnosis is curated. This field is blank for cancer diagnoses obtained from the tumor registry.
+>    - Cancers was not diagnosed at stage IV ([ca_stage_iv] = “No”).
 
 It may be that this is not important to report - I don't have a great reason for having included it in the first place.  There are loads of other choices for staging variables.
 
@@ -1640,7 +1639,7 @@ Including investigational regimens means we cannot have accurate time statistics
 
 We're currently using the term "neoadjuvant therapy" for platinum based chemotherapies which were started before metastatic diagnosis.  In our January 2024 meeting we discussed whether there might be a better term.  In particular, it was suggested that "perioperative" therapy might be a better term.
 
-I did not push this change through because we are currently not even looking at whether a person has a surgery at all, or whether they 
+I did not push this change through because we are currently not even looking at whether a person has a surgery at all.
 
 ### Todos
 
