@@ -50,8 +50,7 @@ rmarkdown::render(
 # 2. Run the following copy command:
 fs::file_move(
   path = here('analysis', 'report', 'genie-bpc-bladder-met-class.html'),
-  new_path = here('output', 'report', '99-genie-bpc-bladder-met_class.html'),
-  over
+  new_path = here('output', 'report', '99-genie-bpc-bladder-met-class.html')
 )
 
 

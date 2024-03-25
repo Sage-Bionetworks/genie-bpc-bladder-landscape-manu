@@ -4,8 +4,11 @@ make_dmet_musc_prop_status_block <- function(
     truncate_musc_inv_at_dx = T
 ) {
   
+  dat_dmet_time <- get_dmet_time(ca_ind_dat) %>%
+    mutate(event = "dmet", dx_to_event_yrs = dx_dmet_yrs)
+  
   ci_sub <- ca_ind_dat %>% 
-    # just to be clear about variables we're using:
+    # just to be clear about variables we're using for the rest of this:
     select(
       record_id, 
       ca_seq,
@@ -20,19 +23,6 @@ make_dmet_musc_prop_status_block <- function(
     # loss to follow up:
     mutate(event = "ltfu") %>%
     rename(dx_to_event_yrs = tt_os_dx_yrs) %>%
-    select(record_id, ca_seq, event, dx_to_event_yrs)
-  
-  dmet_at_onset <- ci_sub %>%
-    filter(stage_dx_iv %in% "Stage IV" & ca_dmets_yn %in% "Yes") %>%
-    mutate(event = "dmet") %>%
-    mutate(dx_to_event_yrs = 0) %>%
-    select(record_id, ca_seq, event, dx_to_event_yrs)
-  
-  dmet_in_fu <- ci_sub %>%
-    filter(!(stage_dx_iv %in% "Stage IV" & ca_dmets_yn %in% "Yes")) %>%
-    filter(!is.na(dx_to_dmets_yrs)) %>%
-    mutate(event = "dmet") %>%
-    rename(dx_to_event_yrs = dx_to_dmets_yrs) %>%
     select(record_id, ca_seq, event, dx_to_event_yrs)
   
   musc_inv <- ci_sub %>%
@@ -57,12 +47,11 @@ make_dmet_musc_prop_status_block <- function(
   
   event_df <- bind_rows(
     last_fu_time,
-    dmet_at_onset,
-    dmet_in_fu,
+    dat_dmet_time,
     musc_inv,
     dx
   ) %>%
-    mutate(event = factor(event, levels = event_priority)) %>%
+    mutate(event = factor(event, levels = event_priority, ordered = T)) %>%
     arrange(record_id, ca_seq, dx_to_event_yrs, event) 
   
   # if there are multiple events at the exact same time, take the highest
@@ -72,9 +61,13 @@ make_dmet_musc_prop_status_block <- function(
     slice(n()) %>%
     ungroup(.)
   
-  event_df %>%
-    filter(record_id %in% 'GENIE-DFCI-000095' & ca_seq %in% 3) %>%
-    print(.)
+  # if a lower priority event follows a higher priority one, ignore it.
+  event_df %<>%
+    group_by(record_id, ca_seq) %>%
+    mutate(lag_event = lag(event)) %>%
+    filter(is.na(lag_event) | lag_event < event) %>%
+    select(-lag_event) %>%
+    ungroup(.)
   
   event_df %<>%
     mutate(
@@ -82,9 +75,6 @@ make_dmet_musc_prop_status_block <- function(
       dx_block_end = dplyr::lead(dx_to_event_yrs)
     )
   
-  event_df %>%
-    filter(record_id %in% 'GENIE-DFCI-000095' & ca_seq %in% 3) %>%
-    print(.)
   
   # The last block should be just the end of followup time.  We've already
   #   used that information with the lead() call above.
@@ -104,15 +94,8 @@ make_dmet_musc_prop_status_block <- function(
     left_join(., event_to_block, by = "event") %>%
     mutate(status = factor(status, levels = event_to_block$status)) %>%
     select(record_id, ca_seq, status, dx_block_start, dx_block_end)
-  
-  rtn %>%
-    filter(record_id %in% 'GENIE-DFCI-000095' & ca_seq %in% 3) %>%
-    print(.)
       
   return(rtn)
-  
-  
-  
 }
 
 

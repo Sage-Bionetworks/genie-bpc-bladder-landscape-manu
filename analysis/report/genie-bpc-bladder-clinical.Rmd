@@ -523,7 +523,7 @@ gg_swim <- plot_swim_block_status(
   label_var = "stage_dx",
   order_by_label = T,
   pt_subset = vec_swim_pt_subset,
-  line_pal = viridis::magma(n = 3, begin = 0.2, end = 0.8, alpha = 0.5)
+  line_pal = viridis::magma(n = 3, begin = 0.8, end = 0.2, alpha = 0.5)
 ) 
   
   
@@ -801,15 +801,12 @@ gg_top_drugs <- plot_drug_prop(
 
 # Now repeat the calculation above for CRPC regimens only.
 
-dft_dmet_block <- make_dmet_status_block(dft_ca_ind)
+# dft_dmet_block <- make_dmet_status_block(dft_ca_ind)
   
-n_bladder_dmet <- dft_dmet_block %>% 
-  filter(dmet_status %in% "Distant Metastasis") %>%
-  nrow
+n_bladder_dmet <- get_dmet_time(dft_ca_ind) %>% nrow
 
-dft_drug_dmet <- dft_dmet_block %>%
-  filter(dmet_status %in% "Distant Metastasis") %>%
-  mutate(dmet_days = dx_block_start * 365.25) %>%
+dft_drug_dmet <- get_dmet_time(dft_ca_ind) %>%
+  mutate(dmet_days = dx_dmet_yrs * 365.25) %>%
   select(record_id, dmet_days) %>%
   inner_join(
     dft_drug, 
