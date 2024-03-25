@@ -93,9 +93,8 @@ dft_reg_neo %<>%
     dx_reg_end_all_int_yrs
   )
 
-dft_dmet_timing <- make_dmet_status_block(dft_ca_ind) %>%
-  filter(dmet_status %in% "Distant Metastasis") %>%
-  select(record_id, ca_seq, dmet_time_yrs = dx_block_start)
+dft_dmet_timing <- get_dmet_time(dft_ca_ind) %>% 
+  select(record_id, ca_seq, dmet_time_yrs = dx_dmet_yrs)
 
 dft_reg_neo <- left_join(
   dft_reg_neo,

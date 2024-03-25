@@ -988,43 +988,6 @@ dft_drug %<>%
 dft_met_timing <- dft_timing %>% 
   select(record_id, ca_seq, tt_dmet_dx_yrs) %>%
   filter(!is.na(tt_dmet_dx_yrs))
-
-temp_ex1 <- dft_lot %>%
-  group_by(record_id, ca_seq) %>%
-  summarize(
-    has_carbo = any(str_detect(regimen_drugs, "Carboplatin") &
-                          str_detect(regimen_drugs, "Gemcitabine")),
-    has_cis = any(str_detect(regimen_drugs, "Cisplatin") &
-                          str_detect(regimen_drugs, "Gemcitabine")),
-    n = n(),
-    .groups = 'drop'
-  ) %>%
-  filter(has_carbo & has_cis) 
-
-temp_ex1 <- left_join(
-  temp_ex1, 
-  dft_met_timing,
-  by = c('record_id', 'ca_seq')
-) %>%
-  arrange(tt_dmet_dx_yrs, desc(n))
-  
-
-
-# Finding BCG vaccines:
-dft_reg_dmet_s %>% 
-  group_by(record_id, ca_seq) %>%
-  summarize(
-    has_bcg = any(str_detect(regimen_drugs, "BCG Vaccine")),
-    n = n(),
-    .groups = "drop"
-  ) %>%
-  filter(has_bcg) %>%
-  left_join(
-    .,
-    dft_met_timing,
-    by = c('record_id', 'ca_seq')
-  ) %>%
-  arrange(tt_dmet_dx_yrs, desc(n))
 ```
 
 
