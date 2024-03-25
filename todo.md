@@ -1,5 +1,9 @@
 
-
+- Add a table or analysis showing the stage II but later invasive issue.
+- Check the AJCC manual on what the definition of stage II actually is.
+- Add a line for metastatic drugs in the plot of drug years.
+- Idea:  Show the actual minimum and maximum number of drugs possible for each year.  Go row by row and calculate whether it's "possible to be out of year" or "definitely in this year" for each person/year combo.  This will give hugely wide ranges but it's a statement of certainty which seems nice.
+  - Low priority because this is a ton of work.
 - Perioperative update?
 - add a note to have people review the equivalence classes with carbo and cis in the regimen
 - Send the following to the group:
