@@ -526,6 +526,48 @@ gg_swim <- plot_swim_block_status(
   line_pal = viridis::magma(n = 3, begin = 0.8, end = 0.2, alpha = 0.5)
 ) 
   
+```
+
+```{r, eval = F}
+dft_q_stage_23 <- dft_ca_ind %>% 
+  select(record_id, ca_seq, institution, ca_type, stage_dx, dx_muscprop_invasive_days)
+
+dft_q_stage_23 %>%
+  filter(institution %in% "MSK") %>%
+  filter(stage_dx %in% c("Stage II", "Stage III")) %>%
+  arrange(desc(dx_muscprop_invasive_days)) %>%
+  mutate(
+    str = glue(
+      "-{record_id}, ca_seq = {ca_seq}, {stage_dx} at dx, dx_muscprop_invasive_days = {dx_muscprop_invasive_days}\n"
+    )
+  ) %>%
+  slice(1:5) %>%
+  pull(str)
+
+dft_q_stage_23 %>%
+  # filter(institution %in% "MSK") %>%
+  filter(stage_dx %in% c("Stage II", "Stage III")) %>%
+  filter(!(ca_type %in% "Renal Pelvis Cancer")) %>%
+  arrange(desc(dx_muscprop_invasive_days)) %>%
+  ggplot(
+    dat = ., 
+    aes(x = dx_muscprop_invasive_days, color = institution)
+  ) +
+  stat_ecdf() 
+
+dft_q_stage_23 %>%
+  # filter(institution %in% "MSK") %>%
+  filter(stage_dx %in% c("Stage II", "Stage III", "Stage IV")) %>%
+  filter(ca_type %in% "Bladder Cancer") %>%
+  arrange(desc(dx_muscprop_invasive_days)) %>%
+  # pull(dx_muscprop_invasive_days) %>%
+  # quantile(., probs = c(0.5, 0.75, 0.9, 0.95, 0.99), na.rm = T)
+  mutate(gte_90d = dx_muscprop_invasive_days >= 90) %>%
+  summarize(gte_90d = sum(gte_90d, na.rm = T))
+
+dft_cpt %>%
+  tabyl(cpt_oncotree_code)
+  
   
 ```
 

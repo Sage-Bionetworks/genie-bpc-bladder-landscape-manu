@@ -34,6 +34,7 @@ source(here('analysis', 'script', 'prepare_data_for_oncokb_annotate.R'))
 # Run annotate_oncokb.sh - see instructions there in comments.
 source(here('analysis', 'script', 'create_gene_panel_dat.R'))
 source(here('analysis', 'script', 'process_oncokb_output.R'))
+source(here('analysis', 'script', 'add_tmb_to_cpt.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-genomic.rmd'),
   output_file = '02-genie-bpc-bladder-genomic.html',
