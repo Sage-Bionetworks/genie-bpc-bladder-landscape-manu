@@ -29,7 +29,6 @@ rmarkdown::render(
 ###########
 # Genomic #
 ###########
-source(here('analysis', 'script', 'reshape_cna.R'))
 source(here('analysis', 'script', 'prepare_data_for_oncokb_annotate.R'))
 # Run annotate_oncokb.sh - see instructions there in comments.
 source(here('analysis', 'script', 'create_gene_panel_dat.R'))

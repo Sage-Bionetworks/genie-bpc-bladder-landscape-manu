@@ -7,6 +7,11 @@ purrr::walk(.x = fs::dir_ls('R'), .f = source)
 # The Synapse folder containing the clinical data files.
 synid_clin_data <- "syn28495599"
 synid_cbio_data <- "syn26958249"
+# These have to be pulled in from main GENIE:
+synid_assay_info <- 'syn22159815'
+synid_bed_file <- 'syn9734427'
+synid_bed_file_version <- 108
+
 
 # genomic files to grab (panels are all grabbed based on file name):
 geno_files_included <- c(
@@ -32,7 +37,11 @@ if (any(stringr::str_detect(df_clin_children$name, ".csv^"))) {
 }
 
 syn_store_in_dataraw <- function(sid) {
-  synGet(entity = sid, downloadLocation = here("data-raw"))
+  synGet(
+    entity = sid, 
+    downloadLocation = here("data-raw"),
+    ifcollision = 'overwrite.local'
+  )
 }
 
 purrr::walk(.x = df_clin_children$id, 
@@ -57,9 +66,23 @@ df_geno_children %<>%
   ) %>%
   filter(is_panel | is_included) 
 
-syn_store_in_dataraw_geno <- function(sid) {
-  synGet(entity = sid, downloadLocation = here("data-raw", "genomic"))
+syn_store_in_dataraw_geno <- function(sid, v = NULL) {
+  synGet(
+    entity = sid, 
+    downloadLocation = here("data-raw", "genomic"),
+    ifcollision = 'overwrite.local',
+    version = v
+  )
 }
 
 purrr::walk(.x = df_geno_children$id, 
             .f = syn_store_in_dataraw_geno)
+
+
+syn_store_in_dataraw_geno(
+  synid_assay_info
+)
+# Insanely slow, maybe the versioned bed file is in colder storage? 
+syn_store_in_dataraw_geno(
+  synid_bed_file, v = synid_bed_file_version
+)
