@@ -161,6 +161,7 @@ dft_panel_stats %<>%
 # Part 2: TMB using the panel data.
 
 tumor_aggr <- dft_maf %>%
+  # Note: "silent" is empirically a synonym for Synonymous (just look at the annotated maf)
   filter(!(Variant_Classification %in% "Silent")) %>%
   dplyr::count(Tumor_Sample_Barcode, name = "numberMutations")
 
@@ -228,7 +229,7 @@ dft_cpt_aug <- left_join(
 
 readr::write_rds(
   x = dft_cpt_aug,
-  file = here('data', 'cohort', 'dft_cpt_aug.rds')
+  file = here('data', 'cohort', 'cpt_aug.rds')
 )
 
 
