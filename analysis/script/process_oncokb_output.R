@@ -228,6 +228,47 @@ dft_gene_test %<>%
   left_join(., dft_gp_all, by = "cpt_seq_assay_id",
             relationship = "many-to-many")
 
+# First thing:  Annotate gene tests with any alteration, oncogenic alteration.
+dft_alt_any <- dft_alt %>% 
+  group_by(sample_id, hugo) %>%
+  summarize(
+    any_alt = T,
+    any_alt_onco = (
+      sum(
+        oncogenic %in% c("Likely Oncogenic", "Oncogenic"),
+        na.rm = T
+      ) 
+      >= 1),
+    .groups = "drop"
+  ) 
+
+dft_gene_test_any_alt <- left_join(
+  rename(dft_gene_test, sample_id = cpt_genie_sample_id),
+  dft_alt_any,
+  by = c("sample_id", "hugo")
+) 
+
+dft_gene_test_any_alt %<>%
+  select(sample_id, record_id, ca_seq, cpt_seq_assay_id, sample_type,
+         hugo, tested, any_alt, any_alt_onco) %>%
+  mutate(
+    any_alt = if_else(is.na(any_alt), F, any_alt),
+    any_alt_onco = if_else(is.na(any_alt_onco), F, any_alt_onco)
+  )
+
+# put the dataset keys first:
+dft_gene_test_any_alt %<>%
+  select(sample_id, hugo, everything())
+
+readr::write_rds(
+  dft_gene_test_any_alt,
+  file = here('data', 'genomic', 'gene_test_any_alt.rds')
+)
+
+
+
+
+
 dft_gene_test %<>%
   select(
     sample_id = cpt_genie_sample_id, 
