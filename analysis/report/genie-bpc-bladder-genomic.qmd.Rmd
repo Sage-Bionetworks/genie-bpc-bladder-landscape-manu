@@ -730,13 +730,13 @@ gg_tmb_ecdf_panel_onco
 
 **Notes:**
 
-- The TMB distributions of the sites are generally more comparable now.
+- These plots should be compared with R2.2.3 and R2.2.4.
 - The UHN hotspot panel still sticks out pretty considerably from the rest, though it is a small number of samples.
 
 
 
 
-### R2.4.3 VAF distribution over sites
+### R2.4.3 OncoKB on VAF
 
 
 
@@ -773,4 +773,8 @@ This section contains analyses that were too complex or involved or we just didn
     - Are genes with oncogenic mutations (per OncoKB) more likely to be covered in gene panels, versus genes without oncogenic mutations?
     - Are there any frequently mutated oncogenic drivers that are missing from certain panels vs others?
 - (Alex) A model can be run for TMB to investigate confounders in a more formal way if needed.  This is probably not fruitful.
+- (Alex) Other options exist to normalize data aside from OncoKB.  These may include:
+  - Filters based on VAF
+  - Alternative databases (Jackson Lab, MD anderson)
+  - Alpha missense (only covers missense variants)
 
