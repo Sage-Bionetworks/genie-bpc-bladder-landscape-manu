@@ -71,12 +71,17 @@ dft_assay_info <- readr::read_tsv(
 )
 
 dft_cpt <-  dft_assay_info %>%
-  select(
-    cpt_seq_assay_id = SEQ_ASSAY_ID,
-    calling_strategy
-  ) %>%
+  select(cpt_seq_assay_id = SEQ_ASSAY_ID, calling_strategy) %>%
   left_join(
     dft_cpt,
+    ., 
+    by = 'cpt_seq_assay_id'
+  )
+
+dft_gp_all <- dft_assay_info %>% 
+  select(cpt_seq_assay_id = SEQ_ASSAY_ID, calling_strategy) %>%
+  left_join(
+    dft_gp_all,
     ., 
     by = 'cpt_seq_assay_id'
   )
@@ -199,6 +204,7 @@ dft_gp_all %<>%
     select(dft_gp_sum, cpt_seq_assay_id, n_pts, n_samples, n_genes),
     by = "cpt_seq_assay_id"
   ) %>%
+  arrange(desc(n_pts), cpt_seq_assay_id) %>%
   mutate(
     assay_lab = glue("{cpt_seq_assay_id} [{n_genes}] ({n_pts}, {n_samples})"),
     assay_lab = forcats::fct_inorder(assay_lab)
@@ -220,13 +226,15 @@ dft_gp_all_limited <- dft_gp_all %>%
   filter(hugo %in% vec_test_prop_gte50)
 
 
-gg_panel_coverage <- plot_assay_heatmap(
+gg_panel_coverage <- plot_assay_heatmap_color(
   dat = dft_gp_all,
+  fill_var = "calling_strategy",
   plot_title = "Gene panel coverage"
 )
 
-gg_panel_coverage_limited <- plot_assay_heatmap(
+gg_panel_coverage_limited <- plot_assay_heatmap_color(
   dat = dft_gp_all_limited,
+  fill_var = "calling_strategy",
   plot_title = "Gene panel coverage (limited)"
 )
   
@@ -513,17 +521,19 @@ prop_over_tmb_10 <- dft_cpt %>%
 
 ```
 
-### R 2.2.2 TMB distribution
+### R2.2.2 TMB distribution
 
 Tumor mutation burden is calculated in the simplest way possible:  The count of non-synonymous variants forms the numerator (count of mutations) and the denominator is the size of the exome region covered by the panel.  The following distribution is the result for Primary and Metastatic samples in our cohort:
 
 ```{r}
+#| include: true
+#| fig-height: 4
 gg_tmb_dist
 ```
 
 **Notes:**
 
-- The naive TMB distribution of BPC data tends to be high, we will dig into this more below.
+- The naive TMB distribution of BPC data tends to be high, we will dig into this more below.  However, let's keep in mind this may reflect the reality of data that physicians have access to when making treatment decisions, both in this cohort and in the target population.
 - I was surprised to find a higher median TMB for primary samples than metastatic samples.
 
 
@@ -561,20 +571,21 @@ gg_tmb_dist_panel <- plot_boxplot_tmb_color(
 
 ```
 
-### R2.3.2 TMB by panel
+### R2.2.3 TMB by panel
 
 One reason for the high TMB values may be that most GENIE sites have tumor only sequencing.  Even with the efforts to remove germline mutations, some could slip through, artificially inflating the TMB of those samples.
 
 Fortunately we have one large site which has all tumor-normal sequencing panels (MSK), and one additional panel from UHN (UHN-48-V1).  If the germline mutations are indeed the cause of the high TMB in our group, we would expect the MSK panels to have a more typical TMB distribution and the others to be relatively high.  This motivates the next plot, where we show TMB distributions by panel (panels with less than 5 samples were removed):
 
 
-```{r, include = T}
+```{r}
 #| include: true
 gg_tmb_dist_panel
 ```
 
 **Notes:**
 
+- The panels with tumor-normal sequencing are MSK IMPACT (all) and UHN-48-V1.
 - Compare this with the upcoming plot limiting to oncogenic alterations only.
 
 
@@ -602,38 +613,22 @@ ft_median_tmb <- dft_tmb %>%
   flextable() %>%
   autofit()
 
-ft_tmb_over_10 <- dft_tmb %>% 
-  group_by(institution) %>%
-  summarize(
-    num_tmb_gte_10 = sum(tmb_Mb > 10, na.rm = T),
-    pct_tmb_gte_10 = round(num_tmb_gte_10/n()*100, 1),
-    .groups = 'drop'
-  ) %>%
-  flextable %>%
-  autofit
 
 ```
 
-### R2.3.3 TMB eCDF by site
+### R2.2.4 TMB eCDF by site
 
-Another way we can view this is showing the cumulative distribution function for each site.  All MSK panels are tumor-normal and all others are tumor-only.  The black line is at TMB = 10.
+A second way to look at TMB by panels: showing the cumulative distribution function for each site.  All MSK panels are tumor-normal and all others are tumor-only.  The black line is at TMB = 10.
 
 ```{r, include = T}
 gg_tmb_ecdf_panel
 ```
 
-The following table states the median TMB by institution/sample_type:
+The following table states the median TMB by institution/sample_type (readable from the figure above):
 
 ```{r, include = T}
 ft_median_tmb
 ```
-
-And the following table states the proportion of samples over 10 mut/Mb by site:
-
-```{r, include = T}
-ft_tmb_over_10
-```
-
 
 
 
@@ -700,6 +695,56 @@ Observations:
 
 
 
+```{r}
+gg_tmb_dist_panel_onco <- plot_boxplot_tmb_color(
+  dat = dft_tmb,
+  x_var = 'tmb_Mb_onco',
+  plot_title = "Tumor mutation burden sample distribution",
+  plot_subtitle = "only including oncogenic mutations",
+  x_lab = "TMB"
+)
+
+gg_tmb_ecdf_panel_onco <- plot_ecdf_by_panel(
+  dat = dft_tmb,
+  x_var = 'tmb_Mb_onco',
+  plot_title = "Tumor mutation burden sample distribution",
+  plot_subtitle = "only including oncogenic mutations",
+  x_lab = "TMB"
+)
+```
+
+
+### R2.4.2 OncoKB effect on TMB
+
+The TMB plots we showed before give us a sign which indicates a possible problem in our data: tumor-normal samples may have a systematically lower (and more typical) TMB than tumor-only samples.  We now investigate whether this persists when we limit our pool of alterations to **only oncogenic** mutations.  
+
+Here are the previous plots, using only oncogenic alterations in calculating TMB:
+
+```{r, include = T}
+gg_tmb_dist_panel_onco
+```
+
+```{r, include = T}
+gg_tmb_ecdf_panel_onco
+```
+
+**Notes:**
+
+- The TMB distributions of the sites are generally more comparable now.
+- The UHN hotspot panel still sticks out pretty considerably from the rest, though it is a small number of samples.
+
+
+
+
+### R2.4.3 VAF distribution over sites
+
+
+
+
+
+
+
+
 
 
 ## Upcoming
@@ -727,3 +772,5 @@ This section contains analyses that were too complex or involved or we just didn
 - (Vincent Xu) Out of the different NGS panels used, do they do a good job of prioritizing the genes with likely oncogenic mutations in bladder cancer?
     - Are genes with oncogenic mutations (per OncoKB) more likely to be covered in gene panels, versus genes without oncogenic mutations?
     - Are there any frequently mutated oncogenic drivers that are missing from certain panels vs others?
+- (Alex) A model can be run for TMB to investigate confounders in a more formal way if needed.  This is probably not fruitful.
+

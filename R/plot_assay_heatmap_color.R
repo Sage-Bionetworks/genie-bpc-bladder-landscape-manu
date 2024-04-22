@@ -1,5 +1,6 @@
-plot_assay_heatmap <- function(
+plot_assay_heatmap_color <- function(
     dat,
+    fill_var,
     plot_title = "Gene panel coverage"
 ) {
   gg <- ggplot(
@@ -18,8 +19,11 @@ plot_assay_heatmap <- function(
       axis.ticks.x = element_blank(),
       axis.line.x = element_blank(),
       axis.line.y = element_blank(),
-      plot.title.position = "plot"
-    ) 
+      plot.title.position = "plot",
+      legend.position = 'bottom',
+    ) + 
+    scale_fill_light()
+  
   return(gg)
   
 }

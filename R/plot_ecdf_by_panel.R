@@ -27,7 +27,8 @@ plot_ecdf_by_panel <- function(
       plot.title.position = "plot",
       axis.title.y = element_blank(),
       axis.text.y = element_text(hjust = 0),
-      strip.text = element_text(hjust = 0)
+      strip.text = element_text(hjust = 0),
+      axis.ticks.length.x = unit(0.2, 'cm')
     ) + 
     scale_x_continuous(
       expand = expansion(mult = 0.01, add = 0),
