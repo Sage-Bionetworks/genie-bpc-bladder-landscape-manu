@@ -228,7 +228,8 @@ dft_gene_test %<>%
   left_join(., dft_gp_all, by = "cpt_seq_assay_id",
             relationship = "many-to-many")
 
-# First thing:  Annotate gene tests with any alteration, oncogenic alteration.
+
+# Side venture
 dft_alt_any <- dft_alt %>% 
   group_by(sample_id, hugo) %>%
   summarize(

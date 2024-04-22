@@ -93,7 +93,7 @@ dft_gp_all <- dft_assay_info %>%
 
 
 
-## Content
+## Panels and testing
 
 ```{r}
 # Table explaining the sample type coding we'll use:
@@ -300,6 +300,38 @@ Observations:
 
 
 
+### R2.1.3 Panel info
+
+This information is pulled directly from `assay_information.txt`, which is generally provided by the sites:
+
+```{r}
+#| include: true
+dft_assay_info %>%
+  select(
+    Panel = SEQ_ASSAY_ID, 
+    calling_strategy, 
+    alteration_types, 
+    calling = calling_strategy, 
+    coverage
+  ) %>%
+  # need spaces for "width" to work correctly.
+  mutate(alteration_types = str_replace_all(alteration_types, ";", "; ")) %>%
+  mutate(coverage = str_replace_all(coverage, ";", "; ")) %>%
+  filter(Panel %in% dft_cpt$cpt_seq_assay_id) %>%
+  arrange(calling) %>%
+  flextable(.) %>%
+  flextable::theme_zebra() %>%
+  flextable::fontsize(size = 8) %>%
+  flextable::width(j = 1, width = 1.5, unit = "in") %>%
+  flextable::width(j = 2, width = 0.5, unit = "in") %>%
+  flextable::width(j = 3, width = 3.5, unit = "in") %>%
+  flextable::width(j = 4, width = 2, unit = "in") %>%
+  flextable::valign(valign = "top")
+```
+
+
+
+
 ### R2.1.3a Panel coverage
 
 Heatmap of gene panel coverage.
@@ -326,6 +358,9 @@ Observations:
 ```{r}
 n_pt <- dft_ca_ind %>% nrow
 n_samp <- dft_cpt %>% nrow
+
+dft_assay_info %>%
+  select(SEQ_ASSAY_ID, alteration_types, calling_strategy, coverage)
 
 gene_panel_table_help <- function(dat) {
   dat %>% 
@@ -472,6 +507,8 @@ gg_alt_comb <- plot_grid(
 
 ```
 
+## Alteration results
+
 ### R2.2.1 Number of alterations
 
 The plots below show the distribution of alterations (mutations, CNAs or fusions) over samples.  Samples with zero alterations are not plotted (log scale, overwhelms plot).
@@ -572,18 +609,19 @@ gg_inst_alt_onco <- plot_alt_by_inst(
 
 ```
   
-### R2.5.1a Alteration frequency by institution
+### R2.2.2 Alteration frequency by institution
 
-The following plot show the percentage of tested samples with an alteration of any kind.  The black square shows the whole cohort number, and colored dots show the numbers at each institution.  
+The following plot show the percentage of tested samples with an alteration of any kind (mutation, CNA or fusion).  Tested is defined by whether the gene is covered in the mutation panel, which is not ideal for CNA and fusion phenomena,.  The black square shows the whole cohort percentage, and colored dots show the numbers at each institution.
 
-This plot is limited to genes tested in more than 50% of samples, and only the top 20 most frequently altered genes are shown.
+This plot is limited to genes tested in more than 50% of samples and with a pan-institution alteration frequency of 5% or greater.
 
-```{r, include = T}
+```{r}
+#| include: true
+#| fig-height: 12
 gg_inst_alt
 ```
 
 
-### R2.2.2 Alteration frequency
 
 
 
@@ -648,7 +686,7 @@ prop_over_tmb_10 <- dft_cpt %>%
 
 ```
 
-### R2.2.2 TMB distribution
+### R2.2.3a TMB distribution
 
 Tumor mutation burden is calculated in the simplest way possible:  The count of non-synonymous variants forms the numerator (count of mutations) and the denominator is the size of the exome region covered by the panel.  The following distribution is the result for Primary and Metastatic samples in our cohort:
 
@@ -660,7 +698,7 @@ gg_tmb_dist
 
 **Notes:**
 
-- The naive TMB distribution of BPC data tends to be high, we will dig into this more below.  However, let's keep in mind this may reflect the reality of data that physicians have access to when making treatment decisions, both in this cohort and in the target population.
+- The naive TMB distribution of BPC data has tended to be surprisingly high in most other cohorts, and we will dig into this more below.  
 - I was surprised to find a higher median TMB for primary samples than metastatic samples.
 
 
@@ -698,7 +736,7 @@ gg_tmb_dist_panel <- plot_boxplot_tmb_color(
 
 ```
 
-### R2.2.3 TMB by panel
+### R2.2.3b TMB by panel
 
 One reason for the high TMB values may be that most GENIE sites have tumor only sequencing.  Even with the efforts to remove germline mutations, some could slip through, artificially inflating the TMB of those samples.
 
@@ -743,7 +781,7 @@ ft_median_tmb <- dft_tmb %>%
 
 ```
 
-### R2.2.4 TMB eCDF by site
+### R2.2.4c TMB eCDF by site
 
 A second way to look at TMB by panels: showing the cumulative distribution function for each site.  All MSK panels are tumor-normal and all others are tumor-only.  The black line is at TMB = 10.
 
@@ -758,6 +796,204 @@ ft_median_tmb
 ```
 
 
+
+
+
+```{r}
+dft_top_gene_bin <- dft_alt %>% 
+  # filter(hugo %in% vec_alt_most_common[1:20]) %>%
+  group_by(sample_id, hugo) %>%
+  summarize(exists = n() >= 1, .groups = "drop") %>%
+  pivot_wider(
+    names_from = hugo,
+    values_from = exists
+  ) 
+
+# Add in rows where nothing at all was found:
+dft_top_gene_bin <- dft_cpt %>%
+  select(sample_id = cpt_genie_sample_id) %>%
+  left_join(dft_top_gene_bin, by = "sample_id")
+  
+dft_top_gene_bin %<>%
+  mutate(
+    across(
+      .cols = -sample_id,
+      .fns = (function(x) {
+        x <- as.integer(x)
+        x <- if_else(is.na(x), 0L, x)
+      })
+    )
+  ) %>%
+  # just ordering:
+  select(sample_id, all_of(vec_alt_most_common), everything())
+
+
+dft_gene_assoc <- test_fisher_co_occur(
+  dat = dft_top_gene_bin,
+  ignore_cols = c("sample_id"),
+  top = 10,
+  alpha = 0.05
+)
+
+dft_gene_assoc %<>%
+  mutate(
+    assoc_lab = glue("{ct_11} / {ct_10+ct_01}"),
+    p_value_adj = p.adjust(p.value, method = "BH"),
+    cont_table_lab = cont_table_lab_help(
+      ct_11 = ct_11,
+      ct_01 = ct_01,
+      ct_10 = ct_10,
+      ct_00 = ct_00
+    )
+  )
+
+gg_gene_assoc <- plot_binary_association(
+  dat = dft_gene_assoc,
+  x_var = "var1_lab",
+  y_var = "var2_lab",
+  show_p_sig = T,
+  label_var = "cont_table_lab",
+  pval_var = "p_value_adj"
+)  + 
+  theme(
+    axis.text.x.top = element_text(angle = -20, hjust = 1)
+  )
+
+```
+
+
+```{r}
+# Putting the code for the sensitivity here.  I want to make sure I get both.
+
+
+# Sensitivity analysis to the above:  Only people who had all these genes tested in their panels.
+# we want to force the same group of genes for the last test since
+#   this is a sensitivity analysis.  This gets those in their axis
+#. order:
+vec_genes_in_co_occur_plot <- dft_gene_assoc$var1_lab %>%
+  levels(.) %>%
+  str_replace_all(
+    ., "[:space:].*", ""
+  )
+
+vec_panels_with_all_top10 <- dft_gp_all %>%
+  filter(
+    hugo %in% vec_genes_in_co_occur_plot
+  ) %>%
+  select(cpt_seq_assay_id, hugo, tested) %>% 
+  group_by(cpt_seq_assay_id) %>%
+  summarize(
+    has_all_top_10 = n() >= 10 # those with tested = F are implicitly missing currently.
+  ) %>%
+  filter(has_all_top_10) %>%
+  pull(cpt_seq_assay_id) %>%
+  as.character(.)
+
+dft_alt_full_top_10_tested <- dft_alt %>%
+  left_join(
+    ., 
+    select(dft_cpt, sample_id = cpt_genie_sample_id, cpt_seq_assay_id),
+    by = 'sample_id'
+  ) %>%
+  filter(cpt_seq_assay_id %in% vec_panels_with_all_top10)
+
+# Now we copy-paste the same code from above:
+dft_top_gene_bin_sens <- dft_alt_full_top_10_tested %>% 
+  filter(hugo %in% vec_genes_in_co_occur_plot) %>%
+  group_by(sample_id, hugo) %>%
+  summarize(exists = n() >= 1, .groups = "drop") %>%
+  pivot_wider(
+    names_from = hugo,
+    values_from = exists
+  ) 
+
+# Add in rows where nothing at all was found:
+dft_top_gene_bin_sens <- dft_cpt %>%
+  filter(cpt_seq_assay_id %in% vec_panels_with_all_top10) %>%
+  select(sample_id = cpt_genie_sample_id) %>%
+  left_join(dft_top_gene_bin, by = "sample_id")
+  
+dft_top_gene_bin_sens %<>%
+  mutate(
+    across(
+      .cols = -sample_id,
+      .fns = (function(x) {
+        x <- as.integer(x)
+        x <- if_else(is.na(x), 0L, x)
+      })
+    )
+  ) %>%
+  # just ordering:
+  select(sample_id, vec_genes_in_co_occur_plot)
+
+dft_gene_assoc_sens <- test_fisher_co_occur(
+  dat = dft_top_gene_bin_sens,
+  ignore_cols = c("sample_id"),
+  top = 10,
+  alpha = 0.05,
+  axis_order = vec_genes_in_co_occur_plot
+)
+
+
+
+dft_gene_assoc_sens %<>%
+  mutate(
+    assoc_lab = glue("{ct_11} / {ct_10+ct_01}"),
+    p_value_adj = p.adjust(p.value, method = "BH"),
+    cont_table_lab = cont_table_lab_help(
+      ct_11 = ct_11,
+      ct_01 = ct_01,
+      ct_10 = ct_10,
+      ct_00 = ct_00
+    )
+  )
+
+gg_gene_assoc_sens <- plot_binary_association(
+  dat = dft_gene_assoc_sens,
+  x_var = "var1_lab",
+  y_var = "var2_lab",
+  show_p_sig = T,
+  label_var = "cont_table_lab",
+  pval_var = "p_value_adj"
+)  + 
+  theme(
+    axis.text.x.top = element_text(angle = -20, hjust = 1)
+  )
+
+
+```
+
+
+
+```{r}
+# get the number of people in each cell from both plots for the sake of text explanation:
+help_cell_table_total <- function(dat) {
+  n_s <- dat %>%
+    mutate(cell_n = ct_11 + ct_10 + ct_01 + ct_00) %>% 
+    pull(cell_n)
+  
+  if (var(n_s, na.rm = T) > 0) {
+    cli_abort("Problem:  Cells have different counts")
+  } 
+  return(unique(n_s))
+}
+
+n_cell_gene_assoc <- help_cell_table_total(dft_gene_assoc)
+n_cell_gene_assoc_sens <- help_cell_table_total(dft_gene_assoc_sens)
+
+n_cell_gene_assoc
+n_cell_gene_assoc_sens
+
+```
+
+### R2.2.5 Co-occurence
+
+
+### Notes on deferred items
+
+Some descriptions of gene alterations are deferred until we discuss filtering with OncoKB.  Currently these include:
+
+- Variant allele frequency (VAF)
 
 
 
@@ -803,6 +1039,8 @@ gg_onco_impact <- ggplot(
   )
 ```
 
+## Post-processing options and effects
+
 ### R2.3.1 Oncogenic annotation impact
 
 We discussed annotating and potentially filtering the data using the "oncogenic" feature from oncoKB (https://www.oncokb.org/).  Looking at the alteration level (multiple alterations per sample are possible), the following plot shows the impact this would have on the raw data.
@@ -841,7 +1079,7 @@ gg_tmb_ecdf_panel_onco <- plot_ecdf_by_panel(
 ```
 
 
-### R2.4.2 OncoKB effect on TMB
+### R2.3.2 OncoKB effect on TMB
 
 The TMB plots we showed before give us a sign which indicates a possible problem in our data: tumor-normal samples may have a systematically lower (and more typical) TMB than tumor-only samples.  We now investigate whether this persists when we limit our pool of alterations to **only oncogenic** mutations.  
 
@@ -863,7 +1101,7 @@ gg_tmb_ecdf_panel_onco
 
 
 
-### R2.4.3 OncoKB on VAF
+### R2.3.3 OncoKB on VAF
 
 
 
