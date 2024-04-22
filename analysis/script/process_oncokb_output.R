@@ -74,6 +74,21 @@ readr::write_rds(
 
 
 
+# Addon: we want to calculate the variant allele frequency also.
+# t_ref_count is the "read depth" (number of times a specific seqeunce was read)
+#   supporting the reference sequence in this sample.
+# t_alt_count is the read depth for the variant sequence in this sample.
+# these both come from the BAM file, so even though we don't have the reads we 
+# can still estimate VAF.
+# A very small number of samples have this missing, which seems odd (but fine 
+#   if it's really just two samples.
+
+dft_mut_onco %<>%
+  mutate(
+    mut_vaf = t_alt_count / (t_alt_count + t_ref_count)
+  )
+
+
 
 
 # Create an alterations dataset - one row per alteration.
@@ -94,7 +109,8 @@ dft_mut_onco_alt <- dft_mut_onco %>%
     consequence,
     variant_classification,
     variant_type,
-    mutation_status
+    mutation_status,
+    mut_vaf
   )
 
 dft_cna_onco_alt <- dft_cna_onco %>% 

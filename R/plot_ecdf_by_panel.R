@@ -32,8 +32,10 @@ plot_ecdf_by_panel <- function(
     ) + 
     scale_x_continuous(
       expand = expansion(mult = 0.01, add = 0),
-      trans = 'log10'
+      trans = 'log10',
+      minor_breaks = log_tick_helper()
     ) +
+    guides(x = guide_axis(minor.ticks = T)) +
     scale_y_continuous(
       breaks = seq(0,1, by = 0.5),
       labels = paste0(seq(0,1, by = 0.5)*100, "%"),
