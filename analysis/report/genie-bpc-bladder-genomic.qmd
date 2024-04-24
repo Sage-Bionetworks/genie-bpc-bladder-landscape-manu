@@ -1374,14 +1374,6 @@ gg_tmb_ecdf_panel_onco
 
 
 
-## Upcoming
-
-- Pathway analysis.
-- Further charcterization of alterations after we decide on filtering:
-  - Consequence (missense, frameshift, synonymous, etc).
-  - Level of evidence (for likely oncogenic or oncogenic mutations).
-
-
 
 
 
