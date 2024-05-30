@@ -977,8 +977,8 @@ gg_reg_yr <- ggplot(
   dft_reg_yr_est,
   aes(x = event_yr, group = type, fill = type, color = type)
 ) + 
-  geom_ribbon(
-    color = NA,
+  geom_linerange(
+    alpha = 0.5,
     aes(ymin = lcb_n, ymax = ucb_n)
   ) + 
   geom_line(
@@ -997,9 +997,9 @@ gg_reg_yr <- ggplot(
   scale_color_manual(
     values = c("#004488", "#997700", "#994455")
   ) + 
-  scale_fill_manual(
-    values = c("#6699cc", "#eecc66", "#ee99aa")
-  ) + 
+  # scale_fill_manual(
+  #   values = c("#6699cc", "#eecc66", "#ee99aa")
+  # ) + 
   theme(
     plot.title.position = "plot"
   )
@@ -1015,7 +1015,7 @@ Vincent suggested we look at the distribution of the year in which regimens happ
 - Time from birth to diagnosis.
 - Time from diagnosis to regimen start.
 
-The missing information is month and day of birth.  To estimate regimen start year with this in mind, we can use multiple imputation on the missing information.  If we assume that birth dates are approximately evenly distributed, we can assume random birth dates for the participants.  Each time we do this, calculate a number of regimens which took place in each year.  By doing this thousands of times and taking the quantiles, we get a min/max (light ribbon) and median number of regimens (dark line) for each year.  This is repeated for metatstic and nonmetastatic regimens separately - All is just the sum of those two.  The following chart shows this:
+The missing information is month and day of birth.  To estimate regimen start year with this in mind, we can use multiple imputation on the missing information.  If we assume that birth dates are approximately evenly distributed, we can assume random birth dates for the participants.  Each time we do this, calculate a number of regimens which took place in each year.  By doing this thousands of times and taking the quantiles, we get a min/max (light lineranges) and median number of regimens (dark line) for each year.  This is repeated for metatstic and nonmetastatic regimens separately - All is just the sum of those two.  The following chart shows this:
 
 ```{r, include = T}
 gg_reg_yr
