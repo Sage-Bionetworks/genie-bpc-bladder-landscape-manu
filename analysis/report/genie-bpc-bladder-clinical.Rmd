@@ -133,8 +133,10 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
   select(
     record_id,
     `Age at dx (years)` = dob_ca_dx_yrs,
+    `Cancer type` = ca_type,
     `Stage at dx` = stage_dx,
-    `Source of dx date` = ca_dx_how,
+    # Removing this:
+    # `Source of dx date` = ca_dx_how,
     `Mets at dx (for Stage IV pts.)` = mets_s4
     # Update May 5:  Removed histology (unimportant)
     # `Histology` = ca_hist_adeno_squamous, # at dx?
@@ -500,7 +502,13 @@ dfp_obs_count
 ```{r}
 
 set.seed(55)
-vec_swim_pt_subset <- dft_pt$record_id %>% 
+
+vec_swim_pt_subset <- dft_ca_ind %>%
+  filter(
+    !(ca_type %in% "Renal Pelvis Cancer"),
+    !is.na(stage_dx)
+  ) %>% 
+  pull(record_id) %>%
   unique %>% 
   sample(x = ., size = 50, replace = F)
 
@@ -513,7 +521,6 @@ dft_event_swim <- make_event_df(
 
 dft_swim_lab <- dft_ca_ind %>% 
   select(record_id, stage_dx)
-
 gg_swim <- plot_swim_block_status(
   block_dat = dft_status_block,
   block_var = "status",
@@ -528,52 +535,12 @@ gg_swim <- plot_swim_block_status(
   
 ```
 
-```{r, eval = F}
-dft_q_stage_23 <- dft_ca_ind %>% 
-  select(record_id, ca_seq, institution, ca_type, stage_dx, dx_muscprop_invasive_days)
 
-dft_q_stage_23 %>%
-  filter(institution %in% "MSK") %>%
-  filter(stage_dx %in% c("Stage II", "Stage III")) %>%
-  arrange(desc(dx_muscprop_invasive_days)) %>%
-  mutate(
-    str = glue(
-      "-{record_id}, ca_seq = {ca_seq}, {stage_dx} at dx, dx_muscprop_invasive_days = {dx_muscprop_invasive_days}\n"
-    )
-  ) %>%
-  slice(1:5) %>%
-  pull(str)
 
-dft_q_stage_23 %>%
-  # filter(institution %in% "MSK") %>%
-  filter(stage_dx %in% c("Stage II", "Stage III")) %>%
-  filter(!(ca_type %in% "Renal Pelvis Cancer")) %>%
-  arrange(desc(dx_muscprop_invasive_days)) %>%
-  ggplot(
-    dat = ., 
-    aes(x = dx_muscprop_invasive_days, color = institution)
-  ) +
-  stat_ecdf() 
 
-dft_q_stage_23 %>%
-  # filter(institution %in% "MSK") %>%
-  filter(stage_dx %in% c("Stage II", "Stage III", "Stage IV")) %>%
-  filter(ca_type %in% "Bladder Cancer") %>%
-  arrange(desc(dx_muscprop_invasive_days)) %>%
-  # pull(dx_muscprop_invasive_days) %>%
-  # quantile(., probs = c(0.5, 0.75, 0.9, 0.95, 0.99), na.rm = T)
-  mutate(gte_90d = dx_muscprop_invasive_days >= 90) %>%
-  summarize(gte_90d = sum(gte_90d, na.rm = T))
+### *R1.5a Swimmer plot
 
-dft_cpt %>%
-  tabyl(cpt_oncotree_code)
-  
-  
-```
-
-### *R1.5 Swimmer plot
-
-The following plot shows the status and major events for a random sample of participants.  Each participant is represented by one horizontal line.  The stage labeled on the Y axis is the stage at diagnosis.  The goal of this plot is describing survival in an intuitive way.
+The following plot shows the status and major events for a random sample of participants, except those with renal pelvis cancer.  Because renal pelvis has different staging and curation, staging gets confusing if we include both.  Each participant is represented by one horizontal line.  The stage labeled on the Y axis is the stage at diagnosis.  The goal of this plot is describing survival in an intuitive way.
 
 ```{r, include = T, fig.height = 6}
 gg_swim
@@ -582,7 +549,26 @@ gg_swim
 Notes:
 
 - We're showing the report time (as opposed to order time) for the NGS test, which can be after death or censoring.
-- Showing "status" as a progression from non-invasive to invasive to metastatic is up for debate.
+- Stage and MIBC come from different fields, and some inconsistencies are obvious (for example, Stage 2+ with NMIBC for a long period).  Here are some causes:
+  - (**fixed**) Renal pelvis cancer is curated and staged differently, muscle invasive is not asssessed in the same way or used in staging in the same way.
+  - (*fixable*) Using a few cases, Chelsea Nichols confirmed some curation errors.  These could be fixed in future rounds.
+  
+  
+  
+  
+  
+```{r}
+
+```
+  
+### *R1.5b Swimmer plot - additional assumptions
+
+Here we assume that a diagnosis of stage 2 implies MIBC at the time of diagnosis, regardless of what the medical oncologist notes say.  This smooths over the data problems in the previous plot, which may or may not be a service to readers of our paper.
+
+```{r}
+
+```
+
 
 
 

@@ -9,6 +9,7 @@ read_wrap <- function(p) {
 
 dft_pt <- read_wrap("pt")
 dft_med_onc <- read_wrap("med_onc")
+dft_ca_ind <-read_wrap('ca_ind')
 
 dft_med_onc %>% pull(md_ecog) %>% unique %>% sort
 dft_med_onc %>% pull(md_karnof) %>% unique %>% sort
