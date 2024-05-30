@@ -89,3 +89,44 @@ readr::write_rds(
 )
 
 
+
+
+# Update:  got a request to do this again for met regimens only.
+dft_reg_met <- readr::read_rds(here('data', 'dmet', 'reg_start_gte_dmet.rds'))
+
+dft_reg_yr_met <- dft_reg_met %>% 
+  select(record_id, ca_seq, regimen_number) %>%
+  distinct(.) %>%
+  left_join(
+    .,
+    dft_reg_yr,
+    by = c("record_id", "ca_seq", "regimen_number"),
+    relationship = "one-to-many"
+  ) 
+
+dft_reg_yr_non_met <- anti_join(
+  dft_reg_yr, 
+  dft_reg_yr_met,
+  by = c("record_id", "ca_seq", "regimen_number")
+)
+
+reps_met <- many_iter_yr(input_dat = dft_reg_yr_met, n_rep = 10^3)
+rep_sum_met <- sum_reps(reps_met)
+
+reps_non_met <- many_iter_yr(input_dat = dft_reg_yr_non_met, n_rep = 10^3)
+rep_sum_non_met <- sum_reps(reps_non_met)
+
+dft_rep_comb <- bind_rows(
+  mutate(rep_sum, type = "All"),
+  mutate(rep_sum, type = "Metastatic"),
+  mutate(rep_sum, type = "Not metastatic")
+) %>%
+  mutate(type = fct_inorder(type))
+  
+readr::write_rds(
+  x = dft_rep_comb,
+  file = here('data', 'cohort', 'reg_yr_estimates_three_ways.rds')
+)
+
+  
+  

@@ -63,7 +63,7 @@ dft_reg <- read_wrap("reg")
 dft_cpt <- read_wrap("cpt")
 dft_drug <- read_wrap("drug")
 
-dft_reg_yr_est <- read_wrap('reg_yr_estimates')
+dft_reg_yr_est <- read_wrap('reg_yr_estimates_three_ways')
 
 n_bladder_cohort <- dft_ca_ind %>% nrow()
 
