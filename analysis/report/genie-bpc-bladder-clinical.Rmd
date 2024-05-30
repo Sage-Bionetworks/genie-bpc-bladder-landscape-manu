@@ -971,7 +971,7 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 ```{r}
-dft_reg_yr_est %<>% mutate(event_yr = as.numeric(event_yr))
+dft_reg_yr_est %<>% mutate(event_yr = as.numeric(as.character(event_yr)))
 
 gg_reg_yr <- ggplot(
   dft_reg_yr_est,
