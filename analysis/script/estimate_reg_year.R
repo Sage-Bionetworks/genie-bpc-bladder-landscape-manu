@@ -118,8 +118,8 @@ rep_sum_non_met <- sum_reps(reps_non_met)
 
 dft_rep_comb <- bind_rows(
   mutate(rep_sum, type = "All"),
-  mutate(rep_sum, type = "Metastatic"),
-  mutate(rep_sum, type = "Not metastatic")
+  mutate(rep_sum_met, type = "Metastatic"),
+  mutate(rep_sum_non_met, type = "Not metastatic")
 ) %>%
   mutate(type = fct_inorder(type))
   

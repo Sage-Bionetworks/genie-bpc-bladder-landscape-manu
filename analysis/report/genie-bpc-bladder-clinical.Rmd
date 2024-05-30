@@ -971,16 +971,17 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 
 
 ```{r}
+dft_reg_yr_est %<>% mutate(event_yr = as.numeric(event_yr))
+
 gg_reg_yr <- ggplot(
   dft_reg_yr_est,
-  aes(x = event_yr, group = 1)
+  aes(x = event_yr, group = type, fill = type, color = type)
 ) + 
   geom_ribbon(
-    fill = "#6699cc",
+    color = NA,
     aes(ymin = lcb_n, ymax = ucb_n)
   ) + 
   geom_line(
-    color = "#004488",
     aes(y = median_n)
   ) +
   theme_bw() + 
@@ -990,9 +991,20 @@ gg_reg_yr <- ggplot(
     title = "Number of regimens per year",
     subtitle = "Ribbons estimated by multiple imputation on birthdates"
   ) + 
+  scale_x_continuous(
+    breaks = seq(1992, 2092, by = 4)
+  ) + 
+  scale_color_manual(
+    values = c("#004488", "#997700", "#994455")
+  ) + 
+  scale_fill_manual(
+    values = c("#6699cc", "#eecc66", "#ee99aa")
+  ) + 
   theme(
     plot.title.position = "plot"
   )
+
+gg_reg_yr
 ```
 
 ### R2.3 Regimen year
@@ -1003,7 +1015,7 @@ Vincent suggested we look at the distribution of the year in which regimens happ
 - Time from birth to diagnosis.
 - Time from diagnosis to regimen start.
 
-The missing information is month and day of birth.  To estimate regimen start year with this in mind, we can use multiple imputation on the missing information.  If we assume that birth dates are approximately evenly distributed, we can assume random birth dates for the participants.  Each time we do this, calculate a number of regimens which took place in each year.  By doing this thousands of times and taking the quantiles, we get a min/max (ribbon) and median number of regimens (dark blue line) for each year.  The following chart shows this:
+The missing information is month and day of birth.  To estimate regimen start year with this in mind, we can use multiple imputation on the missing information.  If we assume that birth dates are approximately evenly distributed, we can assume random birth dates for the participants.  Each time we do this, calculate a number of regimens which took place in each year.  By doing this thousands of times and taking the quantiles, we get a min/max (light ribbon) and median number of regimens (dark line) for each year.  This is repeated for metatstic and nonmetastatic regimens separately - All is just the sum of those two.  The following chart shows this:
 
 ```{r, include = T}
 gg_reg_yr
@@ -1014,6 +1026,7 @@ gg_reg_yr
 - We might simplify this by saying most regimens are between 2012 and 2019.  
 - A more exact figure, like "X% of regimens most likely occured between 2012 and 2019" could be obtained by estimating the most likely year for each regimen.
 - Iterations on this are not too hard.  For example, year of first regimen.
+- Adding metastatic and nonmetastatic regimens doesn't convey a ton of surprising information:  The metatstatic regimens tend to be slightly later.  This is reflection of both cohort selection bias (you have to live long enough to be curated) and the fact that an individuals metastatic regimens follow their non-metatstatic ones by definition.
 
 
 
