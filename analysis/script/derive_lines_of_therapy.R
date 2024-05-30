@@ -80,7 +80,11 @@ dft_variation_classes <- tribble(
   2, "Enfortumab Vedotin, Pembrolizumab",
   2, "Ipilimumab, Nivolumab",
   2, "Nivolumab",
-  2, "Pembrolizumab"
+  2, "Pembrolizumab",
+  3, "Carboplatin, Gemcitabine Hydrochloride, Paclitaxel",
+  3, "Cisplatin, Gemcitabine Hydrochloride, Paclitaxel",
+  4, "Cisplatin, Etoposide",
+  4, "Carboplatin, Etoposide"
 )
 
 if (!all( dft_variation_classes$regimen_drugs %in% dft_reg_dmet_s$regimen_drugs) ) {

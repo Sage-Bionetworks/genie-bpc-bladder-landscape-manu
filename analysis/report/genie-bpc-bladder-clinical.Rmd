@@ -604,7 +604,7 @@ gg_swim_smoothed <- plot_swim_block_status(
 
 ### *R1.5b Swimmer plot - additional assumptions
 
-Here we assume that a diagnosis of stage 2 implies MIBC right at the time of diagnosis, regardless of what the medical oncologist notes say.  This smooths over the data problems in the previous plot, which may or may not be a service to readers of our paper.
+Here we assume that a diagnosis of stage 2 or higher implies MIBC right at the time of diagnosis, regardless of what the medical oncologist notes say.  This smooths over the data problems in the previous plot, which may or may not be a service to readers of our paper.
 
 ```{r, include = T}
 gg_swim_smoothed
