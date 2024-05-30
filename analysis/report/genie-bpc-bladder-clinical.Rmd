@@ -506,7 +506,8 @@ set.seed(55)
 vec_swim_pt_subset <- dft_ca_ind %>%
   filter(
     !(ca_type %in% "Renal Pelvis Cancer"),
-    !is.na(stage_dx)
+    !is.na(stage_dx),
+    !(stage_dx %in% "Stage I-III NOS")
   ) %>% 
   pull(record_id) %>%
   unique %>% 
@@ -558,15 +559,55 @@ Notes:
   
   
 ```{r}
+dft_status_block_smoothed_out <- dft_status_block %>%
+  left_join(
+    ., 
+    select(dft_ca_ind, record_id, ca_seq, stage_dx),
+    by = c("record_id", "ca_seq")
+  )
 
-```
+dft_status_block_smoothed_out %<>%
+  mutate(
+    status = case_when(
+      status %in% "Non-invasive" & 
+        stage_dx %in% paste("Stage", c("II", "III", "IV")) ~ "Invasive",
+      T ~ status
+    )
+  ) %>%
+  mutate(
+    status = factor(
+      status,
+      levels = levels(dft_status_block$status)
+    )
+  ) %>%
+  # if there are two invasive blocks, smash them together.
+  group_by(record_id, ca_seq, status) %>%
+  summarize(
+    dx_block_start = min(dx_block_start),
+    dx_block_end = max(dx_block_end),
+    .groups = "drop"
+  )
+
+gg_swim_smoothed <- plot_swim_block_status(
+  block_dat = dft_status_block_smoothed_out,
+  block_var = "status",
+  event_dat = dft_event_swim,
+  event_var = "event",
+  label_dat = dft_swim_lab,
+  label_var = "stage_dx",
+  order_by_label = T,
+  pt_subset = vec_swim_pt_subset,
+  line_pal = viridis::magma(n = 3, begin = 0.8, end = 0.2, alpha = 0.5)
+) 
   
+```
+
 ### *R1.5b Swimmer plot - additional assumptions
 
-Here we assume that a diagnosis of stage 2 implies MIBC at the time of diagnosis, regardless of what the medical oncologist notes say.  This smooths over the data problems in the previous plot, which may or may not be a service to readers of our paper.
+Here we assume that a diagnosis of stage 2 implies MIBC right at the time of diagnosis, regardless of what the medical oncologist notes say.  This smooths over the data problems in the previous plot, which may or may not be a service to readers of our paper.
 
 ```{r}
-
+gg_swim_smoothed
 ```
 
 
