@@ -57,29 +57,35 @@ one_iter_yr <- function(s, dat) {
     count(event_yr)
 }
 
-n_rep <- 10^3 # takes about 60s to run this way.
-reps <- tibble(id = 1:n_rep) %>%
-  mutate(s = sample.int(10^6, size = n(), replace = T)) %>%
-  mutate(dat = purrr::map(.x = s,
-                          .f = one_iter_yr,
-                          dat = dft_reg_yr)) %>%
-  unnest(dat) %>%
-  mutate(event_yr = factor(event_yr)) %>%
-  tidyr::complete(id, event_yr, fill = list(n = 0)) 
+many_iter_yr <- function(input_dat, n_rep) {
+  rtn <- tibble(id = 1:n_rep) %>%
+    mutate(s = sample.int(n_rep*10^3, size = n(), replace = T)) %>%
+    mutate(dat = purrr::map(.x = s,
+                            .f = one_iter_yr,
+                            dat = input_dat)) %>%
+    unnest(dat) %>%
+    mutate(event_yr = factor(event_yr)) %>%
+    tidyr::complete(id, event_yr, fill = list(n = 0))
+}
 
-rep_sum <- reps %>%
-  group_by(event_yr) %>%
-  summarize(
-    median_n = median(n, na.rm = T),
-    lcb_n = quantile(n, probs = c(0.025)),
-    ucb_n = quantile(n, probs = c(0.975)),
-    yr_ct_sanity = n(), # does not not need to be output.
-  ) 
+sum_reps <- function(rep_dat) {
+  rep_dat %>%
+    group_by(event_yr) %>%
+    summarize(
+      median_n = median(n, na.rm = T),
+      lcb_n = quantile(n, probs = c(0.025)),
+      ucb_n = quantile(n, probs = c(0.975)),
+      # yr_ct_sanity = n(), # does not not need to be output.
+      .groups = "drop"
+    )
+}
+
+reps <- many_iter_yr(input_dat = dft_reg_yr, n_rep = 10^3)
+rep_sum <- sum_reps(reps)
 
 readr::write_rds(
   x = rep_sum,
   file = here('data', 'cohort', 'reg_yr_estimates.rds')
 )
 
-# Sanity check:
-# tabyl(dft_reg_yr, reg_start_yr_dec31_bd)
+
