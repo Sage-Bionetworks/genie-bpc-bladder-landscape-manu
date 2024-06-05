@@ -1,25 +1,151 @@
 ---
-title: "Untitled"
-format: html
+title: "BPC Bladder - Survival"
+author: "Alex Paynter"
+date: "`r Sys.Date()`"
+output:
+  quarto::quarto_html:
+editor_options:
+  quarto:
+    chunk_output_type: console
+format:
+  html:
+    embed-resources: true
+    toc: true
+    theme: sandstone 
+execute:
+  echo: false
+  include: false
+  warning: false
+  message: false
+  fig.width: 7
+  fig.height: 5
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+library(purrr); library(here); library(fs)
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
 ```
 
-You can add options to executable code like this 
-
-```{r}
-#| echo: false
-2 * 2
+```{r, set_gtsummary_theme}
+theme_gtsummary_compact()
+theme_gtsummary_language("en", big.mark = "") # for now.
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+```{r}
+read_wrap_clin <- function(p) {
+  read_rds(file = here("data", 'cohort', p))
+}
+
+dft_pt <- read_wrap_clin("pt.rds")
+dft_ca_ind <- read_wrap_clin("ca_ind.rds")
+# we're taking the augmented version, which has TMB columns added.  The existing info is the same.
+dft_cpt <- read_wrap_clin("cpt_aug.rds")
+
+
+```
+
+
+## Introduction
+
+This document contains analyses related to survival for the GENIE BPC Bladder Cancer Landscape Manuscript group.  The initial report items are borrowed from the prostate cancer group.
+
+The appendix defines (narrowly) a few survival terms.  Looking there may help clarify what I mean in some places, and please ask if not.
+
+## Basics
+
+```{r}
+# now in a separate script.
+gg_os_dx_stage <- readr::read_rds(
+  here('data', 'survival', 'os_dx_by_stage.rds')
+)
+```
+
+
+### R3.1.1 Survival from diagnosis
+
+The following plot shows simple Kaplan-Meier estimates from diagnosis for overall survival.  This is broken into groups based on stage at diagnosis.  These groups could be altered, for example Stage IV could be changed to "metastatic at diagnosis".
+
+```{r}
+#| include: true
+
+gg_os_dx_stage
+```
+
+Notes:
+
+- The counts for At Risk are snapshots in time.  The counts for Censored and Events are cumulative.
+- Everyone is either censored or has an event, so the total n for each group is the sum of the last entry for those two.
+- The risk set for both groups increases after 0 years due to adjustment for delayed entry.  Participants enter the risk set when they enter the cohort, which can be well after diagnosis.
+
+
+
+
+
+```{r}
+# now in a separate script.
+gg_os_dmet_adj <- readr::read_rds(
+  here('data', 'survival', 'os_dmet_by_adjustment.rds')
+)
+```
+
+### R3.1.2 Survival from metastasis
+
+Next we show survival from metastasis.  Metastasis is **not** identical to 'advanced disease' in the bladder cancer cohort because stage IV can be diagnosed with or without mets.  The strategy for identifying metastases in this cohort is detailed in another report.  
+
+This is a good opportunity to show curves which are (recommended) and are not adjusted for left truncation.
+
+```{r}
+#| include: true
+
+gg_os_dmet_adj
+```
+
+
+
+
+
+```{r}
+dft_trunc_test <- readr::read_rds(
+  here('data', 'survival', 'trunc_test.rds')
+)
+```
+
+
+### R3.1.3 Testing truncation independence
+
+The following table shows values for the conditional Kendall Tau statistic.  Kendall tau is a measurement of the rank (nonparametric) association between the time to truncation and time to death.  Truncation in our cohort means delayed entry due to NGS being required to join GENIE cohort.  The conditional version of the Tau statistic takes censoring into account, where pairs of observations have to meet certain conditions to be included.  
+
+**Interpretation:** A negative test statistic would indicate that longer times to NGS are associated with shorter survival times than would be expected if the two variables were independent.  A positive test statistic would indicate the opposite.
+
+We repeat this several times for different cohorts.  When we index from metastasis, the difference in indexing time is not important but it *is* important that this only includes participants which had a metastasis at some point.  
+
+```{r}
+#| include: true
+
+dft_trunc_test %>%
+  filter(method %in% "MB") %>%
+  mutate(
+    ci_low = estimate - std.error * qnorm(0.975),
+    ci_high = estimate + std.error * qnorm(0.975),
+    `Cond. Kendall Tau` = cfmisc::est_int_str(estimate, ci_low, ci_high),
+    p.value = cfmisc::pval_nejm(p.value)) %>%
+  select(` ` = lab, `Cond. Kendall Tau`, p.value) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+**Notes:** 
+
+- Based on the results, we might say the dependence seems more for early stage cases than when limit to the most severe cases (metastatic at diagnosis).  However, all appear to have dependence.
+- We apply the method of Martin and Betensky (https://doi.org/10.1198/016214504000001538), which should be sufficient for testing the null.  The $\hat{\tau}_{c_2}$ IPW method from https://doi.org/10.1016%2Fj.csda.2013.11.018 was generally similar.
+- It's notable that even for those who are metastatic at diagnosis we seem to have a major dependence, which makes this cohort somewhat unique compared to those analyzed in https://doi.org/10.1001%2Fjamaoncol.2021.5153.
+  - Obvious differences:  Prostate cancer has longer survival times, and Stage IV prostate cancer generally seems to denote a much lower hazard of death than some others.
+  - One hypothesized sequence of events contributing to the negative association between truncation and survival is a worsening cancer which would prompt both testing and increased risk of death.  If this is more true in prostate cancer which is stage IV than other cancers, it could explain the test result we're seeing.  For example, maybe people are tested for pembro eligibility frequently when a sign of worsening is observed.  Clinical thoughts on hypotheses are surely more valuable than mine.
+
+
+
+
+## Specific questions
+
+
+(fill in next time)
