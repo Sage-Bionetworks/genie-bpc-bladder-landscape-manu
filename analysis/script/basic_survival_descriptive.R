@@ -11,13 +11,13 @@ fs::dir_create(
 surv_desc_fp <- here('data', 'survival')
 
 read_wrap_clin <- function(p) {
-  read_rds(file = here("data", 'clin', p))
+  read_rds(file = here("data", 'cohort', p))
 }
 
-dft_pt <- read_wrap_clin("dft_pt.rds")
-dft_ca_ind <- read_wrap_clin("dft_ca_ind.rds")
+dft_pt <- read_wrap_clin("pt.rds")
+dft_ca_ind <- read_wrap_clin("ca_ind.rds")
 # we're taking the augmented version, which has TMB columns added.  The existing info is the same.
-dft_cpt <- read_wrap_clin("dft_cpt_aug.rds")
+dft_cpt <- read_wrap_clin("cpt_aug.rds")
 
 
 
@@ -30,8 +30,17 @@ dft_first_cpt <- get_first_cpt(
 
 dft_surv_dx <- dft_ca_ind %>%
   left_join(., dft_first_cpt, by = c("record_id", "ca_seq")) %>%
+  mutate(
+    stage_custom = case_when(
+      stage_dx %in% c("Stage 0", "Stage I") ~ "Early (Stage 0-1)",
+      stage_dx %in% c("Stage II", "Stage III") ~ "Invasive (Stage 2-3)",
+      stage_dx %in% c("Stage IV") ~ "Stage IV",
+      T ~ NA_character_ # Note:  Stage I-III NOS and the 3 NAs get clumped here.
+    ),
+    stage_custom = factor(stage_custom) # Happens to be alphabetical.
+  ) %>%
   select(
-    record_id, ca_seq, stage_dx_iv, dx_cpt_rep_yrs,
+    record_id, ca_seq, stage_custom, dx_cpt_rep_yrs,
     os_dx_status, tt_os_dx_yrs
   ) 
 
@@ -52,7 +61,7 @@ surv_obj_os_dx <- with(
 
 gg_os_dx_stage <- plot_one_survfit(
   dat = dft_surv_dx,
-  surv_form = surv_obj_os_dx ~ stage_dx_iv,
+  surv_form = surv_obj_os_dx ~ stage_custom,
   plot_title = "OS from diagnosis",
   plot_subtitle = "Adjusted for (independent) delayed entry",
   x_exp = 0.1
@@ -172,7 +181,7 @@ dft_km_no_lt_adj <- survfit(
 
 gg_os_dmet <- plot_one_survfit(
   dat = dft_surv_dmet,
-  surv_form = surv_obj_os_dmet ~ 1,
+  surv_form = surv_obj_os_dmet_lt_adj ~ 1,
   plot_title = "OS from metastasis",
   plot_subtitle = glue(
     "<span style = 'color:{pal_surv_dmet[1]};'>Adjusted</span> and
@@ -200,20 +209,17 @@ readr::write_rds(
 # There's not much we can do with this information, but it's a curiousity that 
 #   someone may be interested in.
 
-res <- tranSurv::cKendall(
-  trun = dft_surv_dmet$dmet_cpt_rep_yrs,
-  obs = dft_surv_dmet$tt_os_dmet_yrs,
-  delta = dft_surv_dmet$os_dx_status,
-  method = "MB"
-) 
-
 # We'll just do all the tests and save them in case anyone asks.
 # Rediculous practice statistically but we also don't plan to do anything with this.
 dft_trunc_ind_test <- tribble(
   ~lab, ~dat, ~v_trunc, ~v_event, ~v_event_ind,
-  "From diagnosis", dft_surv_dx, "dx_cpt_rep_yrs", "tt_os_dx_yrs", "os_dx_status",
-  "From metastasis (all)", dft_surv_dmet, "dmet_cpt_rep_yrs", "tt_os_dmet_yrs", "os_dx_status",
-  "From metastasis (dx Stage IV)", filter(dft_surv_dmet, stage_dx_iv %in% "Stage IV"), "dmet_cpt_rep_yrs", "tt_os_dmet_yrs", "os_dx_status",
+  "From diagnosis", 
+    dft_surv_dx, "dx_cpt_rep_yrs", "tt_os_dx_yrs", "os_dx_status",
+  "From metastasis (all)", 
+    dft_surv_dmet, "dmet_cpt_rep_yrs", "tt_os_dmet_yrs", "os_dx_status",
+  "From metastasis (metastatic at dx)", 
+    filter(dft_surv_dmet, stage_dx_iv %in% "Stage IV" & ca_dmets_yn %in% "Yes"),
+    "dmet_cpt_rep_yrs", "tt_os_dmet_yrs", "os_dx_status",
 ) %>%
   slice(rep(1:n(), times = 3)) %>%
   mutate(method = rep(c("MB", "IPW1", "IPW2"), each = n()/3))

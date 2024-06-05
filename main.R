@@ -41,7 +41,19 @@ source(here('analysis', 'script', 'add_tmb_to_cpt.R'))
 #   output_file = '02-genie-bpc-bladder-genomic.html',
 #   output_dir = here('output', 'report')
 # )
-#   
+#  
+
+
+
+
+
+
+############
+# Survival #
+############
+source(here('analysis', 'script', 'basic_survival_descriptive.R'))
+
+
 
 #############################
 # Met classification report #
