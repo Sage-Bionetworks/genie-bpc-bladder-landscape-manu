@@ -1027,6 +1027,7 @@ gg_reg_yr
 - A more exact figure, like "X% of regimens most likely occured between 2012 and 2019" could be obtained by estimating the most likely year for each regimen.
 - Iterations on this are not too hard.  For example, year of first regimen.
 - Adding metastatic and nonmetastatic regimens doesn't convey a ton of surprising information:  The metatstatic regimens tend to be slightly later.  This is reflection of both cohort selection bias (you have to live long enough to be curated) and the fact that an individuals metastatic regimens follow their non-metatstatic ones by definition.
+- If we decide to share this we can clean up the look by adding a small horizontal offset so the errorbars don't overlap.  This also could be made cleaner by removing the "All" line if desired.
 
 
 
