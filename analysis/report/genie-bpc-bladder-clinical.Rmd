@@ -189,7 +189,7 @@ dft_demo %<>%
 
 ## Content
 
-### R1.1.1a: Characteristics at dx
+### *R1.1.1a: Characteristics at dx
 
 Table of characteristics at diagnosis.  A few notes:
 
@@ -210,7 +210,7 @@ dft_demo %>%
 
 **Comment:** "Mets among Stage IV" and "Stage at dx" could be combined into one classification scheme (just dividing the Stage IV category further).  The main disadvantage of doing this is deviating from clear mapping to PRISSMM.
 
-### R1.1.1b: Characteristics at dx (by site)
+### *R1.1.1b: Characteristics at dx (by site)
 
 The previous table, broken down by site.
 
@@ -1008,7 +1008,7 @@ gg_reg_yr <- ggplot(
 gg_reg_yr
 ```
 
-### R1.2.3 Regimen year
+### *R1.2.3 Regimen year
 
 Vincent suggested we look at the distribution of the year in which regimens happened.  In GENIE we don't have exact dates, so this ends up being an exercise in estimation.  We have the following information for each participant:
 
@@ -1313,7 +1313,7 @@ dft_stats_by_line <- dft_rad %>%
 ```
 
 
-### R1.2.4d Lines of therapy - people stats 
+### *R1.2.4d Lines of therapy - people stats 
 
 The following table shows the followup time for those who received exactly zero, one, two, or three+ lines of therapy according to our definition.
 
@@ -1341,7 +1341,7 @@ I added the cancer sequence information afterward, looking for an explanation.  
 
 We can change the table structure a bit to point something out more clearly:
 
-```{r}
+```{r, include = T}
 gtsummary::tbl_summary(
   select(
     dft_stats_by_line,
@@ -1354,9 +1354,9 @@ gtsummary::tbl_summary(
 )
 ```
 
-If we just focus on those cases that are a first cancer, it seems implausible that those with multiple cancers ("First") were more likely to receive zero lines of therapy associated with cancer #1, even though they had much longer average followup times.  One possible explanation is an error in the curation of the regimen data (if a regimen was taken but not assigned as possibly related to the first cancer, for example).  I think we can check thise more carefully if needed, but it will be a major tangent from this paper.
+If we just focus on those cases that are a first cancer, it seems implausible that those with multiple cancers ("First") were more likely to receive zero lines of therapy associated with cancer #1, even though they had much longer average followup times.  One possible explanation is the way regimens are associated with agent use in the curation.  For example, if a regimen was taken but not assigned as possibly related to the first cancer because the patient now has a newer cancer.  There are ways we could peel this back further looking at each case, but we're already at a major tangent with this sentence.
 
-One other comment, more to the point of this section:  If we limit to only first and only cancers, the followup time distribution looks as we would expect it to:
+One other comment, more to the point of this section:  If we limit to only first and only cancers, the followup time distribution looks as we would expect it to, with zero regimen people having shorter followup than those with one regimen:
 
 ```{r, include = T}
 gtsummary::tbl_summary(
