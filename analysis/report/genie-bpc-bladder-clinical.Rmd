@@ -62,6 +62,7 @@ dft_reg <- read_wrap("reg")
 # dft_tm <- read_wrap("tm_level_dataset.csv")
 dft_cpt <- read_wrap("cpt")
 dft_drug <- read_wrap("drug")
+dft_rad <- read_wrap("rad")
 
 dft_reg_yr_est <- read_wrap('reg_yr_estimates_three_ways')
 
@@ -1287,6 +1288,28 @@ dft_stats_by_line %<>%
     lines_received_f = factor(lines_received_f, levels = lev_high_line)
   ) %>%
   rename(`Follow-up time` = tt_os_dmet_yrs) # without status indicator that's basically what it is.
+
+dft_stats_by_line <- dft_rad %>% 
+  select(record_id, ca_seq) %>%
+  mutate(`Had Radiation` = T) %>%
+  distinct(.) %>%
+  left_join(
+    dft_stats_by_line,
+    .,
+    by = c("record_id", "ca_seq")
+  ) %>%
+  replace_na(., list(`Had Radiation` = F)) %>%
+  arrange(ca_seq) %>%
+  mutate(
+    `Cancer seq (cat)` = case_when(
+      ca_seq %in% c(0) ~ "First and only",
+      ca_seq %in% c(1) ~ "First",
+      ca_seq %in% 2:10 ~ "Not first"
+    ),
+    `Cancer seq (cat)` = fct_inorder(`Cancer seq (cat)`)
+  ) 
+
+
 ```
 
 
@@ -1299,35 +1322,56 @@ gtsummary::tbl_summary(
   select(
     dft_stats_by_line, 
     lines_received_f,
-    `Follow-up time`
+    `Follow-up time`,
+    `Had Radiation`, 
+    `Cancer seq (cat)`
   ),
   by = lines_received_f
 )
   
 ```
 
-**Notes:**
+**Discussion**
 
-- Our hypothesis previously was that people who received fewer lines of therapy probably had less followup time.
-- This appears to be broadly true, except for those with zero lines of therapy, who had a greater amount of followup than any other group.
-- One possibility is that those who have regimens started before metastasis continue them afterward.  The way we count lines currently only includes regimens started on or after metastasis.  Support for this explanation ca be found below in the neoadjuvant therapy group breakdowns (R2.5a), where those with neoadjuvant therapy disappear after we limit to only those with one or more line.
-- This is not a survival statement and definitely is not causal (e.g. "those with three lines lived longer than those who stuck with one" is not in any way supported here).  The followup time is basically the observed time for overall survival, but we're completely ignoring whether the event ending followup was death or censoring (intentionally).  
+Our hypothesis previously was that people who received fewer lines of therapy probably had less followup time. This appears to be broadly true, except for those with zero lines of therapy, who had a greater amount of followup than any other group.  This motivated the lines added after follow-up time.
 
+Our initial hypothesis was that those with zero lines of therapy may have used radiation rather than drugs as their first course of treatment.  The opposite is true, people with zero lines of therapy had a lower frequency of radiation use.
 
+I added the cancer sequence information afterward, looking for an explanation.  It is odd (to me) that the rates of first vs "first and only" cancer sequences are so different between those with zero lines recorded and those with one or more recorded.
 
-
+We can change the table structure a bit to point something out more clearly:
 
 ```{r}
-
-dft_rad_q <- dft_stats_by_line %>%
-  mutate(
-    any_lines = case_when(
-      lines_received_f %in% "Zero" ~ 0,
-      T ~ 1
-    )
-  )
-  select(record_id, ca_seq)
+gtsummary::tbl_summary(
+  select(
+    dft_stats_by_line,
+    lines_received_f,
+    `Follow-up time`,
+    `Had Radiation`, 
+    `Cancer seq (cat)`
+  ),
+  by = `Cancer seq (cat)`
+)
 ```
+
+If we just focus on those cases that are a first cancer, it seems implausible that those with multiple cancers ("First") were more likely to receive zero lines of therapy associated with cancer #1, even though they had much longer average followup times.  One possible explanation is an error in the curation of the regimen data (if a regimen was taken but not assigned as possibly related to the first cancer, for example).  I think we can check thise more carefully if needed, but it will be a major tangent from this paper.
+
+One other comment, more to the point of this section:  If we limit to only first and only cancers, the followup time distribution looks as we would expect it to:
+
+```{r, include = T}
+gtsummary::tbl_summary(
+  select(
+    filter(dft_stats_by_line, ca_seq %in% 0),
+    lines_received_f,
+    `Follow-up time`,
+    `Had Radiation`, 
+    `Cancer seq (cat)`
+  ),
+  by = lines_received_f
+)
+  
+```
+
 
 
 
