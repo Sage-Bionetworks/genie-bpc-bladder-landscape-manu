@@ -17,7 +17,7 @@ dft_med_onc <- read_wrap("med_onc_note_level_dataset.csv")
 dft_path <- read_wrap("pathology_report_level_dataset.csv")
 dft_reg <- read_wrap("regimen_cancer_level_dataset.csv")
 dft_cpt <- read_wrap("cancer_panel_test_level_dataset.csv")
-
+dft_rad <- read_wrap("ca_radtx_dataset.csv")
 
 # A few sanity checks on the data:
 if ((dft_pt$record_id %>% duplicated %>% any)) {
@@ -60,9 +60,11 @@ key_filt_help <- function(dat) {
 
 n_row_cpt_old <- nrow(dft_cpt)
 n_row_reg_old <- nrow(dft_reg)
+n_row_rad_old <- nrow(dft_rad)
 
 dft_cpt %<>% key_filt_help(.)
 dft_reg %<>% key_filt_help(.)
+dft_rad %<>% key_filt_help(.)
 
 cli_alert_info(glue("{n_row_cpt_old-nrow(dft_cpt)} rows removed from dft_cpt for being related to non index cancers"))
 cli_alert_info(glue("{n_row_reg_old-nrow(dft_reg)} rows removed from dft_reg for being related to non index cancers"))
@@ -120,6 +122,8 @@ write_wrap(dft_med_onc, file_name = "med_onc")
 write_wrap(dft_path, file_name = "path")
 write_wrap(dft_reg, file_name = "reg")
 write_wrap(dft_cpt, file_name = "cpt")
+write_wrap(dft_rad, file_name = "rad")
+
 
 
     

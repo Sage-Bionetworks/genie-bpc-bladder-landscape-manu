@@ -1127,6 +1127,73 @@ gg_gene_assoc_compare
 
 
 
+```{r}
+dft_co_occur_gene_stat <- dft_alt %>% 
+  filter(hugo %in% vec_co_occur_genes) %>%
+  filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
+  mutate(
+    gain = mutation_effect %in% c("Loss-of-function", "Likely Loss-of-function"),
+    loss = mutation_effect %in% c("Gain-of-function", "Likely Gain-of-function"),
+    mut = alt_type %in% "Mutation",
+    cna = alt_type %in% "CNA",
+    fusion = alt_type %in% "Fusion"
+  ) %>%
+  group_by(hugo) %>%
+  summarize(
+    across(
+      .cols = c(gain, loss, mut, cna, fusion),
+      .fns = \(x) mean(x, na.rm = T)
+    )
+  )
+```
+
+### R2.2.4c ERBB2 and FGFR3
+
+It was noted in our April 2024 meeting that ERBB2 and FGFR3 are commonly thought to be mutually exclusive phenomena, while the plot above doesn't show an especially strong result here.  An immediately possible explanation is that it might only be the case with ERBB2 CNAs but not mutations (or vice versa). The following table states the proportion of oncogenic alterations (over all samples) for a gene which meet several criteria:
+
+- `gain`: gain of function expected for the alteration (or likely gain).
+- `loss`: loss of function expected for the alteration (or likely loss).
+- `mut`: porportion of alterations which are a mutation.
+- `cna`: porportion of alterations which are a high level amplification (the only type of CNA we considered).
+- `fusion`: porportion of alterations which are a gene fusion.
+
+The point of this is assessing whether splitting ERBB2 or FGFR3 into multiple features might be more appropriate.  For example, maybe ERBB2 CNAs and mutations are not similar at all and pooling them is inadvisable.  This can only be the case for a gene if there exists a sizable proportion of both CNAs and mutations.
+
+```{r, include = T}
+dft_co_occur_gene_stat %>%
+  # mutate(across(.cols = -hugo, .fns = \(x) formatC(x, format = 'f', digits = 3))) %>%
+  flextable(.) %>%
+  autofit(.) %>%
+  bg(
+    j = 2:6, 
+    bg = scales::col_numeric(
+      palette = function(x) {
+        colorRamp(c("#abc5ed", "#FFFFFF"), interpolate="spline")(
+          (abs(0.5 - x) * 2)
+        )
+      },
+      domain = c(0,1),
+      alpha = 0.5
+    )
+  ) %>%
+  colformat_double(
+    j = 2:6,
+    digits = 3
+  )
+```
+
+**Notes:**
+
+- Colors above just highlight cells far from 0 or 1 (which is essentially what we're looking for).
+- There are exactly two genes which come in multiple flavors (in this low dimensional view) in sizable proportions:  ERBB2, as mutation and CNA, and FGFR3, as mutation and fusion.
+- We can always split ERBB2 into two features (one for CNA and one for mutations), but I think a more direct route is finding the claim from previous work and investigating its scope.
+
+
+
+
+
+
+
 
 ### Notes on deferred items
 
