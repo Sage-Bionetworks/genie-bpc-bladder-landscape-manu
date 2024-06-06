@@ -36,11 +36,11 @@ source(here('analysis', 'script', 'create_gene_panel_dat.R'))
 source(here('analysis', 'script', 'process_oncokb_output.R'))
 source(here('analysis', 'script', 'add_tmb_to_cpt.R'))
 # need to set up quarto render still.
-# rmarkdown::render(
-#   input = here('analysis', 'report', 'genie-bpc-bladder-genomic.rmd'),
-#   output_file = '02-genie-bpc-bladder-genomic.html',
-#   output_dir = here('output', 'report')
-# )
+rmarkdown::render(
+  input = here('analysis', 'report', 'genie-bpc-bladder-genomic.rmd'),
+  output_file = '02-genie-bpc-bladder-genomic.html',
+  output_dir = here('output', 'report')
+)
 #  
 
 

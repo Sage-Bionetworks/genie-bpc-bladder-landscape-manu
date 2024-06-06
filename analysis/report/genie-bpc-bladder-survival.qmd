@@ -300,15 +300,14 @@ dft_hrd_drugs %>%
 
 *Notes:*
 
-- Popular drugs seem similar between groups.
-- We discussed grouping drugs, hopefully easier with a list.
+- Popular drugs seem similar between groups, with investigational drugs being a notable omission in the HRD group.
 
 
 
 
 ```{r}
 dft_met_hrd_surv_no_adj <- readr::read_rds(
-  here('data', 'outcome', 'surv_met_hrd', 'met_hrd_surv.rds')
+  here('data', 'survival', 'hrd_onco', 'met_hrd_surv.rds')
 )
 
 dft_met_hrd_surv_no_adj %<>% mutate(fmr_fcpt_yrs = ifelse(fmr_fcpt_yrs < 0, 0, fmr_fcpt_yrs))
@@ -338,18 +337,3 @@ gg_os_fmr_hrd_no_adj <- plot_one_survfit(
 ```
 
 
-Finally, we initially discussed running this analysis with an without risk set adjustment (for left truncation).  If we want do this, I think we would have to amend our criterion to say that the NGS sample would need to be collected before the first metastatic regimen (which would now be the time of risk set entry).  There are only `r sum(dft_met_hrd_surv_no_adj$hrd_before_pm_reg)` people who have an HRD mutation before the first met regimen. Here is the KM curve for that analysis:
-
-```{r}
-#| include: true
-gg_os_fmr_hrd_no_adj
-```
-
-*Notes:*
-
-- The difference between HRD and no HRD is not major in either the risk set adjusted graph or this one.
-- As we would expect, removing the risk set adjustment changes the survival curves dramatically.  Median survival with adjustment was about 3.5 years for the no-HRD group, >5 here.
-
-
-
-### R3.2.2 
