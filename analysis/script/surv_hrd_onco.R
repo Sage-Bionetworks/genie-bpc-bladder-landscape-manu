@@ -93,7 +93,7 @@ dft_onco_hrd %<>%
 
 readr::write_rds(
   dft_onco_hrd,
-  here('data', 'outcome', 'surv_met_hrd', 'alt_onco_hrd.rds')
+  here('data', 'survival', 'hrd_onco', 'alt_onco_hrd.rds')
 )
 
 
@@ -110,7 +110,7 @@ dft_onco_hrd_flags <- dft_onco_hrd %>%
 
 readr::write_rds(
   dft_onco_hrd_flags,
-  here('data', 'outcome', 'surv_met_hrd', 'alt_onco_hrd_flags.rds')
+  here('data', 'survival', 'hrd_onco', 'alt_onco_hrd_flags.rds')
 )
 
 
@@ -121,17 +121,6 @@ dft_met_hrd_surv <- dft_post_met_reg %>%
   arrange(dx_reg_start_int_yrs) %>%
   slice(1) %>%
   ungroup(.)
-
-# temp_missing_cohort <- anti_join(
-#   dft_onco_hrd_flags,
-#   dft_met_hrd_surv,
-#   by = c('record_id', 'ca_seq')
-# )
-
-
-dft_reg %>%
-  filter(record_id %in% 'GENIE-DFCI-000893') %>% 
-  glimpse
 
 dft_met_hrd_surv <- left_join(
   dft_met_hrd_surv,
@@ -170,7 +159,7 @@ dft_met_hrd_surv %<>%
 
 readr::write_rds(
   dft_met_hrd_surv,
-  here('data', 'outcome', 'surv_met_hrd', 'met_hrd_surv.rds')
+  here('data', 'survival', 'hrd_onco', 'met_hrd_surv.rds')
 )
 
 

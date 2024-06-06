@@ -169,4 +169,187 @@ gg_first_line_platinum
 
 
 
+
+
+
+
+
+
+```{r}
+dft_met_hrd_surv <- readr::read_rds(
+  here('data', 'survival', 'hrd_onco', 'met_hrd_surv.rds')
+)
+
+dft_met_hrd_surv %<>% 
+  remove_trunc_gte_event(
+    trunc_var = 'fmr_fcpt_yrs',
+    event_var = 'tt_os_first_met_reg_yrs'
+  )
+
+dft_met_hrd_surv %<>% mutate(fmr_fcpt_yrs = ifelse(fmr_fcpt_yrs < 0, 0, fmr_fcpt_yrs))
+
+surv_obj_os_fmr <- with(
+  dft_met_hrd_surv,
+  Surv(
+    time = fmr_fcpt_yrs,
+    time2 = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  )
+)
+
+dft_met_hrd_surv %<>%
+  mutate(
+    hrd_disp = case_when(
+      hrd_before_entry ~ "Oncogenic HRD",
+      T ~ "No Onco. HRD"
+    )
+  )
+
+gg_os_fmr_hrd <- plot_one_survfit(
+  dat = dft_met_hrd_surv,
+  surv_form = surv_obj_os_fmr ~ hrd_disp,
+  plot_title = "OS from first metastatic regimen",
+  plot_subtitle = "Adjusted for (independent) delayed entry"
+)
+
+  
+```
+
+
+
+
+### R3.2.2 HRD pathway
+
+In our Apr 2024 meeting the group expressed an interest in looking at the HRD pathway.  Further details on this general question are borrowed from the prostate cancer group (which had the same interest).
+
+We will look at overall survival comparing those with an oncogenic homologous repair deficiency (HRD) mutation.  We discussed the complication added by lower rates of BRCA2 reported at sites with normal-matched genomic samples, compared with those doing tumor-only sequencing.
+
+These are the restrictions needed to form the cohort for this analysis:
+
+- Include only participants with a metastasis and at least one regimen after that diagnosis.
+- For determining HRD covariate:
+  - For each subject, include only NGS tests which had a pathology specimen collected before they enter the risk set.  Risk set entry happens when both (1) first NGS test for that subject is reported and (2) the index event, first metastatic regimen, happens.
+  - Include only alterations which are oncogenic and include a HUGO symbol in the HRD pathway according to Pearl (2015).   appendix.
+  
+The following plot shows Kaplan-Meier survival curves for those two groups:
+
+```{r}
+#| include: true
+gg_os_fmr_hrd
+```
+
+```{r}
+dft_alt_onco_hrd <- readr::read_rds(
+  here('data', 'survival', 'hrd_onco', 'alt_onco_hrd.rds')
+)
+
+dft_onco_hrd_before_entry <- dft_alt_onco_hrd %>% 
+  filter(dx_path_proc_cpt_yrs < dx_entry) 
+
+dft_onco_hrd_before_entry %<>%
+  count(alt_type, hugo, fusion_desc) %>%
+  mutate(
+    desc = case_when(
+      alt_type %in% "Mutation" ~ hugo,
+      alt_type %in% "Fusion" ~ fusion_desc,
+      T ~ NA_character_
+    )
+  ) %>%
+  select(alt_type, desc, n) %>%
+  arrange(alt_type, desc(n))
+
+```
+
+The following table shows the mutations which met the criteria above (oncogenic, HRD pathway, sample taken at the right time).  The total here is greater than the number of subjects in the Oncogenic HRD group above because each person can have more than one HRD alteration.
+
+```{r}
+#| include: true
+dft_onco_hrd_before_entry %>%
+  flextable(.) %>%
+  autofit(.) %>% 
+  merge_v(j = 1) %>% 
+  flextable::valign(valign = "top") %>%
+  fix_border_issues(.)
+```
+
+*Notes:*
+
+- As expected BRCA2 is prominent here, the tumor-normal vs tumor-only issue may require some thought.
+
+```{r}
+dft_hrd_drugs <- dft_met_hrd_surv %>% 
+  count(hrd_disp, regimen_drugs) %>%
+  group_by(hrd_disp) %>%
+  arrange(desc(n)) %>%
+  slice(1:5) %>%
+  ungroup(.) %>%
+  rename(` ` = hrd_disp)
+```
+
+Finally, this table shows a list of the top 5 regimens in each HRD group which counted as the first regimen after metastasis.
+
+```{r}
+#| include: true
+dft_hrd_drugs %>%
+  flextable(.) %>%
+  autofit(.) %>%
+  merge_v(j = 1) %>% 
+  flextable::valign(valign = "top") %>%
+  fix_border_issues(.)
+```
+
+*Notes:*
+
+- Popular drugs seem similar between groups.
+- We discussed grouping drugs, hopefully easier with a list.
+
+
+
+
+```{r}
+dft_met_hrd_surv_no_adj <- readr::read_rds(
+  here('data', 'outcome', 'surv_met_hrd', 'met_hrd_surv.rds')
+)
+
+dft_met_hrd_surv_no_adj %<>% mutate(fmr_fcpt_yrs = ifelse(fmr_fcpt_yrs < 0, 0, fmr_fcpt_yrs))
+
+surv_obj_os_fmr_no_adj <- with(
+  dft_met_hrd_surv_no_adj,
+  Surv(
+    time = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  )
+)
+
+dft_met_hrd_surv_no_adj %<>%
+  mutate(
+    hrd_disp = case_when(
+      hrd_before_pm_reg ~ "Oncogenic HRD",
+      T ~ "No Onco. HRD"
+    )
+  )
+
+gg_os_fmr_hrd_no_adj <- plot_one_survfit(
+  dat = dft_met_hrd_surv_no_adj,
+  surv_form = surv_obj_os_fmr_no_adj ~ hrd_disp,
+  plot_title = "OS from first metastatic regimen",
+  plot_subtitle = "NOT adjusted for delayed entry"
+)
+```
+
+
+Finally, we initially discussed running this analysis with an without risk set adjustment (for left truncation).  If we want do this, I think we would have to amend our criterion to say that the NGS sample would need to be collected before the first metastatic regimen (which would now be the time of risk set entry).  There are only `r sum(dft_met_hrd_surv_no_adj$hrd_before_pm_reg)` people who have an HRD mutation before the first met regimen. Here is the KM curve for that analysis:
+
+```{r}
+#| include: true
+gg_os_fmr_hrd_no_adj
+```
+
+*Notes:*
+
+- The difference between HRD and no HRD is not major in either the risk set adjusted graph or this one.
+- As we would expect, removing the risk set adjustment changes the survival curves dramatically.  Median survival with adjustment was about 3.5 years for the no-HRD group, >5 here.
+
+
+
 ### R3.2.2 

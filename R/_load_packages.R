@@ -37,6 +37,6 @@ library(rmarkdown)
 
 library(gt)
 library(gtsummary)
-library(flextable)
 library(sunburstR)
 library(huxtable)
+library(flextable)
