@@ -191,6 +191,30 @@ dft_alt %<>%
     everything()
   )
 
+
+
+# Also add in the DDR pathways
+dft_pearl_pathways <- readr::read_rds(
+  here('data', 'genomic', 'pearl_pathways.rds')
+)
+
+lev_path_pearl <- c(
+  (dft_pearl_pathways$pathway %>% unique),
+  "None"
+)
+dft_alt %<>% 
+  left_join(
+    .,
+    select(dft_pearl_pathways, hugo = gene, pathway_ddr = pathway),
+    by = "hugo",
+    relationship = 'many-to-one'
+  ) %>%
+  mutate(
+    pathway_ddr = if_else(is.na(pathway_ddr), "None", pathway_ddr),
+    pathway_ddr = factor(pathway_ddr, levels = lev_path_pearl)
+  )
+
+
 readr::write_rds(
   x = dft_alt,
   file = here('data', 'genomic', 'alterations.rds')
