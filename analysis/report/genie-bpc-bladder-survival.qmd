@@ -138,9 +138,7 @@ dft_trunc_test %>%
 
 - Based on the results, we might say the dependence seems more for early stage cases than when limit to the most severe cases (metastatic at diagnosis).  However, all appear to have dependence.
 - We apply the method of Martin and Betensky (https://doi.org/10.1198/016214504000001538), which should be sufficient for testing the null.  The $\hat{\tau}_{c_2}$ IPW method from https://doi.org/10.1016%2Fj.csda.2013.11.018 was generally similar.
-- It's notable that even for those who are metastatic at diagnosis we seem to have a major dependence, which makes this cohort somewhat unique compared to those analyzed in https://doi.org/10.1001%2Fjamaoncol.2021.5153.
-  - Obvious differences:  Prostate cancer has longer survival times, and Stage IV prostate cancer generally seems to denote a much lower hazard of death than some others.
-  - One hypothesized sequence of events contributing to the negative association between truncation and survival is a worsening cancer which would prompt both testing and increased risk of death.  If this is more true in prostate cancer which is stage IV than other cancers, it could explain the test result we're seeing.  For example, maybe people are tested for pembro eligibility frequently when a sign of worsening is observed.  Clinical thoughts on hypotheses are surely more valuable than mine.
+- One hypothesized sequence of events contributing to the negative association between truncation and survival is a worsening cancer which would prompt both testing and increased risk of death.  
 
 
 
@@ -148,4 +146,27 @@ dft_trunc_test %>%
 ## Specific questions
 
 
-(fill in next time)
+```{r}
+gg_first_line_platinum <- readr::read_rds(
+  here('data', 'survival', 'first_line_platinum', 'gg_first_line_platinum.rds')
+)
+```
+
+### R3.2.1 First line platinum chemotherapy
+
+The first exploration we discussed was stating overall survival for first line Carboplatin/Cisplatin combined with Gemcitabine.  By definition (for line of therapy) this only includes participants who were metastatic at the start of the drug combination.  We are not currently including more elaborate regimens such as GemCarbo + Paclitaxel.
+
+```{r}
+#| include: true
+
+gg_first_line_platinum
+```
+
+**Notes:**
+
+- If we sharpen our question more we can certainly start to add coufounders or do statistical testing.
+- Previous GENIE papers have looked at estimates like these to compare to other studies.  These median KM estimates are quite similar to the first study I found addressing this question: https://pubmed.ncbi.nlm.nih.gov/34535437/
+
+
+
+### R3.2.2 

@@ -8,6 +8,7 @@ plot_one_survfit <- function(
     x_title = "Years",
     risktable_prop = NULL,
     x_exp = 0.15,
+    x_breaks = seq(0, 100, by = 2.5),
     force_color = NULL
 ) {
   
@@ -39,7 +40,7 @@ plot_one_survfit <- function(
     scale_x_continuous(
       name = x_title,
       expand = expansion(add = 0, mult = c(0, x_exp)), # needed to prevent clipping
-      breaks = seq(0, 100, by = 2.5)
+      breaks = x_breaks
     ) +
     scale_color_manual(
       values = pal

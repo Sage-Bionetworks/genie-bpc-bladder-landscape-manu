@@ -52,6 +52,8 @@ source(here('analysis', 'script', 'add_tmb_to_cpt.R'))
 # Survival #
 ############
 source(here('analysis', 'script', 'basic_survival_descriptive.R'))
+source(here('analysis', 'script', 'surv_platinum_gem_first_line.R'))
+# Render the qmd for survival.
 
 
 

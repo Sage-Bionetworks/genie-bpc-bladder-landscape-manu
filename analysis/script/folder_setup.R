@@ -15,4 +15,7 @@ dir_create('output', 'report')
 dir_create('output', 'fig')
 dir_create('output', 'other')
 
+fs::dir_create(here('data', 'survival'))
+fs::dir_create(here('data', 'survival', 'first_line_platinum'))
+
 
