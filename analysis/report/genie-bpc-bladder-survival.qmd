@@ -337,3 +337,88 @@ gg_os_fmr_hrd_no_adj <- plot_one_survfit(
 ```
 
 
+
+
+```{r}
+# Read in the data related to this analysis
+path_ercc3 <- here('data', 'survival', 'ercc3_plat')
+dft_ercc3_alt <- readr::read_rds(here(path_ercc3, 'ercc3_alt.rds'))
+gg_surv_ercc3 <- readr::read_rds(here(path_ercc3, 'gg_surv_ercc3.rds'))
+dft_surv_plat_ercc3 <- readr::read_rds(here(path_ercc3, 'surv_dat_plat_ercc3.rds'))
+```
+
+
+### R3.2.3 ERCC3, Platinum chemo
+
+The question at hand is "does an ERCC3 alteration confer an advantage to those receiving platinum-based chemotherapy with gemcitabine?"  If yes, it would confirm previous results Neil and others were aware of.
+
+This analysis will unfortunately be limited by sample size in the ERCC3 arm.  We have a grand total of `r nrow(dft_ercc3_alt)` ERCC3 alterations in `r length(unique(dft_ercc3_alt$record_id))` people.  Only `r sum(str_detect(tolower(dft_ercc3_alt$oncogenic), "oncogenic"))` of these alterations are oncogenic, so we did not limit to oncogenic alterations in ERCC3.  When we limit to those who can make it into this survival analysis, we get `r  sum(dft_surv_plat_ercc3$gene_ercc3)` people in the ERCC3 arm.
+
+All the same, we can have a look.  Here are the regimens which qualify as the first platinum chemotherapy:
+
+```{r}
+#| include: true
+dft_surv_plat_ercc3 %>% count(regimen_drugs) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+KM curves for those with and without ERCC3 alterations are as follows:
+
+```{r}
+#| include: true
+gg_surv_ercc3
+```
+ 
+ 
+```{r}
+dft_lot <- readr::read_rds(
+  here('data', 'dmet', 'lines_of_therapy', 'lot.rds')
+)
+```
+ 
+**Notes**
+
+- We can limit to chemo regimens in the metastatic state (better control, lower concern about dependent truncation), but this will likely further reduce the numbers.
+
+
+
+
+ 
+### R3.2.4 First line immunotherapy
+
+The question here may have been "does first line immunotherapy lead to longer survival than alteratives?", but I want to use this first presentation as a chance to clarify the question.
+
+Here are the drugs used in the first **line of therapy** (following all the rules from our clinical report) which appear to be immunotherapy to me:
+
+```{r}
+lot_regex <- paste(
+  c(
+    'atezolizumab',
+    'durvalumab',
+    'cemiplimab',
+    'nivolumab',
+    'pembrolizumab',
+    'ipilimumab',
+    'tremelimumab'
+  ),
+  collapse = "|"
+)
+```
+
+
+```{r}
+#| include: true
+dft_lot %>% 
+  filter(line_therapy %in% 1) %>% 
+  count(regimen_drugs) %>%
+  filter(str_detect(tolower(regimen_drugs), lot_regex)) %>%
+  arrange(desc(n)) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+So there's good news, we probably have the numbers to do an analysis.  With only two immunotherapies used in large numbers, pembrolizumab and atezolizumab, we could choose to try an analysis as "Any immunotherapy vs. None" or separated into Pembro vs. no pembro, atezolizumab vs no atezolizumab.  Narrowing the question will help as we start considering confounders.
+
+
+
