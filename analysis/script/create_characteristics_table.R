@@ -102,6 +102,6 @@ dft_demo %<>%
            .before = `Age at dx (years)`) 
 
 readr::write_rds(
-  dft_demo
+  dft_demo,
   here('data', 'cohort', 'formatted_characteristics.rds')
 )

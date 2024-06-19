@@ -106,11 +106,10 @@ dft_neoadj_therapy_key <- readr::read_rds(
 
 
 ```{r}
-readr::read_rds(
+dft_demo <- readr::read_rds(
   here('data', 'cohort', 'formatted_characteristics.rds')
 )
 ```
-
 
 ## Content
 
