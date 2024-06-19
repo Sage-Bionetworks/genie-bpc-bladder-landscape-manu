@@ -105,3 +105,19 @@ readr::write_rds(
   dft_demo,
   here('data', 'cohort', 'formatted_characteristics.rds')
 )
+
+
+
+# While working on changes (comment out otherwise):
+dft_demo %>%
+  select(-record_id) %>%
+  gtsummary::tbl_summary(
+    data = .,
+    digits = list(
+      `Year of birth` ~ 0,
+      `Year of diagnosis` ~ 0
+    )
+  ) 
+
+    
+

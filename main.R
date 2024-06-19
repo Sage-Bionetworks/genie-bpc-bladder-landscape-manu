@@ -5,6 +5,10 @@
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
+# Manual downloads:
+# - data-raw/manual/icd_topography.xlsx from https://www.ncri.ie/html/icdo3sites
+
+
 
 
 ############

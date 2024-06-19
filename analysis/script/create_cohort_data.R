@@ -86,6 +86,39 @@ dft_cpt %<>%
     sample_type_simple_f = factor(sample_type_simple_f, levels = lev_st_simple)
   )
 
+
+# Add in a text description of ca_d_site (useless because too many are NOS but whatever)
+dft_icd <- readxl::read_xlsx(
+  here('data-raw', 'manual', 'icd_topography.xlsx')
+)
+
+# there are two cases which weren't found in the downloaded table and we need.  I pulled these from the data guide:i
+
+dft_icd %<>%
+  add_row(
+    icdo3_code = "C67.3",
+    description = "Anterior wall of bladder",
+  ) %>%
+  add_row(
+    icdo3_code = "C67.5",
+    description = "Bladder neck",
+  ) %>%
+  arrange(icdo3_code) %>%
+  rename(ca_d_site_txt = description)
+
+dft_ca_ind %<>%
+  count(ca_d_site) %>% 
+  left_join(
+    .,
+    dft_icd,
+    by = c(ca_d_site = "icdo3_code")
+  )
+
+
+
+
+
+
 # This is needed so the panels match what we have panel data on:
 cli::cli_alert_info(
   "Correcting any entries of 'UHN-OCA-v3' to 'UHN-OCA-V3'."
