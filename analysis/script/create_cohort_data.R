@@ -106,14 +106,16 @@ dft_icd %<>%
   arrange(icdo3_code) %>%
   rename(ca_d_site_txt = description)
 
-dft_ca_ind %<>%
-  count(ca_d_site) %>% 
+dft_ca_ind %<>% 
   left_join(
     .,
     dft_icd,
     by = c(ca_d_site = "icdo3_code")
+  ) %>%
+  relocate(
+    ca_d_site_txt,
+    .after = ca_d_site
   )
-
 
 
 

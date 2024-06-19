@@ -11,14 +11,7 @@ read_wrap <- function(p) {
 
 dft_pt <- read_wrap("pt")
 dft_ca_ind <- read_wrap("ca_ind")
-# dft_img <- read_wrap("img")
 dft_med_onc <- read_wrap("med_onc")
-# dft_path <- read_wrap("path")
-# dft_reg <- read_wrap("reg")
-# dft_tm <- read_wrap("tm_level_dataset.csv")
-# dft_cpt <- read_wrap("cpt")
-# dft_drug <- read_wrap("drug")
-# dft_rad <- read_wrap("rad")
 
 
 dft_pt_baseline_sub <- dft_pt %>%
@@ -40,25 +33,19 @@ dft_pt_baseline_sub <- dft_pt %>%
 
 dft_ca_ind_baseline_sub <- dft_ca_ind %>%
   mutate(
-    mets_s4 = s4_met_helper(stage_dx_iv, ca_dmets_yn),
+    stage_mets_dx = format_stage_mets_dx(
+      var_stage_dx = stage_dx,
+      var_ca_dmets_yn = ca_dmets_yn
+    ),
     ca_dx_how = format_ca_dx_how(ca_dx_how),
-    ca_hist_adeno_squamous = format_ca_hist_adeno_squamous(ca_hist_adeno_squamous),
-    stage_dx = format_stage_dx(stage_dx),
-    ca_dmets_yn = format_ca_dmets_yn(ca_dmets_yn),
-    ca_path_n_stage = format_ca_path_n_stage(ca_path_n_stage),
+    ca_dmets_yn = format_ca_dmets_yn(ca_dmets_yn)
   ) %>%
   select(
     record_id,
     `Age at dx (years)` = dob_ca_dx_yrs,
     `Cancer type` = ca_type,
-    `Stage at dx` = stage_dx,
-    # Removing this:
-    # `Source of dx date` = ca_dx_how,
-    `Mets at dx (for Stage IV pts.)` = mets_s4
-    # Update May 5:  Removed histology (unimportant)
-    # `Histology` = ca_hist_adeno_squamous, # at dx?
-    # Update Mar 23 2024:  remove this too (unimportant)
-    # `Pathologic N Stage` = ca_path_n_stage # describes spread to lymph nodes
+    `Cancer site (detailed)` = ca_d_site_txt,
+    `Stage at dx` = stage_mets_dx
   ) 
 
 
