@@ -48,23 +48,87 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
     `Stage at dx` = stage_mets_dx
   ) 
 
+# just forming a good spine for this:
+dft_first <- dft_ca_ind %>%
+  select(record_id) %>%
+  distinct(.)
 
-dft_med_onc_dx <- augment_med_onc_imputed_ecog(dft_med_onc)
-
-dft_med_onc_dx %<>%
+dft_first_ecog <- dft_med_onc %>%
+  augment_med_onc_imputed_ecog(.) %>%
   filter(md_ecog_imputed != "Not documented in note") %>%
-  mutate(md_ecog_imputed = format_md_ecog(md_ecog_imputed)) %>%
   group_by(record_id) %>%
-  filter(dx_md_visit_days < 30 & dx_md_visit_days > -180) %>%
   mutate(abs_days = abs(dx_md_visit_days)) %>%
   arrange(abs_days) %>% 
   slice(1) %>%
   ungroup(.) %>%
   select(
     record_id, 
-    `ECOG (or Karnofsky)` =  md_ecog_imputed,
-    `ECOG scale source` = md_ecog_imp_source,
+    `First observed ECOG` =  md_ecog_imputed,
+    # I'm leaving this in for now because I think it's interesting:
+    `First ECOG source` = md_ecog_imp_source,
   )
+
+dft_first %<>% left_join(., dft_first_ecog, by = 'record_id')
+
+dft_met_ever <- get_dmet_time(dft_ca_ind) %>%
+  group_by(record_id) %>%
+  summarize(
+    `Dmet anytime` = T
+  )
+
+dft_first %<>% left_join(., dft_met_ever, by = 'record_id')
+
+
+# To find if MIBC was ever diagnosed we will use the "corrected" version,
+# which considers either a med onc note or a stage >= 2 at diagnosis to be a sign on MIBC.
+dft_mibc_ever <- make_dmet_musc_prop_status_block(dft_ca_ind) %>%
+  group_by(record_id) %>%
+  summarize(
+    med_onc_mibc = any(status %in% c("Invasive", "Metastatic")),
+    .groups = "drop"
+  ) %>%
+  left_join(
+    ., select(dft_ca_ind_baseline_sub, record_id, `Stage at dx`), by = "record_id"
+  ) %>%
+  mutate(
+    mibc_ever = case_when(
+      med_onc_mibc ~ T,
+      `Stage at dx` %in% c(
+        "Stage II/III",
+        "Stage IV (no met)",
+        "Stage IV (met at dx)",
+        "Stage IV (met unk.)"
+      ) ~ T,
+      T ~ F
+    )
+  ) %>%
+  select(record_id, `MIBC anytime` = mibc_ever)
+
+dft_first %<>% left_join(., dft_mibc_ever, by = 'record_id')
+
+dft_first %<>%
+  mutate(
+    `First observed ECOG` = format_md_ecog(
+      `First observed ECOG`,
+      cluster_high_levels = T,
+      na_lab = "(none)"
+    ),
+    `MIBC anytime` = case_when(
+      is.na(`MIBC anytime`) ~ "No",
+      `MIBC anytime` ~ "Yes", 
+      T ~ "No"
+    ),
+    `Dmet anytime` = case_when(
+      is.na(`Dmet anytime`) ~ "No",
+      `Dmet anytime` ~ "Yes", 
+      T ~ "No"
+    )
+  ) 
+
+
+
+
+
 
 dft_demo <- full_join(
   dft_pt_baseline_sub,
@@ -73,9 +137,10 @@ dft_demo <- full_join(
 ) %>%
   full_join(
     .,
-    dft_med_onc_dx,
+    dft_first,
     by = "record_id"
   )
+
 
 
 # age_dx is not an integer in this cohort, so this should be more exact.
