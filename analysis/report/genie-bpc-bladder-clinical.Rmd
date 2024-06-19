@@ -122,7 +122,12 @@ Table of characteristics at diagnosis.  A few notes:
 
 ```{r, tab_r1_1a, include = T}
 dft_demo %>%
-  select(-record_id) %>%
+  select(-c(
+    record_id,
+    # taking off some stuff that's too detailed:
+    `Cancer site (detailed)`,
+    `First ECOG source`
+  )) %>%
   gtsummary::tbl_summary(
     data = .,
     digits = list(
