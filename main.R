@@ -15,7 +15,6 @@ source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'create_cohort_data.R'))
 source(here('analysis', 'script', 'create_drug_dat.R'))
 source(here('analysis', 'script', 'create_dmet_data.R'))
-# There is a point of non-reproducibility here:  The file needs to be tracked by git.
 source(here('analysis', 'script', 'estimate_reg_year.R'))
 source(here('analysis', 'script', 'create_neoadj_dat.R'))
 source(here('analysis', 'script', 'derive_lines_of_therapy.R'))

@@ -383,7 +383,19 @@ dft_lot <- readr::read_rds(
 
 
 
+```{r}
 
+dir_fl_imm <- here('data', 'survival', 'first_line_immuno')
+dft_fl_io <- readr::write_rds(
+  dft_fl_io,
+  here(dir_out, 'surv_first_line_immuno.rds')
+)
+
+readr::write_rds(
+  gg_os_fl_io,
+  here(dir_out, 'gg_os_fl_io.rds')
+)
+```
  
 ### R3.2.4 First line immunotherapy
 
@@ -419,6 +431,7 @@ dft_lot %>%
 ```
 
 So there's good news, we probably have the numbers to do an analysis.  With only two immunotherapies used in large numbers, pembrolizumab and atezolizumab, we could choose to try an analysis as "Any immunotherapy vs. None" or separated into Pembro vs. no pembro, atezolizumab vs no atezolizumab.  Narrowing the question will help as we start considering confounders.
+
 
 
 

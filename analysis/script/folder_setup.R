@@ -18,5 +18,7 @@ dir_create('output', 'other')
 fs::dir_create(here('data', 'survival'))
 fs::dir_create(here('data', 'survival', 'first_line_platinum'))
 fs::dir_create(here('data', 'survival', 'hrd_onco'))
+fs::dir_create(here('data', 'survival', 'ercc3_plat'))
+fs::dir_create(here('data', 'survival', 'first_line_immuno'))
 
 
