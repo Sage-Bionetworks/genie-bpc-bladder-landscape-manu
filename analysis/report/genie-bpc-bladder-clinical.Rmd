@@ -730,7 +730,9 @@ dft_met_sum_simple <- dft_met_loc %>%
     Anytime = at_dx + post_dx
   ) 
 
-dft_met_sum_simple %<>%
+
+
+dfp_met_sum_simple <- dft_met_sum_simple %>%
   mutate(
     across(
       .cols = -met_loc,
@@ -741,13 +743,14 @@ dft_met_sum_simple %<>%
     )
   )
 
-dft_met_sum_simple %<>%
+dfp_met_sum_simple %<>%
   select(
     Location = met_loc,
     `At dx` = at_dx,
     `Post dx` = post_dx,
     Anytime
   )
+
 ```
 
 ### R1.1.6a: Metastasis location
@@ -755,13 +758,72 @@ dft_met_sum_simple %<>%
 The following table counts the number of participants who had a metastasis at diagnosis, post diagnosis and anytime for each site category in the data.
 
 ```{r, include = T}
-dft_met_sum_simple %>%
+dfp_met_sum_simple %>%
   flextable(.) %>%
   flextable::theme_booktabs(.) %>%
   flextable::fontsize(size = 8) %>%
   autofit(.)
 ```
 
+
+
+
+```{r}
+dft_met_sum_simple_long <- dft_met_sum_simple %>%
+  select(met_loc, at_dx, post_dx) %>%
+  pivot_longer(
+    cols = c(post_dx, at_dx),
+    names_to = "timing",
+    values_to = "n"
+  ) %>%
+  mutate(
+    prop = n / n_bladder_cohort
+  ) %>%
+  mutate(
+    timing = case_when(
+      timing %in% "at_dx" ~ "At diagnosis",
+      timing %in% "post_dx" ~ "Post diagnosis"
+    ),
+    # both for display reasons:
+    timing = fct_rev(factor(timing)),
+    met_loc = fct_rev(factor(met_loc))
+  )
+  
+
+gg_met_loc_bar <- ggplot(
+  dat = dft_met_sum_simple_long,
+  aes(x = prop, y = met_loc, fill = timing, group = timing) 
+) + 
+  theme_light() + 
+  geom_col(position = "stack") + 
+  scale_fill_manual(
+    values = c("#56b4e9", "#e69f00")
+  ) + 
+  scale_x_continuous(
+    name = "Proportion of cohort",
+    labels = scales::label_percent(),
+    expand = expansion(add = c(0,0), mult = c(0, 0.05))
+  ) +
+  labs(y = NULL, title = "Locations of metastasis") + 
+  guides(fill = guide_legend(title = NULL))
+
+ggsave(
+  gg_timing_just_ngs,
+  file = here(
+    'output', 'aacr_ss24', 'img',
+    '01_met_location.pdf'
+  ),
+  height = 4, width = 6
+)
+  
+
+```
+
+### R1.1.6b Metastatsis location (graph)
+
+```{r}
+gg_met_loc_bar
+```
 
 
 
@@ -812,7 +874,7 @@ upset_separate_demo <- plot_grid(
 ```
 
 
-### R1.1.6b: Co-occurrence of metastatic locations
+### R1.1.6c: Co-occurrence of metastatic locations
 
 The following upset plot shows the combinations of metastatic sites, ordered by the number of people with that combination.  The metastastases here are at any point over the followup period, so they may occur at different times.
 
@@ -851,7 +913,7 @@ gg_met_loc_timing <- dft_met_loc %>%
 
 ```
 
-### R1.1.6c: Timing of metastasis by site
+### R1.1.6d: Timing of metastasis by site
 
 As a first pass, I am re-using my function for timing intervals, so some of these summary statistics (e.g. non-negative if observed) don't make sense.  We can optimize the plot if it's considered for manuscript inclusion.
 
