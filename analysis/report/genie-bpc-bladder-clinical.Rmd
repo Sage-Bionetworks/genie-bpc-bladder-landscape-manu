@@ -1107,10 +1107,16 @@ sun_wrap(dft_sun_reg_dmet, seed = 238)
 ```{r}
 dft_reg_yr_est %<>% mutate(event_yr = as.numeric(as.character(event_yr)))
 
+dft_reg_yr_est %<>% 
+  filter(!(type %in% "All"))
+
 gg_reg_yr <- ggplot(
   dft_reg_yr_est,
-  aes(x = event_yr, group = type, fill = type, color = type)
+  aes(x = event_yr, group = type, color = type)
 ) + 
+  # this is annoying, you have to do this to get the
+  #   legend to work below.
+  geom_point(alpha = 0, aes(y = median_n)) + 
   geom_linerange(
     alpha = 0.5,
     aes(ymin = lcb_n, ymax = ucb_n)
@@ -1122,8 +1128,8 @@ gg_reg_yr <- ggplot(
   labs(
     x = "Year of regimen start",
     y = NULL,
-    title = "Number of regimens per year",
-    subtitle = "Ribbons estimated by multiple imputation on birthdates"
+    title = "Regimens per year",
+    subtitle = "Bars represent multiple imputation on birthdate (only know year)"
   ) + 
   scale_x_continuous(
     breaks = seq(1992, 2092, by = 4)
@@ -1135,10 +1141,28 @@ gg_reg_yr <- ggplot(
   #   values = c("#6699cc", "#eecc66", "#ee99aa")
   # ) + 
   theme(
-    plot.title.position = "plot"
+    plot.title.position = "plot",
+    legend.position = "bottom"
+  ) + 
+  guides(
+    color = guide_legend(
+      title = NULL,
+      override.aes = list(
+        size = 3, linetype = 0, shape = 15, alpha = 1
+      )
+    )
+    
   )
 
-gg_reg_yr
+ggsave(
+  gg_reg_yr,
+  file = here(
+    'output', 'aacr_ss24', 'img',
+    '01_drug_timing.pdf'
+  ),
+  height = 3, width = 6
+)
+
 ```
 
 ### *R1.2.3 Regimen year
