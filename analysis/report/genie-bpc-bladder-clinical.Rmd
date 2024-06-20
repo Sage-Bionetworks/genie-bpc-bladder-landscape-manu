@@ -808,12 +808,12 @@ gg_met_loc_bar <- ggplot(
   guides(fill = guide_legend(title = NULL))
 
 ggsave(
-  gg_timing_just_ngs,
+  gg_met_loc_bar,
   file = here(
     'output', 'aacr_ss24', 'img',
     '01_met_location.pdf'
   ),
-  height = 4, width = 6
+  height = 3, width = 6
 )
   
 
@@ -996,11 +996,59 @@ gg_top_drug_comb <- cowplot::plot_grid(
   ncol = 1
 )
 
-
-
-
-  
+ggsave(
+  gg_top_drug_comb,
+  file = here(
+    'output', 'aacr_ss24', 'img',
+    '01_drug_prop_horizontal.pdf'
+  ),
+  height = 4, width = 6
+)
 ```
+
+
+```{r}
+# New version vertical by request.
+
+dft_top_drugs %<>%
+  mutate(drug = if_else(drug %in% "Gemcitabine Hydrochloride", "Gemcitabine", drug))
+
+dfp_top_drugs_dmet %<>%
+  mutate(drug = if_else(drug %in% "Gemcitabine Hydrochloride", "Gemcitabine", drug))
+
+
+set.seed(239048)
+gg_top_drug_not_met_vertical <- plot_drug_prop_vert(
+  drug_dat = dft_top_drugs,
+  cohort_n = n_bladder_dmet,
+  pal = sample(viridisLite::magma(n = 10, begin = 0.2, end = 0.8)),
+  plot_title = glue("Exposed at any time (n={n_bladder_cohort})")
+)
+
+gg_top_drug_dmet_vertical <- plot_drug_prop_vert(
+  drug_dat = dfp_top_drugs_dmet,
+  cohort_n = n_bladder_dmet,
+  pal = sample(viridisLite::viridis(n = 10, begin = 0.2, end = 0.8)),
+  plot_title = glue("Exposures started while metastatic (n={n_bladder_dmet})")
+)
+
+gg_top_drug_comb_vert <- cowplot::plot_grid(
+  gg_top_drug_not_met_vertical, 
+  gg_top_drug_dmet_vertical,
+  ncol = 1
+)
+
+ggsave(
+  gg_top_drug_comb_vert,
+  file = here(
+    'output', 'aacr_ss24', 'img',
+    '01_drug_prop_vertical.pdf'
+  ),
+  height = 4, width = 6
+)
+```
+
+
 
 ### R1.2.1a: Drug exposure
 
