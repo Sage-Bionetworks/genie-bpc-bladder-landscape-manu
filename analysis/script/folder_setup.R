@@ -15,6 +15,7 @@ dir_create('output', 'report')
 dir_create('output', 'fig')
 dir_create('output', 'other')
 dir_create('output', 'aacr_ss24', 'tfl_obj')
+dir_create('output', 'aacr_ss24', 'img')
 
 fs::dir_create(here('data', 'survival'))
 fs::dir_create(here('data', 'survival', 'first_line_platinum'))

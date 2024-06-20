@@ -12,8 +12,12 @@ plot_timing_intervals <- function(
   label_stat_color = "black",
   violin_fill = c("#a9c6e2", "#f6e3aa", "#f5c6d0", "gray80"),
   violin_line = c("#004488", "#997700", "#994455", "gray20"),
+  violin_width = 1,
+  point_alpha = 0.2,
+  point_height_jitter = 0.25, 
   facet_scale = "fixed",
-  facet_cols = 1
+  facet_cols = 1,
+  x_coord = NULL
 ) {
   
   ld <- label_digits # more concise
@@ -54,7 +58,13 @@ plot_timing_intervals <- function(
       T ~ NA_character_
     ))
   
-  x_max <- dat %>% pull(all_of(time_var)) %>% max(na.rm = T)
+  x_max <- dat %>% 
+    pull(all_of(time_var)) %>% 
+    max(na.rm = T)
+  
+  if (!is.null(x_coord)) {
+    x_max = x_coord[2]*.95
+  }
   
   gg <- ggplot(
     data = dat,
@@ -62,9 +72,12 @@ plot_timing_intervals <- function(
     geom_vline(xintercept = 0, color = "black", size = 0.5) + 
     geom_violin(
       aes(fill = .data[[color_var]], color = .data[[color_var]]),
-      draw_quantiles = c(0.25, 0.5, 0.75)
+      draw_quantiles = c(0.25, 0.5, 0.75),
+      width = violin_width
     ) + 
-    geom_jitter(width = 0, height = 0.25, alpha = 0.2, size = 0.25) + 
+    geom_jitter(width = 0, 
+                height = point_height_jitter, 
+                alpha = point_alpha, size = 0.25) + 
     geom_richtext(
       aes(x = x_max*.95, y = 1.05, label = str_all),
       vjust = 0, hjust = 1, size = label_size,
@@ -87,6 +100,11 @@ plot_timing_intervals <- function(
     ) +
     scale_color_manual(values = violin_line, drop = F) + 
     scale_fill_manual(values = violin_fill, drop = F)
+  
+  if (!is.null(x_coord)) {
+    gg <- gg + 
+      coord_cartesian(xlim = x_coord)
+  }
   
   return(gg)
   

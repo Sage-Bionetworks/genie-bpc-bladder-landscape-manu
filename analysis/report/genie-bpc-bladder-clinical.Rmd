@@ -298,7 +298,10 @@ gg_timing_dmet_comb_all <- cowplot::plot_grid(
   nrow = 1,
   rel_widths = c(0.7, 0.3)
 )
+
+
 ```
+
 
 
 
@@ -314,6 +317,64 @@ The following plot is similar to the previous, except that times are indexed fro
 ```{r, print_dmet_event_timing, include = T, fig.height = 6}
 gg_timing_dmet_comb_all
 ```
+
+
+```{r, custom_timing_intervals}
+gg_timing_just_ngs <- cowplot::plot_grid(
+  (
+    plot_timing_intervals(
+      dat = filter(
+        dft_timing_long,
+        interval %in% "First NGS (from dx)"
+      ),
+      x_coord = c(-2, 5),
+      point_alpha = 1,
+      violin_width = 0.25,
+      point_height_jitter = 0.03
+    ) +
+      annotate(
+        geom = "point", y = 1.25, x = 1, alpha = 0
+      )
+  ),
+  (
+    plot_timing_intervals(
+      dat = filter(
+        dft_timing_dmet_long,
+        interval %in% "First NGS (from dmet)"
+      ),
+      x_coord = c(-2, 5),
+      point_alpha = 1,
+      violin_width = 0.25,
+      point_height_jitter = 0.03
+    ) +
+      annotate(
+        geom = "point", y = 1.25, x = 1, alpha = 0
+      )
+  ),
+  ncol = 1
+)
+
+ggsave(
+  gg_timing_just_ngs,
+  file = here(
+    'output', 'aacr_ss24', 'img',
+    '01_ngs_timing.pdf'
+  ),
+  height = 4, width = 6
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -432,6 +493,21 @@ dfp_obs_count <- dft_count_all %>%
   gtsummary::tbl_summary(data = ., digits = everything() ~ 0) %>%
   modify_header(
     label = '**Observation Type**'
+  )
+
+dft_count_all %>%
+  select(
+    Regimens = n_regimens,
+    `MedOnc Notes` = n_med_onc,
+    `Total scans` = n_scan_total
+  ) %>% 
+  gtsummary::tbl_summary(data = ., digits = everything() ~ 0) %>%
+  modify_header(
+    label = '**Observation Type**'
+  ) %>%
+  aacr_ss24_output_helper(
+    .,
+    filename = "01_obs_count.rds"
   )
 ```
 
