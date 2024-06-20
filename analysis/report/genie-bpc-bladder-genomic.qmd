@@ -1303,6 +1303,9 @@ dft_vaf <- dft_gp_all %>%
     by = 'cpt_seq_assay_id'
   )
 
+dft_vaf %<>%
+  mutate(calling = str_replace_all(calling, "_", "-"))
+
 gg_vaf_all <- dft_vaf %>%
   plot_vaf_density_by_group(
     .,
@@ -1340,12 +1343,47 @@ gg_vaf_by_site_onco <- dft_vaf %>%
   theme(
     legend.position = "bottom"
   )
+```
 
+
+```{r}
 gg_vaf_by_site_comb <- cowplot::plot_grid(
   gg_vaf_by_site,
   gg_vaf_by_site_onco,
   ncol = 2
 ) 
+
+gg_vaf_all + 
+  annotate(
+    geom = "segment", x = 0.5, xend = 0.5,
+    y = 2.5, yend = 1.75, color = "red", linewidth = 2,
+    arrow = arrow(type = "closed", length = unit(0.5, "cm"))
+  )
+
+gg_vaf_aacr_ss24 <- cowplot::plot_grid(
+  (gg_vaf_all + 
+     annotate(
+       geom = "segment", x = 0.5, xend = 0.5,
+       y = 3, yend = 1.75, color = "red", linewidth = 2,
+       arrow = arrow(
+         type = "closed", 
+         length = unit(0.5, "cm")
+       )
+     )
+  ),
+  gg_vaf_onco,
+  ncol = 1 
+)
+
+ggsave(
+  gg_vaf_aacr_ss24,
+  file = here(
+    'output', 'aacr_ss24', 'img',
+    '02_vaf_onco.pdf'
+  ),
+  height = 4, width = 6
+)
+
 ```
 
 
