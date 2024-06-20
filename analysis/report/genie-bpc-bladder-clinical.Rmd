@@ -104,6 +104,17 @@ dft_neoadj_therapy_key <- readr::read_rds(
 ```
 
 
+```{r}
+aacr_ss24_output_helper <- function(obj, filename) {
+  readr::write_rds(
+    obj,
+    here('output', 'aacr_ss24', 'tfl_obj', filename)
+  )
+}
+```
+
+
+
 
 ```{r}
 dft_demo <- readr::read_rds(
@@ -135,16 +146,8 @@ dft_demo %>%
       `Year of diagnosis` ~ 0
     )
   ) 
-```
 
-**Comment:** "Mets among Stage IV" and "Stage at dx" could be combined into one classification scheme (just dividing the Stage IV category further).  The main disadvantage of doing this is deviating from clear mapping to PRISSMM.
-
-### *R1.1.1b: Characteristics at dx (by site)
-
-The previous table, broken down by site.
-
-```{r, tab_r1_1b, include = T}
-dft_demo %>%
+gt_char <- dft_demo %>%
   select(-record_id) %>%
   gtsummary::tbl_summary(
     data = ., 
@@ -154,6 +157,21 @@ dft_demo %>%
     ),
     by = Institution
   ) 
+
+aacr_ss24_output_helper(
+  gt_char,
+  '01_characteristics.rds'
+)
+```
+
+**Comment:** "Mets among Stage IV" and "Stage at dx" could be combined into one classification scheme (just dividing the Stage IV category further).  The main disadvantage of doing this is deviating from clear mapping to PRISSMM.
+
+### *R1.1.1b: Characteristics at dx (by site)
+
+The previous table, broken down by site.
+
+```{r, tab_r1_1b, include = T}
+gt_char
 ```
 
 **Observation:** The only site with KPS scores available to convert to ECOG was MSK.  While this table only shows information near diagnosis, this is generally the case that MSK is the only site with subtantial KPS reporting.

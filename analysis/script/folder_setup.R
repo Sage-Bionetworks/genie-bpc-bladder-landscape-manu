@@ -14,6 +14,7 @@ dir_create('data', 'dmet', 'lines_of_therapy')
 dir_create('output', 'report')
 dir_create('output', 'fig')
 dir_create('output', 'other')
+dir_create('output', 'aacr_ss24', 'tfl_obj')
 
 fs::dir_create(here('data', 'survival'))
 fs::dir_create(here('data', 'survival', 'first_line_platinum'))
