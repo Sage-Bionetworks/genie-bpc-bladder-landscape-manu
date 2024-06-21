@@ -1,8 +1,8 @@
 # Create the co-occurence plots.  This is now a ton of code.
-
-
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
+
+out_dir <- here('data', 'genomic', 'gene_corr')
 
 
 # Load in the needed data - probably a bit overkill here but it's copied.
@@ -79,6 +79,9 @@ dft_inst_freq_all <- dft_inst_freq %>%
 
 
 
+#########################################
+# Build the whole-cohort co-occur plots #
+#########################################
 
 vec_co_occur_genes <- dft_inst_freq_all %>% 
   mutate(prop_tested = n_tested/max(n_tested)) %>%
@@ -111,7 +114,7 @@ dft_top_gene_bin %<>%
     )
   ) %>%
   # just ordering:
-  select(sample_id, any_of(vec_alt_most_common), everything())
+  select(sample_id, any_of(vec_co_occur_genes), everything())
 
 
 dft_gene_assoc <- test_fisher_co_occur(
@@ -144,6 +147,13 @@ gg_gene_assoc_sens <- plot_binary_association(
   theme(
     axis.text.x.top = element_text(angle = -20, hjust = 1)
   )
+
+readr::write_rds(
+  gg_gene_assoc_sens,
+  # "All samples" here refers to tested or not.  Implicit assumption that 
+  #    untested is negative.
+  file = here('data', 'genomic', 'gene_corr', 'gg_mat_fisher_all_samples.rds')
+)
 
 
 # Sensitivity analysis to the above:  Only people who had all these genes tested in their panels.
@@ -197,7 +207,7 @@ dft_top_gene_bin_main <- dft_cpt %>%
 dft_top_gene_bin_main %<>%
   mutate(
     across(
-      .cols = -sample_id,
+      .cols = -any_of('sample_id'),
       .fns = (function(x) {
         x <- as.integer(x)
         x <- if_else(is.na(x), 0L, x)
@@ -243,6 +253,11 @@ gg_gene_assoc_main <- plot_binary_association(
     plot.margin = unit(c(0.25, 1, 0.25, 0.25), "cm")
   )
 
+readr::write_rds(
+  gg_gene_assoc_main,
+  file = here(out_dir, "gg_mat_fisher_tested_for_all_genes.rds")
+)
+  
 
 # get the number of people in each cell from both plots for the sake of text explanation:
 help_cell_table_total <- function(dat) {
@@ -259,3 +274,90 @@ help_cell_table_total <- function(dat) {
 n_cell_gene_assoc_sens <- help_cell_table_total(dft_gene_assoc)
 n_cell_gene_assoc_main <- help_cell_table_total(dft_gene_assoc_main)
 
+
+
+#################################
+# Create plot comparing the two #
+#################################
+
+dft_gene_assoc_compare <-
+  bind_rows(
+    (dft_gene_assoc %>%
+       filter(p_value_adj < 0.05) %>%
+       select(var1, var2)),
+    (dft_gene_assoc_main %>%
+       filter(p_value_adj < 0.05) %>%
+       select(var1, var2))
+  ) %>%
+  distinct(.)
+
+dft_gene_assoc_compare <- dft_gene_assoc_main %>%
+  select(
+    var1, 
+    var2, 
+    main_or = odds_ratio,
+    main_pval= p_value_adj
+  ) %>%
+  left_join(
+    dft_gene_assoc_compare, .,
+    by = c('var1', 'var2')
+  )
+
+dft_gene_assoc_compare <- dft_gene_assoc %>%
+  select(
+    var1, 
+    var2, 
+    sensitivity_or = odds_ratio,
+    sensitivity_pval= p_value_adj
+  ) %>%
+  left_join(
+    dft_gene_assoc_compare,
+    .,
+    by = c('var1', 'var2')
+  )
+
+dft_gene_assoc_compare %<>%
+  pivot_longer(
+    cols = matches("main|sensitivity")
+  ) %>%
+  separate(name, sep = "_", into = c("analysis", "quantity")) %>%
+  pivot_wider(
+    names_from = 'quantity',
+    values_from = 'value'
+  ) %>%
+  mutate(pval_sig = if_else(pval < 0.05, T, F)) %>%
+  arrange(desc(var1), desc(var2)) %>%
+  mutate(lab = fct_inorder(paste0(var1, ":", var2)))
+
+gg_gene_assoc_compare <- ggplot(
+  dft_gene_assoc_compare,
+  aes(y = lab, x = or, color = analysis, shape = pval_sig)
+) + 
+  geom_vline(xintercept = 1, linetype = "12") + 
+  geom_point() + 
+  scale_x_continuous(
+    expand = expansion(mult = 0.01, add = 0),
+    trans = 'log10',
+    minor_breaks = log_tick_helper()
+  ) +
+  guides(x = guide_axis(minor.ticks = T)) +
+  scale_color_vibrant() + 
+  labs(
+    title = "Estimate comparison for gene association analyses",
+    subtitle = "Triangles = significant P value, Circles = not", 
+    x = "Odds ratio (log10 scale)"
+  ) + 
+  guides(shape = "none") + 
+  theme_bw() + 
+  theme(
+    axis.text.y = element_text(hjust = 0),
+    axis.title.y = element_blank(),
+    legend.position = "bottom",
+    plot.title.position = "plot"
+  )
+
+readr::write_rds(
+  gg_gene_assoc_compare,
+  # "Single matrix" because we're about to split into metastatic and primary,
+  #    which fans of math will know is two matrices.
+  here('data', 'genomic', 'gene_corr', 'gg_sens_compare_single_matrix.rds')

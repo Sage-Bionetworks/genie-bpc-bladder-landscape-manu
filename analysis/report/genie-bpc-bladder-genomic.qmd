@@ -802,6 +802,10 @@ ft_median_tmb
 
 ```{r load_co_occur_data}
 # Placeholder, save from separated script and put in here.
+dir_gene_corr <- here('data', 'genomic', 'gene_corr')
+gg_gene_assoc_main <- readr::read_rds(
+  here(dir_gene_corr, 'gg_mat_fisher_tested_for_all_genes.rds')
+)
 ```
 
 ### R2.2.4a Co-occurence
