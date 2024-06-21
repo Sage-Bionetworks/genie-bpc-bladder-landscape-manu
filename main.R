@@ -39,6 +39,7 @@ source(here('analysis', 'script', 'prepare_data_for_oncokb_annotate.R'))
 source(here('analysis', 'script', 'create_gene_panel_dat.R'))
 source(here('analysis', 'script', 'process_oncokb_output.R'))
 source(here('analysis', 'script', 'add_tmb_to_cpt.R'))
+source(here('analysis', 'script', 'plot_co_occur.R'))
 # need to set up quarto render still.
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-genomic.qmd'),

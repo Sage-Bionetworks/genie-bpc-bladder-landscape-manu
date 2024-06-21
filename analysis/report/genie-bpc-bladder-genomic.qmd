@@ -806,6 +806,12 @@ dir_gene_corr <- here('data', 'genomic', 'gene_corr')
 gg_gene_assoc_main <- readr::read_rds(
   here(dir_gene_corr, 'gg_mat_fisher_tested_for_all_genes.rds')
 )
+gg_gene_assoc_compare <- readr::read_rds(
+  here(dir_gene_corr, 'gg_sens_compare_single_matrix.rds')
+)
+list_gene_corr <- readr::read_rds(
+  here(dir_gene_corr, 'list_misc_gene_corr.rds')
+)
 ```
 
 ### R2.2.4a Co-occurence
@@ -817,7 +823,7 @@ To test the co-occurence, we limit our attention to genes which were:
 
 These are both arbitrary thresholds!  However, I relaxed 90% to 85% specifically to include TERT, a very common alteration.  10% was chosen to include a reasonable number of genes.
 
-Additionally, this main plot limits to samples which were tested for **all** the genes which meet this criteria.  This assumption is relaxed in an upcoming sensitivity analysis, but for not it effectively limits the samples included to `r n_cell_gene_assoc_main`, down from the `r n_cell_gene_assoc_sens` which are available.
+Additionally, this main plot limits to samples which were tested for **all** the genes which meet this criteria.  This assumption is relaxed in an upcoming sensitivity analysis, but for not it effectively limits the samples included to `r list_gene_corr[['n_cell_gene_assoc_main']]`, down from the `r list_gene_corr[['n_cell_gene_assoc_sens']]` which are available.
 
 The association (color) is determined by pairwise (one gene to one gene) Fisher's exact test over the samples.  Black dots represent significant results after correcting for multiple testing using the Benjamini-Hockberg (false discovery rate) method and a false discovery threshold of 5%.  The coloring is the same for any P value under an extreme threshold ($10^{-5}$) to avoid swamping the plot with results like RB1/TP53.
 
@@ -839,85 +845,6 @@ gg_gene_assoc_main
   
   
   
-  
-```{r}
-
-dft_gene_assoc_compare <-
-  bind_rows(
-    (dft_gene_assoc %>%
-       filter(p_value_adj < 0.05) %>%
-       select(var1, var2)),
-    (dft_gene_assoc_main %>%
-       filter(p_value_adj < 0.05) %>%
-       select(var1, var2))
-  ) %>%
-  distinct(.)
-
-dft_gene_assoc_compare <- dft_gene_assoc_main %>%
-  select(
-    var1, 
-    var2, 
-    main_or = odds_ratio,
-    main_pval= p_value_adj
-  ) %>%
-  left_join(
-    dft_gene_assoc_compare, .,
-    by = c('var1', 'var2')
-  )
-
-dft_gene_assoc_compare <- dft_gene_assoc %>%
-  select(
-    var1, 
-    var2, 
-    sensitivity_or = odds_ratio,
-    sensitivity_pval= p_value_adj
-  ) %>%
-  left_join(
-    dft_gene_assoc_compare,
-    .,
-    by = c('var1', 'var2')
-  )
-
-dft_gene_assoc_compare %<>%
-  pivot_longer(
-    cols = matches("main|sensitivity")
-  ) %>%
-  separate(name, sep = "_", into = c("analysis", "quantity")) %>%
-  pivot_wider(
-    names_from = 'quantity',
-    values_from = 'value'
-  ) %>%
-  mutate(pval_sig = if_else(pval < 0.05, T, F)) %>%
-  arrange(desc(var1), desc(var2)) %>%
-  mutate(lab = fct_inorder(paste0(var1, ":", var2)))
-
-gg_gene_assoc_compare <- ggplot(
-  dft_gene_assoc_compare,
-  aes(y = lab, x = or, color = analysis, shape = pval_sig)
-) + 
-  geom_vline(xintercept = 1, linetype = "12") + 
-  geom_point() + 
-  scale_x_continuous(
-    expand = expansion(mult = 0.01, add = 0),
-    trans = 'log10',
-    minor_breaks = log_tick_helper()
-  ) +
-  guides(x = guide_axis(minor.ticks = T)) +
-  scale_color_vibrant() + 
-  labs(
-    title = "Estimate comparison for gene association analyses",
-    subtitle = "Triangles = significant P value, Circles = not", 
-    x = "Odds ratio (log10 scale)"
-  ) + 
-  guides(shape = "none") + 
-  theme_bw() + 
-  theme(
-    axis.text.y = element_text(hjust = 0),
-    axis.title.y = element_blank(),
-    legend.position = "bottom",
-    plot.title.position = "plot"
-  )
-```
   
   
 ### R2.2.4b Co-occurence sensitivity
@@ -942,7 +869,7 @@ gg_gene_assoc_compare
 
 ```{r}
 dft_co_occur_gene_stat <- dft_alt %>% 
-  filter(hugo %in% vec_co_occur_genes) %>%
+  filter(hugo %in% list_gene_corr[['vec_co_occur_genes']]) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
   mutate(
     gain = mutation_effect %in% c("Loss-of-function", "Likely Loss-of-function"),

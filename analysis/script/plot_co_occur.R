@@ -4,7 +4,6 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packag
 
 out_dir <- here('data', 'genomic', 'gene_corr')
 
-
 # Load in the needed data - probably a bit overkill here but it's copied.
 read_wrap_clin <- function(p) {
   read_rds(file = here("data", 'cohort', p))
@@ -271,10 +270,14 @@ help_cell_table_total <- function(dat) {
   return(unique(n_s))
 }
 
-n_cell_gene_assoc_sens <- help_cell_table_total(dft_gene_assoc)
-n_cell_gene_assoc_main <- help_cell_table_total(dft_gene_assoc_main)
-
-
+gene_corr_misc <- list()
+gene_corr_misc$n_cell_gene_assoc_sens <- help_cell_table_total(dft_gene_assoc)
+gene_corr_misc$n_cell_gene_assoc_main <- help_cell_table_total(dft_gene_assoc_main)
+gene_corr_misc$vec_co_occur_genes <- vec_co_occur_genes
+readr::write_rds(
+  gene_corr_num,
+  here(out_dir, 'list_misc_gene_corr.rds')
+)
 
 #################################
 # Create plot comparing the two #
@@ -361,3 +364,4 @@ readr::write_rds(
   # "Single matrix" because we're about to split into metastatic and primary,
   #    which fans of math will know is two matrices.
   here('data', 'genomic', 'gene_corr', 'gg_sens_compare_single_matrix.rds')
+)
