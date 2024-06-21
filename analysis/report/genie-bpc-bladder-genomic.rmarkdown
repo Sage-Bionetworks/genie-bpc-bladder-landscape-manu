@@ -20,26 +20,21 @@ execute:
   fig-height: 5
 ---
 
-
 ```{r setup, include=FALSE}
 #| include = FALSE
 k_dpi <- 150
 pal_pt_hc <- c("#004488","#ddaa33", "#bb5566")
 ```
 
-
 ```{r}
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
 ```
 
-
-
 ```{r set_gtsummary_theme}
 theme_gtsummary_compact()
 theme_gtsummary_language("en", big.mark = "") # for now.
 ```
-
 
 ```{r, load_datasets}
 #| warning: true
@@ -94,7 +89,11 @@ dft_gp_all <- dft_assay_info %>%
 
 
 
+
+
 ## Panels and testing
+
+
 
 ```{r}
 # Table explaining the sample type coding we'll use:
@@ -168,9 +167,13 @@ n_gte_2_met <- dft_ngs_pp %>%
 ```
 
 
+
+
 ### R2.1.1 NGS tests per person
 
 This table uses the "Specimen Sample Type" variable from the Cancer Panel Test dataset.  We simplified this slightly (`coded_as`) to avoid small categories of tumors:
+
+
 
 ```{r}
 #| include: true 
@@ -180,13 +183,19 @@ dfp_sample_type_expl %>%
   theme_compact(.)
 ```
 
+
+
 The following plot shows histograms of the number of tests per participant.  This is repeated for all tests (Primary, Metastatic, Other) and separately for Primary and Metastatic tumors.
+
+
 
 ```{r, include = T, fig.height = 3}
 #| fig-height: 3
 
 gg_ngs_pp
 ```
+
+
 
 Observations:
 
@@ -195,6 +204,8 @@ Observations:
 - `r n_prim_met_pair` people have at least one primary and at least one metastatic tumor.
 - Only `r n_gte_2_prim` participants have more than one primary tumor test.
 - There are `r n_gte_2_met` with more than one metastatic test.
+
+
 
 
 
@@ -247,9 +258,6 @@ gg_panel_coverage_limited <- plot_assay_heatmap_color(
   
 ```
 
-
-
-
 ```{r}
 gg_gene_sample_hist <- ggplot(
   dft_gp_by_gene,
@@ -278,9 +286,13 @@ dft_gp_by_gene %>% filter(prop_samp_tested < 0.5) %>% nrow()
 
 ```
 
+
+
 ### R2.1.2 Gene NGS coverage over samples
 
 There are `r length(unique(dft_gp_by_gene$hugo))` genes covered by at least one panel in this dataset.  This is a histogram of genes, showing the number covering each decile of the proportion of samples (see example interpretation below).
+
+
 
 ```{r}
 #| include: true
@@ -288,6 +300,8 @@ There are `r length(unique(dft_gp_by_gene$hugo))` genes covered by at least one 
 
 gg_gene_sample_hist
 ```
+
+
 
 **Example interpretation:** The bar between 90% and 100% shows about 200 genes.  This means that approximately 200 genes were covered in at least 90% of panels.  Likewise, there were nearly 300 genes which were covered in under 10% of samples.
 
@@ -304,6 +318,8 @@ Observations:
 ### R2.1.3 Panel info
 
 This information is pulled directly from `assay_information.txt`, which is generally provided by the sites:
+
+
 
 ```{r}
 #| include: true
@@ -333,9 +349,13 @@ dft_assay_info %>%
 
 
 
+
+
 ### R2.1.3a Panel coverage
 
 Heatmap of gene panel coverage.
+
+
 
 ```{r}
 #| include: true
@@ -346,9 +366,13 @@ gg_panel_coverage
 # plotly::ggplotly(gg_panel_coverage)
 ```
 
+
+
 Observations:
 
 - Panels vary in size considerably (under 50 to over 500). 
+
+
 
 
 
@@ -391,7 +415,11 @@ gp_table_hux <- function(dat) {
   
 ```
 
+
+
 **Table Version**  The following table shows similar information to the above figure: the number of patients, samples and genes covered by each panel.  
+
+
 
 ```{r}
 #| include: true
@@ -399,7 +427,11 @@ gp_table_hux <- function(dat) {
 gp_table_hux(dfp_gp)
 ```
 
+
+
 *Note:* The patient percentages do not add to 100 (because each person can be tested with multiple panels).
+
+
 
 
 
@@ -417,16 +449,24 @@ genes_panel_limited <- dft_gp_all_limited %>%
 ```
 
 
+
+
 ### R2.1.3b Panel coverage, limited
 
 Same as R2.1.2a except we limit to genes with at least one alteration in the dataset, and genes that are covered in the panels used in at least 50% of samples.  This selection brings us down to `r genes_panel_limited` genes, from the original `r genes_panel`.
+
+
 
 ```{r, show_gene_table_limited}
 #| include: true
 gg_panel_coverage_limited
 ```
 
+
+
 **Table version** skipped since most columns are identical to what was shown above.
+
+
 
 
 
@@ -508,25 +548,21 @@ gg_alt_comb <- plot_grid(
 
 ```
 
+
+
 ## Alteration results
 
 ### R2.2.1 Number of alterations
 
 The plots below show the distribution of alterations (mutations, CNAs or fusions) over samples.  Samples with zero alterations are not plotted (log scale, overwhelms plot).
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 6 
 gg_alt_comb
 ```
-
-
-
-
-
-
-
-
 
 ```{r}
 dft_inst_freq <- dft_gt_any_alt %>%
@@ -609,6 +645,8 @@ gg_inst_alt_onco <- plot_alt_by_inst(
 )
 
 ```
+
+
   
 ### R2.2.2 Alteration frequency by institution
 
@@ -616,34 +654,13 @@ The following plot show the percentage of tested samples with an alteration of a
 
 This plot is limited to genes tested in more than 50% of samples and with a pan-institution alteration frequency of 5% or greater.
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 12
 gg_inst_alt
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ```{r}
 
@@ -687,9 +704,13 @@ prop_over_tmb_10 <- dft_cpt %>%
 
 ```
 
+
+
 ### R2.2.3a TMB distribution
 
 Tumor mutation burden is calculated in the simplest way possible:  The count of non-synonymous variants forms the numerator (count of mutations) and the denominator is the size of the exome region covered by the panel.  The following distribution is the result for Primary and Metastatic samples in our cohort:
+
+
 
 ```{r}
 #| include: true
@@ -697,10 +718,14 @@ Tumor mutation burden is calculated in the simplest way possible:  The count of 
 gg_tmb_dist
 ```
 
+
+
 **Notes:**
 
 - The naive TMB distribution of BPC data has tended to be surprisingly high in most other cohorts, and we will dig into this more below.  
 - I was surprised to find a higher median TMB for primary samples than metastatic samples.
+
+
 
 
 
@@ -737,6 +762,8 @@ gg_tmb_dist_panel <- plot_boxplot_tmb_color(
 
 ```
 
+
+
 ### R2.2.3b TMB by panel
 
 One reason for the high TMB values may be that most GENIE sites have tumor only sequencing.  Even with the efforts to remove germline mutations, some could slip through, artificially inflating the TMB of those samples.
@@ -744,15 +771,21 @@ One reason for the high TMB values may be that most GENIE sites have tumor only 
 Fortunately we have one large site which has all tumor-normal sequencing panels (MSK), and one additional panel from UHN (UHN-48-V1).  If the germline mutations are indeed the cause of the high TMB in our group, we would expect the MSK panels to have a more typical TMB distribution and the others to be relatively high.  This motivates the next plot, where we show TMB distributions by panel (panels with less than 5 samples were removed):
 
 
+
+
 ```{r}
 #| include: true
 gg_tmb_dist_panel
 ```
 
+
+
 **Notes:**
 
 - The panels with tumor-normal sequencing are MSK IMPACT (all) and UHN-48-V1.  
 - The MSK panels tend to have a bit lower median TMB than the others.  Compare this with the upcoming plot limiting to oncogenic alterations only.
+
+
 
 
 
@@ -782,23 +815,27 @@ ft_median_tmb <- dft_tmb %>%
 
 ```
 
+
+
 ### R2.2.3c TMB eCDF by site
 
 A second way to look at TMB by panels: showing the cumulative distribution function for each site.  All MSK panels are tumor-normal and all others are tumor-only.  The black line is at TMB = 10.
+
+
 
 ```{r, include = T}
 gg_tmb_ecdf_panel
 ```
 
+
+
 The following table states the median TMB by institution/sample_type (readable from the figure above):
+
+
 
 ```{r, include = T}
 ft_median_tmb
 ```
-
-
-
-
 
 ```{r load_co_occur_data}
 # Placeholder, save from separated script and put in here.
@@ -824,6 +861,8 @@ gg_compare_met_primary <- readr::read_rds(
 )
 ```
 
+
+
 ### R2.2.4a Co-occurence
 
 To test the co-occurence, we limit our attention to genes which were:
@@ -837,12 +876,16 @@ Additionally, this main plot limits to samples which were tested for **all** the
 
 The association (color) is determined by pairwise (one gene to one gene) Fisher's exact test over the samples.  Black dots represent significant results after correcting for multiple testing using the Benjamini-Hockberg (false discovery rate) method and a false discovery threshold of 5%.  The coloring is the same for any P value under an extreme threshold ($10^{-5}$) to avoid swamping the plot with results like RB1/TP53.
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 6
 #| fig-width: 7
 gg_gene_assoc_main
 ```
+
+
 
 **Notes**
 
@@ -863,11 +906,15 @@ As a sensitivity analysis we bring all the samples back in and repeat the analys
 
 The plots below show a line for each test which was significant in either the sensitivity or main analysis on the Odds ratio scale (odds ratio > 1 indicates co-occuring), and compares them using colored dots.  To me this plot is useful to check if any pair of dots is dramatically far away from each other on the same line.  Even more catastrophic would be if we had two results with different directions.
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 7
 gg_gene_assoc_compare
 ```
+
+
 
 **Notes**
 
@@ -884,6 +931,8 @@ This is similar to the above plots except we allow one sample (specifically the 
 
 The genes included are those from R2.2.4a: Oncogenically altered in at least 10% of samples, tested in at least 85% of people.
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 7
@@ -892,16 +941,17 @@ gg_gene_assoc_primary_only
 gg_gene_assoc_met_only
 ```
 
+
+
 We can also compare the odds ratios obtained from each category of samples.  Here we include any gene interaction which was significantly associated in either met or primray samples.
+
+
 
 ```{r}
 #| include: true
 #| fig-height: 7
 gg_compare_met_primary
 ```
-
-
-
 
 ```{r}
 dft_co_occur_gene_stat <- dft_alt %>% 
@@ -923,6 +973,8 @@ dft_co_occur_gene_stat <- dft_alt %>%
   )
 ```
 
+
+
 ### R2.2.4e ERBB2 and FGFR3
 
 It was noted in our April 2024 meeting that ERBB2 and FGFR3 are commonly thought to be mutually exclusive phenomena, while the plot above doesn't show an especially strong result here.  An immediately possible explanation is that it might only be the case with ERBB2 CNAs but not mutations (or vice versa). The following table states the proportion of oncogenic alterations (over all samples) for a gene which meet several criteria:
@@ -934,6 +986,8 @@ It was noted in our April 2024 meeting that ERBB2 and FGFR3 are commonly thought
 - `fusion`: porportion of alterations which are a gene fusion.
 
 The point of this is assessing whether splitting ERBB2 or FGFR3 into multiple features might be more appropriate.  For example, maybe ERBB2 CNAs and mutations are not similar at all and pooling them is inadvisable.  This can only be the case for a gene if there exists a sizable proportion of both CNAs and mutations.
+
+
 
 ```{r, include = T}
 dft_co_occur_gene_stat %>%
@@ -958,6 +1012,8 @@ dft_co_occur_gene_stat %>%
   )
 ```
 
+
+
 **Notes:**
 
 - Colors above just highlight cells far from 0 or 1 (which is essentially what we're looking for).
@@ -976,6 +1032,8 @@ dft_co_occur_gene_stat %>%
 Some descriptions of gene alterations are deferred until we discuss filtering with OncoKB.  Currently these include:
 
 - Variant allele frequency (VAF)
+
+
 
 
 
@@ -1021,6 +1079,8 @@ gg_onco_impact <- ggplot(
   )
 ```
 
+
+
 ## Post-processing options and effects
 
 In the last section we pointed out some instances of heterogeneity.  Here we explore the use of OncoKB's oncogenic annotation as a tool to homogenize the data through restriction.
@@ -1029,15 +1089,21 @@ In the last section we pointed out some instances of heterogeneity.  Here we exp
 
 We discussed annotating and potentially filtering the data using the "oncogenic" feature from oncoKB (https://www.oncokb.org/).  Looking at the alteration level (multiple alterations per sample are possible), the following plot shows the impact this would have on the raw data.
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 4
 gg_onco_impact
 ```
 
+
+
 Observations:
 
 - If we filtered our data to include only likely oncogenic or oncogenic alterations, we lose most of the mutations, and a smaller proportion or the fusions and CNAs.
+
+
 
 
 
@@ -1121,7 +1187,6 @@ gg_vaf_by_site_onco <- dft_vaf %>%
   )
 ```
 
-
 ```{r}
 gg_vaf_by_site_comb <- cowplot::plot_grid(
   gg_vaf_by_site,
@@ -1164,6 +1229,8 @@ ggsave(
 
 
 
+
+
 ### R2.3.2 OncoKB on VAF
 
 *Note:* Thanks to **Walid Chatila** at MSK for tremendously helpful conversations on this section, including helping me understand VAF.  Credit also to him for the design of the density plots below (for the Breast cancer cohort), which have been previously shared at GENIE meetings.
@@ -1179,12 +1246,16 @@ In GENIE the goal is to remove germline mutations for privacy reasons.  Therefor
 
 The following graphs show the VAF in our cohort with and without OncoKB filtering for oncogenic mutations:
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 3
 gg_vaf_all
 gg_vaf_onco
 ```
+
+
 
 Comments:
 
@@ -1194,20 +1265,13 @@ Comments:
 
 One final comment here: tumor-normal is almost the same as "panels from MSK" in our cohort (there is also one tumor-normal panel from UHN, representing about 3% of tumor-normal samples).  If we show this in a paper I think grouping by tumor-normal vs tumor-only is more principled and less controversial, but here are the same charts by institution for the sake of our group's exploration:
 
+
+
 ```{r}
 #| include: true
 #| fig-height: 3
 gg_vaf_by_site_comb
 ```
-
-
-
-
-
-
-
-
-
 
 ```{r}
 gg_tmb_dist_panel_onco <- plot_boxplot_tmb_color(
@@ -1228,11 +1292,15 @@ gg_tmb_ecdf_panel_onco <- plot_ecdf_by_panel(
 ```
 
 
+
+
 ### R2.3.3 OncoKB effect on TMB
 
 The TMB plots we showed before give us a sign which indicates a possible problem in our data: tumor-normal samples may have a systematically lower (and more typical) TMB than tumor-only samples.  We now investigate whether this persists when we limit our pool of alterations to **only oncogenic** mutations.  
 
 Here are the previous plots, using only oncogenic alterations in calculating TMB:
+
+
 
 ```{r, include = T}
 gg_tmb_dist_panel_onco
@@ -1241,6 +1309,8 @@ gg_tmb_dist_panel_onco
 ```{r, include = T}
 gg_tmb_ecdf_panel_onco
 ```
+
+
 
 **Notes:**
 
@@ -1280,4 +1350,5 @@ This section contains analyses that were too complex or involved or we just didn
   - Filters based on VAF
   - Alternative databases (Jackson Lab, MD anderson)
   - Alpha missense (only covers missense variants)
+
 

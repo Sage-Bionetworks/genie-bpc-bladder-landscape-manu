@@ -25,11 +25,17 @@ test_fisher_co_occur <- function(
       select(-.temp) 
   }
   
-  
   dat_top %<>%
     mutate(
-      # just matching the maftools syntax to start:
-      feat_lab = paste0(feature, " [", num_pos, "]")
+      # switching to percentage altered:
+      feat_lab = paste0(
+        feature, " [", 
+        num_pos, ", ",
+        formatC(
+          num_pos / nrow(dat) * 100,
+          format = 'f', digits = 0
+        ), "%]"
+      )
     )
   
   trimmed_dat <- dat %>%
