@@ -269,7 +269,7 @@ gg_gene_assoc_compare <- ggplot(
   aes(y = lab, x = or, color = analysis, shape = pval_sig)
 ) + 
   geom_vline(xintercept = 1, linetype = "12") + 
-  geom_point() + 
+  geom_point(size = 3, alpha = 0.9) + 
   scale_x_continuous(
     expand = expansion(mult = 0.01, add = 0),
     trans = 'log10',
@@ -476,7 +476,7 @@ gg_gene_met_primary_compare <- ggplot(
   aes(y = lab, x = or, color = analysis, shape = pval_sig)
 ) + 
   geom_vline(xintercept = 1, linetype = "12") + 
-  geom_point() +
+  geom_point(size = 3, alpha = 0.9) +
   scale_x_continuous(
     expand = expansion(mult = 0.1, add = 0),
     trans = 'log10',
