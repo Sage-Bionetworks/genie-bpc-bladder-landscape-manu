@@ -87,8 +87,6 @@ vec_co_occur_genes <- dft_inst_freq_all %>%
   filter(prop_alt_onco > 0.1, prop_tested > 0.85) %>%
   pull(hugo)
 
-
-
 dft_top_gene_bin <- dft_alt %>% 
   filter(hugo %in% vec_co_occur_genes) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
@@ -173,30 +171,14 @@ dft_alt_full_top_tested <- dft_alt %>%
 dft_top_gene_bin_main <- dft_alt_full_top_tested %>% 
   filter(hugo %in% vec_genes_in_co_occur_plot) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
-  group_by(sample_id, hugo) %>%
-  summarize(exists = n() >= 1, .groups = "drop") %>%
-  pivot_wider(
-    names_from = hugo,
-    values_from = exists
-  ) 
-
-# Add in rows where nothing at all was found:
-dft_top_gene_bin_main <- dft_cpt %>%
-  filter(cpt_seq_assay_id %in% vec_panels_with_all_top) %>%
-  select(sample_id = cpt_genie_sample_id) %>%
-  left_join(dft_top_gene_bin, by = "sample_id")
-
-dft_top_gene_bin_main %<>%
-  mutate(
-    across(
-      .cols = -any_of('sample_id'),
-      .fns = (function(x) {
-        x <- as.integer(x)
-        x <- if_else(is.na(x), 0L, x)
-      })
+  make_binary_gene_matrix(
+    dat_alt = .,
+    vec_sample = (
+      dft_cpt %>%
+        filter(cpt_seq_assay_id %in% vec_panels_with_all_top) %>%
+        pull(cpt_genie_sample_id)
     )
   ) %>%
-  # just ordering:
   select(sample_id, vec_genes_in_co_occur_plot)
 
 dft_gene_assoc_main <- test_fisher_co_occur(
