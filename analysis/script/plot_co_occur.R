@@ -87,32 +87,15 @@ vec_co_occur_genes <- dft_inst_freq_all %>%
   filter(prop_alt_onco > 0.1, prop_tested > 0.85) %>%
   pull(hugo)
 
+
+
 dft_top_gene_bin <- dft_alt %>% 
   filter(hugo %in% vec_co_occur_genes) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
-  group_by(sample_id, hugo) %>%
-  summarize(exists = n() >= 1, .groups = "drop") %>%
-  pivot_wider(
-    names_from = hugo,
-    values_from = exists
-  ) 
-
-# Add in rows where nothing at all was found:
-dft_top_gene_bin <- dft_cpt %>%
-  select(sample_id = cpt_genie_sample_id) %>%
-  left_join(dft_top_gene_bin, by = "sample_id")
-
-dft_top_gene_bin %<>%
-  mutate(
-    across(
-      .cols = -sample_id,
-      .fns = (function(x) {
-        x <- as.integer(x)
-        x <- if_else(is.na(x), 0L, x)
-      })
-    )
+  make_binary_gene_matrix(
+    dat_alt = .,
+    vec_sample = dft_cpt$cpt_genie_sample_id
   ) %>%
-  # just ordering:
   select(sample_id, any_of(vec_co_occur_genes), everything())
 
 
@@ -365,3 +348,32 @@ readr::write_rds(
   #    which fans of math will know is two matrices.
   here('data', 'genomic', 'gene_corr', 'gg_sens_compare_single_matrix.rds')
 )
+
+
+
+
+
+
+
+
+
+dft_sample_split_plot <- dft_cpt %>%
+  # we can't do much with other/na
+  filter(sample_type_simple_f %in% c('Primary tumor', 'Metastatic')) %>%
+  group_by(record_id, sample_type_simple_f) %>%
+  arrange(desc(dob_cpt_report_yrs)) %>%
+  slice(1) %>%
+  ungroup(.)
+
+# heuristic:  we're expecting about 10 people to contribute to both (n=2):
+# dft_sample_split_plot %>% count(record_id, sort = T) %>% print(n =50)
+
+vec_samp_prim <- dft_sample_split_plot %>%
+  filter(sample_type_simple_f %in% "Primary tumor") %>%
+  pull(cpt_genie_sample_id)
+
+vec_samp_met <- dft_sample_split_plot %>%
+  filter(sample_type_simple_f %in% "Metastatic") %>%
+  pull(cpt_genie_sample_id)
+
+  
