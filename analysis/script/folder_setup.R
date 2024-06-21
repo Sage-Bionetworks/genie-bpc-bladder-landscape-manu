@@ -9,6 +9,7 @@ dir_create(here("data-raw", "genomic"))
 dir_create('data', 'dmet')
 dir_create('data', 'drug_mapping')
 dir_create('data', 'dmet', 'lines_of_therapy')
+dir_create('data', 'genomic', 'gene_corr_plots')
 
 
 dir_create('output', 'report')
