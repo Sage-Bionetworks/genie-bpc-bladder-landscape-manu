@@ -152,17 +152,36 @@ dft_alt_full_top_tested <- dft_alt %>%
   ) %>%
   filter(cpt_seq_assay_id %in% vec_panels_with_all_top)
 
+
+
+
+
+# Update: We will also limit to one sample per person here.
+
+vec_sample_one_per_person <- dft_cpt %>%
+  filter(cpt_seq_assay_id %in% vec_panels_with_all_top) %>%
+  mutate(
+    .is_met = sample_type_simple_f %in% "Metastasis",
+    .is_primary = sample_type_simple_f %in% "Primary"
+  ) %>%
+  group_by(record_id) %>%
+  arrange(
+    # priority:  met first if they have it.  then by most recent.
+    desc(.is_met), desc(.is_primary), desc(dx_cpt_rep_days)
+  ) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  pull(cpt_genie_sample_id)
+  
+
 # Now we copy-paste the same code from above:
 dft_top_gene_bin_main <- dft_alt_full_top_tested %>% 
   filter(hugo %in% vec_genes_in_co_occur_plot) %>%
+  filter(sample_id %in% vec_sample_one_per_person) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
   make_binary_gene_matrix(
     dat_alt = .,
-    vec_sample = (
-      dft_cpt %>%
-        filter(cpt_seq_assay_id %in% vec_panels_with_all_top) %>%
-        pull(cpt_genie_sample_id)
-    )
+    vec_sample = vec_sample_one_per_person 
   ) %>%
   select(sample_id, vec_genes_in_co_occur_plot)
 
@@ -178,15 +197,21 @@ gg_gene_assoc_main <- plot_binary_association(
   show_p_sig = T,
   label_var = NULL,
   pval_var = "p_value_adj"
-)  + 
+)  +
   theme(
     axis.text.x.top = element_text(angle = 45, hjust = 0),
-    plot.margin = unit(c(0.25, 1, 0.25, 0.25), "cm")
-  )
+    plot.margin = unit(c(0.25, 1.5, 0.25, 0.25), "cm")
+  ) 
 
 readr::write_rds(
   gg_gene_assoc_main,
   file = here(out_dir, "gg_mat_fisher_tested_for_all_genes.rds")
+)
+
+ggsave(
+  gg_gene_assoc_main,
+  width = 6, height = 7,
+  filename = here('output', 'aacr_ss24', 'img', '02_gene_assoc.pdf')
 )
   
 
@@ -325,9 +350,6 @@ vec_samp_prim <- dft_sample_split_plot %>%
 vec_samp_met <- dft_sample_split_plot %>%
   filter(sample_type_simple_f %in% "Metastatic") %>%
   pull(cpt_genie_sample_id)
-
-
-
 
 
 

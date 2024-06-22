@@ -833,7 +833,7 @@ To test the co-occurence, we limit our attention to genes which were:
 
 These are both arbitrary thresholds!  However, I relaxed 90% to 85% specifically to include TERT, a very common alteration.  10% was chosen to include a reasonable number of genes in my subjective view.
 
-Additionally, this main plot limits to samples which were tested for **all** the genes which meet this criteria.  This assumption is relaxed in an upcoming sensitivity analysis, but for not it effectively limits the samples included to `r list_gene_corr[['n_cell_gene_assoc_main']]`, down from the `r list_gene_corr[['n_cell_gene_assoc_sens']]` which are available.
+Additionally, this main plot limits to samples which were tested for **all** the genes which meet this criteria, and to one sample per person (met samples are prioritized, then we go by most recent).  These assumption is relaxed in an upcoming sensitivity analysis, but it effectively limits the samples included to `r list_gene_corr[['n_cell_gene_assoc_main']]`, down from the `r list_gene_corr[['n_cell_gene_assoc_all']]` which are available (the bigger number is what goes into the sensitivity).
 
 The association (color) is determined by pairwise (one gene to one gene) Fisher's exact test over the samples.  Black dots represent significant results after correcting for multiple testing using the Benjamini-Hockberg (false discovery rate) method and a false discovery threshold of 5%.  The coloring is the same for any P value under an extreme threshold ($10^{-5}$) to avoid swamping the plot with results like RB1/TP53.
 
