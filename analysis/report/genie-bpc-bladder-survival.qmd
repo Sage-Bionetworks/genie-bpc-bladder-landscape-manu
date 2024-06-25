@@ -386,14 +386,12 @@ dft_lot <- readr::read_rds(
 ```{r}
 
 dir_fl_imm <- here('data', 'survival', 'first_line_immuno')
-dft_fl_io <- readr::write_rds(
-  dft_fl_io,
-  here(dir_out, 'surv_first_line_immuno.rds')
+dft_fl_io <- readr::read_rds(
+  here(dir_fl_imm, 'surv_first_line_immuno.rds')
 )
 
-readr::write_rds(
-  gg_os_fl_io,
-  here(dir_out, 'gg_os_fl_io.rds')
+readr::read_rds(
+  here(dir_fl_imm, 'gg_os_fl_io.rds')
 )
 ```
  
@@ -432,6 +430,63 @@ dft_lot %>%
 
 So there's good news, we probably have the numbers to do an analysis.  With only two immunotherapies used in large numbers, pembrolizumab and atezolizumab, we could choose to try an analysis as "Any immunotherapy vs. None" or separated into Pembro vs. no pembro, atezolizumab vs no atezolizumab.  Narrowing the question will help as we start considering confounders.
 
+**Update:** This was deemed not interesting to pursue further in a June 2023 meeting.
 
 
+
+
+
+
+```{r}
+dir_met_ddr <- here('data', 'survival', 'ddr_onco')
+gg_met_ddr <- readr::read_rds(
+  here(dir_met_ddr, 'gg_met_ddr.rds')
+)
+dft_alt_onco_ddr <- readr::read_rds(
+  here(dir_met_ddr, 'alt_onco_ddr.rds')
+)
+dft_surv_met_ddr <- readr::read_rds(
+  here(dir_met_ddr, 'met_ddr_surv.rds')
+)
+```
+
+
+```{r}
+dft_onco_ddr_before_entry <- dft_alt_onco_ddr %>% 
+  filter(dx_path_proc_cpt_yrs < dx_entry) 
+
+dft_onco_ddr_before_entry %<>%
+  count(alt_type, hugo, fusion_desc) %>%
+  mutate(
+    desc = case_when(
+      alt_type %in% "Mutation" ~ hugo,
+      alt_type %in% "Fusion" ~ fusion_desc,
+      T ~ NA_character_
+    )
+  ) %>%
+  select(alt_type, desc, n) %>%
+  arrange(alt_type, desc(n))
+```
+
+
+### R3.2.5 DDR pathway
+
+Similar to the HDR pathway results, except we use the DDR pathway genes.  Those genes include the following in our cohort:
+
+```{r}
+#| include: true
+dft_onco_hrd_before_entry %>%
+  flextable(.) %>%
+  autofit(.) %>% 
+  merge_v(j = 1) %>% 
+  flextable::valign(valign = "top") %>%
+  fix_border_issues(.)
+```
+
+The KM curves for groups with and without a DDR mutation before entering the risk set are:
+
+```{r}
+#| include: true
+gg_met_ddr
+```
 

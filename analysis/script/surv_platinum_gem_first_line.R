@@ -82,3 +82,22 @@ readr::write_rds(
   here('data', 'survival', 'first_line_platinum', 'gg_first_line_platinum.rds')
 )
 
+gg_first_line_platinum_aacr_ss24 <- plot_one_survfit(
+  dat = dft_cases,
+  surv_form = surv_obj_cases ~ regimen_drugs,
+  plot_title = "OS, from start of first line platinum-based chemotherapy",
+  plot_subtitle = "Adjusted for truncation assuming independence",
+  x_exp = 0.1,
+  x_breaks = 0:100
+) + 
+  add_quantile(y_value = 0.5, linetype = 81, alpha = 0.75) + 
+  coord_cartesian(xlim = c(0,5), ylim = c(0, 1.01))
+
+ggsave(
+  gg_first_line_platinum_aacr_ss24,
+  height = 5, width = 8,
+  filename = here(
+    'output', 'aacr_ss24', 'img',
+    '03_first_line_platinum.pdf'
+  )
+)

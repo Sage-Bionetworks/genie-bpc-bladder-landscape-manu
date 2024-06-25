@@ -7,6 +7,7 @@ plot_one_survfit <- function(
     plot_subtitle = NULL,
     x_title = "Years",
     risktable_prop = NULL,
+    risktable_font_size = 3.5,
     x_exp = 0.15,
     x_breaks = seq(0, 100, by = 2.5),
     force_color = NULL
@@ -30,7 +31,7 @@ plot_one_survfit <- function(
       ),
       hjust = 0,
       risktable_height = risktable_prop,
-      size = 3.5  # default
+      size = risktable_font_size  # default
     ) +
     scale_y_continuous(
       expand = c(0,0),

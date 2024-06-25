@@ -72,6 +72,27 @@ readr::write_rds(
   file = here(surv_desc_fp, 'os_dx_by_stage.rds')
 )
 
+gg_os_dx_stage_aacr_ss24 <- plot_one_survfit(
+  dat = dft_surv_dx,
+  surv_form = surv_obj_os_dx ~ stage_custom,
+  plot_title = "OS from diagnosis",
+  plot_subtitle = "Adjusted for (independent) delayed entry",
+  x_exp = 0.1,
+  x_breaks = seq(0, 5, by = 0.5),
+  risktable_prop = 0.3,
+  risktable_font_size = 3
+) + 
+  coord_cartesian(xlim = c(0, 5), ylim = c(0, 1.01))
+
+ggsave(
+  gg_os_dx_stage_aacr_ss24,
+  height = 5, width = 8,
+  filename = here(
+    'output', 'aacr_ss24', 'img',
+    '03_surv_dx_stage.pdf'
+  )
+)
+
 
 
 

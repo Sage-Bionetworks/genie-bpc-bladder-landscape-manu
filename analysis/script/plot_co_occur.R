@@ -210,7 +210,7 @@ readr::write_rds(
 
 ggsave(
   gg_gene_assoc_main,
-  width = 6, height = 7,
+  width = 6, height = 4,
   filename = here('output', 'aacr_ss24', 'img', '02_gene_assoc.pdf')
 )
   
