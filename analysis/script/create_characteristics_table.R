@@ -12,6 +12,10 @@ read_wrap <- function(p) {
 dft_pt <- read_wrap("pt")
 dft_ca_ind <- read_wrap("ca_ind")
 dft_med_onc <- read_wrap("med_onc")
+# We now need these to add in observations:
+dft_img <- read_wrap('img')
+dft_reg <- read_wrap('reg')
+
 
 
 dft_pt_baseline_sub <- dft_pt %>%
@@ -43,7 +47,8 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
   # simple preference of the physicians on terminology here:
   mutate(
     ca_type = case_when(
-      ca_type %in% "Renal Pelvis Cancer" ~ "Upper tract"
+      ca_type %in% "Renal Pelvis Cancer" ~ "Upper tract",
+      T ~ ca_type
     )
   ) %>%
   select(
@@ -163,7 +168,7 @@ dft_demo %<>%
 dft_demo %<>%
   relocate(
     `Age at dx (years)`, `Sex at birth`, 
-    .before = 1L
+    .after = record_id
   )
 
 readr::write_rds(
@@ -178,22 +183,68 @@ readr::write_rds(
 
 
 
-dft_demo %>%
+
+
+
+
+
+
+
+
+
+###
+# Everything below here can be deleted long term.
+###
+
+
+# Creating a super-custom version for the aacr summer summit.
+# This is overall a good use of time.
+dft_demo %<>%
   mutate(
-    
+    `Stage at dx` = forcats::fct_collapse(
+      `Stage at dx`,
+      `Stage I/II/III` = c("Stage I", "Stage II/III"),
+      `Stage IV` = c("Stage IV (no met)", 
+                     "Stage IV (met at dx)",
+                     "Stage IV (met unk.)")
+    )
+  )
 
+dft_demo %<>%
+  select(-`Year of birth`)
+  
+dft_count_all <- make_obs_count_df(
+  med_onc_dat = dft_med_onc,
+  img_dat = dft_img,
+  reg_dat = dft_reg,
+  ca_ind_dat = dft_ca_ind
+) %>%
+  select(
+    record_id,
+    `Regimens (n)` = n_regimens,
+    `Med. Onc. Notes (n)` = n_med_onc,
+    `Scans, any type (n)` = n_scan_total
+  )
 
+dft_demo %<>%
+  left_join(., dft_count_all, by = 'record_id')
 
-# While working on changes (comment out otherwise):
-dft_demo %>%
-  select(-record_id) %>%
+gt_demo_aacr_ss24 <- dft_demo %>%
+  select(-c(record_id,
+            `Cancer site (detailed)`, 
+            `First ECOG source`)) %>%
   gtsummary::tbl_summary(
     data = .,
     digits = list(
-      `Year of birth` ~ 0,
+      `Regimens (n)` ~ 0,
       `Year of diagnosis` ~ 0
     )
   ) 
 
-    
 
+gt_demo_aacr_ss24 %>%
+  as_flex_table() %>%
+  flextable::save_as_pptx(
+    .,
+    path = here('output', 'aacr_ss24', 'tfl_obj', 'char_table.pptx')
+  )
