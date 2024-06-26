@@ -153,6 +153,13 @@ dft_demo %<>%
   relocate(`Year of birth`, `Year of diagnosis`,
            .before = `Age at dx (years)`) 
 
+
+dft_demo %<>%
+  relocate(
+    `Age at dx (years)`, `Sex at birth`, 
+    .before = 1L
+  )
+
 readr::write_rds(
   dft_demo,
   here('data', 'cohort', 'formatted_characteristics.rds')
