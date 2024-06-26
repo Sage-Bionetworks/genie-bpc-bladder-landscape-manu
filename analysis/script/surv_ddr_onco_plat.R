@@ -1,5 +1,5 @@
 # Create analysis dataset for a specific case identified by our physicians:
-# Oncogenic DDR from first systemic therapy after metastasis is the main outcome.
+# Oncogenic DDR from first platinum therapy after metastasis is the main outcome.
 
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also load
@@ -45,8 +45,9 @@ dft_onco_ddr <- dft_cpt %>%
     by = c(sample_id = "cpt_genie_sample_id")
   )
 
-# Find the people who had a metastasis and took a systemic therapy afterward:
-dft_post_met_reg <- dft_reg %>%
+# Find the people who had a metastasis and took a platinum therapy after:
+dft_post_met_plat <- dft_reg %>%
+  filter(regimen_drugs %in% "Cisplatin, Gemcitabine Hydrochloride") %>%
   select(
     record_id, ca_seq, contains("regimen_number"),
     regimen_drugs,
@@ -62,15 +63,16 @@ dft_post_met_reg <- dft_reg %>%
   )
 
 
-dft_post_met_reg %<>%
+dft_post_met_plat %<>%
   # half day tolerance on the cutoff:
   filter(dx_reg_start_int_yrs >= (dx_dmet_yrs - 0.5 / 365.25))
 
-dft_first_post_met_t <- dft_post_met_reg %>%
+dft_first_post_met_t <- dft_post_met_plat %>%
   group_by(record_id, ca_seq) %>%
   summarize(dx_first_post_met_reg_yrs = min(dx_reg_start_int_yrs, na.rm = T), .groups = "drop")
 
-dft_first_cpt <- get_first_cpt(dft_ca_ind, dft_cpt) %>% rename(dx_first_cpt_rep_yrs = dx_cpt_rep_yrs)
+dft_first_cpt <- get_first_cpt(dft_ca_ind, dft_cpt) %>% 
+  rename(dx_first_cpt_rep_yrs = dx_cpt_rep_yrs)
 
 dft_onco_ddr <- left_join(
   dft_onco_ddr,
@@ -123,7 +125,7 @@ readr::write_rds(
 
 
 
-dft_met_ddr_surv <- dft_post_met_reg %>%
+dft_met_ddr_surv <- dft_post_met_plat %>%
   group_by(record_id, ca_seq) %>%
   arrange(dx_reg_start_int_yrs) %>%
   slice(1) %>%
@@ -201,7 +203,7 @@ dft_met_ddr_surv %<>%
 gg_os_fmr_ddr <- plot_one_survfit(
   dat = dft_met_ddr_surv,
   surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first metastatic regimen",
+  plot_title = "OS from GemCis in metastatic setting",
   plot_subtitle = "Adjusted for (independent) delayed entry"
 )
 
@@ -216,7 +218,7 @@ readr::write_rds(
 gg_os_fmr_ddr_aacr_ss24 <- plot_one_survfit(
   dat = dft_met_ddr_surv,
   surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first metastatic regimen",
+  plot_title = "OS from GemCis in metastatic setting",
   plot_subtitle = "Adjusted for (independent) delayed entry",
   x_breaks = seq(0, 100, by = 0.5)
 ) + 

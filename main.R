@@ -58,6 +58,7 @@ rmarkdown::render(
 ############
 source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 source(here('analysis', 'script', 'surv_platinum_gem_first_line.R'))
+source(here('analysis', 'script', 'surv_ddr_onco_plat.R'))
 # Render the qmd for survival.
 
 

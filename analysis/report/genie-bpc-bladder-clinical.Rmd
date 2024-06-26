@@ -790,6 +790,21 @@ dft_met_sum_simple_long <- dft_met_sum_simple %>%
   )
   
 
+dft_met_sum_simple_long %<>%
+  mutate(
+    met_loc = fct_recode(
+      met_loc,
+      `Brain/CNS` = "Brain",
+      `Head/Neck` = "Head+Neck"
+    )
+  ) %>%
+  group_by(met_loc) %>%
+  mutate(.total = sum(prop)) %>%
+  ungroup %>%
+  arrange(.total) %>%
+  mutate(met_loc = fct_inorder(met_loc))
+      
+
 gg_met_loc_bar <- ggplot(
   dat = dft_met_sum_simple_long,
   aes(x = prop, y = met_loc, fill = timing, group = timing) 
