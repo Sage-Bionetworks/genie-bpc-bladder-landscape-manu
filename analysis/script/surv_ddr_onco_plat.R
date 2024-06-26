@@ -123,13 +123,31 @@ readr::write_rds(
 )
 
 
+# Two Options here.
+
+# Option 1: To just select the first regimen, no matter how it falls in lines:
+# dft_met_ddr_surv <- dft_post_met_plat %>%
+#   group_by(record_id, ca_seq) %>%
+#   arrange(dx_reg_start_int_yrs) %>%
+#   slice(1) %>%
+#   ungroup(.)
+
+# Option 2: To select only first line therapy:
+dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
+dft_met_ddr_surv <- dft_lot %>%
+  filter(
+    line_therapy %in% 1,
+    regimen_drugs %in% "Cisplatin, Gemcitabine Hydrochloride"
+  ) %>%
+  select(record_id, ca_seq, regimen_number) %>%
+  left_join(
+    .,
+    dft_post_met_plat,
+    by = c('record_id', 'ca_seq', 'regimen_number')
+  )
 
 
-dft_met_ddr_surv <- dft_post_met_plat %>%
-  group_by(record_id, ca_seq) %>%
-  arrange(dx_reg_start_int_yrs) %>%
-  slice(1) %>%
-  ungroup(.)
+
 
 dft_met_ddr_surv <- left_join(
   dft_met_ddr_surv,
@@ -203,7 +221,7 @@ dft_met_ddr_surv %<>%
 gg_os_fmr_ddr <- plot_one_survfit(
   dat = dft_met_ddr_surv,
   surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from GemCis in metastatic setting",
+  plot_title = "OS from first line (metastatic) GemCis",
   plot_subtitle = "Adjusted for (independent) delayed entry"
 )
 
@@ -218,14 +236,11 @@ readr::write_rds(
 gg_os_fmr_ddr_aacr_ss24 <- plot_one_survfit(
   dat = dft_met_ddr_surv,
   surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from GemCis in metastatic setting",
+  plot_title = "OS from first line (metastatic) GemCis",
   plot_subtitle = "Adjusted for (independent) delayed entry",
   x_breaks = seq(0, 100, by = 0.5)
 ) + 
   coord_cartesian(xlim = c(0,5))
-
-pdf()
-dev.off()
 
 ggsave(
   plot = gg_os_fmr_ddr_aacr_ss24,
