@@ -40,6 +40,12 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
     ca_dx_how = format_ca_dx_how(ca_dx_how),
     ca_dmets_yn = format_ca_dmets_yn(ca_dmets_yn)
   ) %>%
+  # simple preference of the physicians on terminology here:
+  mutate(
+    ca_type = case_when(
+      ca_type %in% "Renal Pelvis Cancer" ~ "Upper tract"
+    )
+  ) %>%
   select(
     record_id,
     `Age at dx (years)` = dob_ca_dx_yrs,
@@ -164,6 +170,17 @@ readr::write_rds(
   dft_demo,
   here('data', 'cohort', 'formatted_characteristics.rds')
 )
+
+
+
+
+
+
+
+
+dft_demo %>%
+  mutate(
+    
 
 
 
