@@ -17,7 +17,7 @@ assign_lot <- function(
       mutate(
         is_repeat = lag(regimen_drugs) == regimen_drugs
       ) %>%
-      ungroup(.)
+      ungroup(.) 
   }
         
   dat_reg %<>%
