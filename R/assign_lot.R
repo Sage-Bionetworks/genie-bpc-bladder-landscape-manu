@@ -15,9 +15,12 @@ assign_lot <- function(
     dat_reg <- dat_reg %>%
       group_by(record_id, ca_seq) %>%
       mutate(
-        is_repeat = lag(regimen_drugs) == regimen_drugs
+        is_repeat = lag(regimen_drugs) == regimen_drugs,
+        is_repeat = if_else(is.na(is_repeat), F, is_repeat) # first row can't be a repeat.
       ) %>%
       ungroup(.) 
+    
+    dat_reg %<>% filter(!is_repeat)
   }
         
   dat_reg %<>%
