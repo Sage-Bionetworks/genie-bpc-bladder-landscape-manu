@@ -13,11 +13,8 @@ dft_cpt <- readr::read_rds(here('data', 'cohort', "cpt_aug.rds"))
 dft_alt <- readr::read_rds(here('data', 'genomic','alterations.rds'))
 
 
-
 # Find the people who had a metastasis:
 dft_met_timing <- get_dmet_time(dft_ca_ind)
-
-
 
 
 dft_onco_hrd <- dft_alt %>% 

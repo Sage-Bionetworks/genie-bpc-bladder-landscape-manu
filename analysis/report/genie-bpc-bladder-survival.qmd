@@ -475,7 +475,7 @@ Similar to the HDR pathway results, except we use the DDR pathway genes.  Those 
 
 ```{r}
 #| include: true
-dft_onco_hrd_before_entry %>%
+dft_onco_ddr_before_entry %>%
   flextable(.) %>%
   autofit(.) %>% 
   merge_v(j = 1) %>% 

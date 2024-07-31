@@ -17,7 +17,7 @@ dft_met_timing <- get_dmet_time(dft_ca_ind)
 
 
 
-# Provided by Mihal Sternschuss from a trial:
+# Provided by Michal Sternschuss from a trial:
 custom_ddr_list <- c(
   'ERCC2', 'ERCC5', 
   'BRCA1', 'BRCA2', 'RECQL4', 'RAD51C', 'ATM', 
