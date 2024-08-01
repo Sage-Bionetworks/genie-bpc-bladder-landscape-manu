@@ -1,4 +1,7 @@
-augment_med_onc_imputed_ecog <- function(med_onc_dat) {
+augment_med_onc_imputed_ecog <- function(
+    med_onc_dat,
+    add_numeric = F
+) {
   
   med_onc_dat <- med_onc_dat %>%
     mutate(
@@ -31,6 +34,13 @@ augment_med_onc_imputed_ecog <- function(med_onc_dat) {
       )
     ) %>%
     select(-c(md_ecog_exists, md_karn_exists))
+  
+  if (add_numeric) {
+    med_onc_dat %<>%
+      mutate(
+        md_ecog_imp_num = suppressWarnings(as.numeric(str_sub(md_ecog_imputed, 0, 1)))
+      )
+  }
   
   return(med_onc_dat)
   

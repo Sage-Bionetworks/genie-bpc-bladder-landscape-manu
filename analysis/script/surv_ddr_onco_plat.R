@@ -3,10 +3,15 @@
 
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also load
+
+dft_pt <- readr::read_rds(here('data', 'cohort', "pt.rds"))
 dft_ca_ind <- readr::read_rds(here('data', 'cohort', "ca_ind.rds"))
 dft_reg <- readr::read_rds(here('data', 'cohort', "reg.rds"))
 dft_cpt <- readr::read_rds(here('data', 'cohort', "cpt_aug.rds"))
 dft_alt <- readr::read_rds(here('data', 'genomic','alterations.rds'))
+dft_med_onc <- readr::read_rds(here('data', 'cohort', "med_onc.rds"))
+dft_med_onc %<>%
+  augment_med_onc_imputed_ecog(., add_numeric = T)
 
 dir_out <- here('data', 'survival', 'ddr_onco')
 
@@ -179,6 +184,76 @@ dft_met_ddr_surv %<>%
     fmr_fcpt_yrs = dx_first_cpt_rep_yrs - dx_reg_start_int_yrs
   )
 
+
+
+
+
+# Adding a few things here which might be valuable as confounders:
+rc_vec <- c('record_id', 'ca_seq') # space saver.
+dft_extra_var <- dft_met_timing %>%
+  mutate(de_novo_met = if_else(abs(dx_dmet_yrs) < 0.0005, T, F)) %>%
+  select(record_id, ca_seq, dx_dmet_yrs, de_novo_met)
+
+dft_extra_var <- dft_ca_ind %>% 
+  select(record_id, ca_seq, dob_ca_dx_yrs) %>%
+  left_join(dft_extra_var, ., by = rc_vec) 
+
+dft_reg_start_dob <- left_join(
+  select(dft_met_ddr_surv, record_id, ca_seq, dx_reg_start_int_yrs),
+  select(dft_ca_ind, record_id, ca_seq, dob_ca_dx_yrs),
+  by = rc_vec
+) %>%
+  mutate(
+    dob_reg_start_yrs = dx_reg_start_int_yrs + dob_ca_dx_yrs,
+    dob_reg_start_days = dob_reg_start_yrs * 365.25
+  ) %>%
+  select(record_id, dob_reg_start_days) 
+
+dft_extra_var %<>%
+  left_join(., dft_reg_start_dob, by = 'record_id')
+
+dft_latest_med_onc <- get_med_onc_by_timing(
+  dat_med_onc = dft_med_onc,
+  dat_cutoff = dft_reg_start_dob,
+  var_cutoff = "dob_reg_start_days",
+  remove_missing = T
+)
+
+dft_extra_var %<>%
+  left_join(
+    .,
+    select(dft_latest_med_onc, record_id, md_ecog_imp_num),
+    by = "record_id"
+  )
+
+dft_extra_var %<>%
+  left_join(
+    .,
+    select(dft_pt, record_id, institution, birth_year, race_ethnicity, naaccr_sex_code), # neat
+    by = "record_id"
+  )
+
+dft_extra_var %<>%
+  mutate(
+    race_ethnicity = fct_collapse(
+      .f = race_ethnicity,
+      `Non-Hsipanic Asian` = c(
+        "AAAPI (Asian, Asian American, and Pacific Islander)",
+        "Asian Indian or Pakistani NOS"
+      ),
+      `Race_Oth_Unk` = c("Other", "Unknown")
+    ),
+    female = if_else(naaccr_sex_code %in% "Female", T, F)
+  ) %>%
+  select(-naaccr_sex_code)
+
+dft_met_ddr_surv <- left_join(
+  dft_met_ddr_surv,
+  select(dft_extra_var, -dx_dmet_yrs), # no need to double up.
+  by = rc_vec
+)
+
+
 readr::write_rds(
   dft_met_ddr_surv,
   here(dir_out, 'met_ddr_surv.rds')
@@ -247,3 +322,100 @@ ggsave(
   height = 4, width = 7,
   filename = here('output', 'aacr_ss24', 'img', '03_met_ddr.pdf')
 )
+
+
+
+
+
+surv_obj_os_fmr <- with(
+  dft_met_ddr_surv,
+  Surv(
+    time = fmr_fcpt_yrs,
+    time2 = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  )
+)
+
+# Some survival code I should probaly move later on:
+coxph(
+  Surv(
+      time = fmr_fcpt_yrs,
+      time2 = tt_os_first_met_reg_yrs,
+      event = os_first_met_reg_status
+    ) ~ ddr_before_entry,
+  data = dft_met_ddr_surv
+)
+
+# Some problems with this as we have ECOG data that's about half missing.
+coxph(
+  Surv(
+    time = fmr_fcpt_yrs,
+    time2 = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  ) ~ ddr_before_entry + de_novo_met + md_ecog_imp_num + institution + race_ethnicity + female,
+  data = dft_met_ddr_surv
+)
+
+
+dft_met_ddr_surv_sub <- dft_met_ddr_surv %>%
+  select(
+    fmr_fcpt_yrs,
+    tt_os_first_met_reg_yrs,
+    os_first_met_reg_status,
+    ddr_before_entry,
+    de_novo_met, 
+    md_ecog_imp_num,
+    institution,
+    race_ethnicity,
+    female
+  ) %>%
+  fastDummies::dummy_cols(
+    select_columns = c("institution", "race_ethnicity"),
+    remove_selected_columns = T, 
+    remove_most_frequent_dummy = T
+  ) 
+
+# Obviously we want to replace this with imputation:
+dft_met_ddr_surv_sub <- dft_met_ddr_surv_sub[complete.cases(dft_met_ddr_surv_sub),] 
+
+
+cli_abort("Need to fix the UHN & race unknown issue")
+
+obj_surv <- with(
+  dft_met_ddr_surv_sub,
+  Surv(
+    time = fmr_fcpt_yrs,
+    time2 = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  )
+)
+
+fit <- cv.glmnet(
+  x = as.matrix(
+    select(dft_met_ddr_surv_sub,
+           -c(fmr_fcpt_yrs, tt_os_first_met_reg_yrs, os_first_met_reg_status)
+    )
+  ),
+  y = obj_surv,
+  family = "cox",
+  nfolds = 5,
+  type.measure = "C",
+  alpha = 0.5
+)
+
+coef(fit, s = "lambda.1se")
+
+# I think if we did a regularized fit with multiple imputation we'd be in better shape.
+
+
+
+
+
+
+
+
+
+
+
+
+
