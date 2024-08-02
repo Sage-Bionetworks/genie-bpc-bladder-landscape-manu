@@ -68,8 +68,6 @@ readr::write_rds(
   here(dir_out, "met_ddr_surv_mod_ready.rds")
 )
 
-# graph to share
-md.pattern(dft_met_ddr_surv_mod_ready, rotate.names = T)
 
 # Some problems with this as we have ECOG data that's about half missing.
 dft_cox_complete_cases <- coxph(
@@ -116,7 +114,7 @@ mids_surv <- mice(
   maxit = 5, m = 15, seed = 2341, 
   predictorMatrix = pm, 
   blocks = blocks,
-  print = FALSE
+  print = TRUE
 )
 
 gg_imp <- plot_gg_strip(mids_surv, var = "md_ecog_imp_num",
@@ -127,13 +125,15 @@ readr::write_rds(
   file = here(dir_out, 'cox_imputation_plot_md_ecog.rds')
 )
 
-# Put the multiply imputed datasets into a list column
-dat_res <- tibble(
-  dat = mice::complete(mids_surv, "all")
-)
+# # Put the multiply imputed datasets into a list column
+# dat_res <- tibble(
+#   dat = mice::complete(mids_surv, "all")
+# )
 
-
-# A bit of a pain here
+# A bit painful here:  You can't use the data argument, or the "~." syntax.
+#   If you do, then it will use the actual data without imputations.
+#   I think there would be a way to autogen the formula and feed it in,
+#   but it's only ~10 names so I'm going to type them out.
 mira_surv <- with(
   mids_surv,
   coxph(
@@ -141,65 +141,95 @@ mira_surv <- with(
       time = fmr_fcpt_yrs,
       time2 = tt_os_first_met_reg_yrs,
       event = os_first_met_reg_status
-    ) ~ .,
-    data = dft_met_ddr_surv_mod_ready
+    ) ~ ddr_before_entry + 
+      de_novo_met + 
+      age_reg_start + 
+      md_ecog_imp_num + 
+      female + 
+      institution_MSK + 
+      institution_UHN + 
+      institution_VICC + 
+      race_eth_Asian + 
+      race_eth_Black + 
+      race_eth_race_other_unk
   )
 )
 
-dft_cox_mult_imp <- pool(mira_surv) %>% summary(conf.int = T) %>% select(term, estimate, conf.low = `2.5 %`, conf.high = `97.5 %`, p.value) %>%
-  mutate(level = 0.95) #alpha level, since I blurred that out above.
-
 readr::write_rds(
-  dft_cox_mult_imp,
-  here(dir_out, "cox_tidy_mult_imp.rds")
+  x = mira_surv,
+  file = here(dir_out, 'cox_mult_imp_models.rds')
 )
+
+
+dft_cox_mult_imp <- pool(mira_surv) %>% 
+  summary(conf.int = T) %>% 
+  select(term, estimate, conf.low = `2.5 %`, conf.high = `97.5 %`, p.value) %>%
+  mutate(level = 0.95) #alpha level, since I blurred that out above.
 
 dft_cox_all_mods <- bind_rows(
   mutate(dft_cox_univariate, model = "uni"),
   mutate(dft_cox_complete_cases, model = "cc"),
   mutate(dft_cox_mult_imp, model = "mi")
-)
-
-  
-  
-
-
-
-
-
-
-
-
-
-# Obviously we want to replace this with imputation:
-dft_met_ddr_surv_sub <- dft_met_ddr_surv_sub[complete.cases(dft_met_ddr_surv_sub),] 
-
-
-cli_abort("Need to fix the UHN & race unknown issue")
-
-obj_surv <- with(
-  dft_met_ddr_surv_sub,
-  Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
+) %>%
+  mutate(
+    term = factor(term, levels = dft_cox_mult_imp$term)
   )
+
+readr::write_rds(
+  dft_cox_all_mods,
+  here(dir_out, "cox_tidy_all_models.rds")
 )
 
-fit <- cv.glmnet(
-  x = as.matrix(
-    select(dft_met_ddr_surv_sub,
-           -c(fmr_fcpt_yrs, tt_os_first_met_reg_yrs, os_first_met_reg_status)
-    )
-  ),
-  y = obj_surv,
-  family = "cox",
-  nfolds = 5,
-  type.measure = "C",
-  alpha = 0.5
-)
+ggplot(
+  dat = mutate(dft_cox_all_mods, term = fct_rev(term)),
+  aes(x = estimate, xmin = conf.low, xmax = conf.high, y = term,
+      color = model)
+) + 
+  geom_pointrange(position = position_dodge2(width = 0.5),
+                  shape = 124) + 
+  theme_bw() + 
+  scale_color_highcontrast() +
+  labs(y = NULL, 
+       x = "Cumulative hazard ratio")  
+  
 
-coef(fit, s = "lambda.1se")
 
-# I think if we did a regularized fit with multiple imputation we'd be in better shape.
 
+
+
+# Regularization on top of this seems harsh.
+
+# 
+# 
+# # Obviously we want to replace this with imputation:
+# dft_met_ddr_surv_sub <- dft_met_ddr_surv_sub[complete.cases(dft_met_ddr_surv_sub),] 
+# 
+# 
+# cli_abort("Need to fix the UHN & race unknown issue")
+# 
+# obj_surv <- with(
+#   dft_met_ddr_surv_sub,
+#   Surv(
+#     time = fmr_fcpt_yrs,
+#     time2 = tt_os_first_met_reg_yrs,
+#     event = os_first_met_reg_status
+#   )
+# )
+# 
+# fit <- cv.glmnet(
+#   x = as.matrix(
+#     select(dft_met_ddr_surv_sub,
+#            -c(fmr_fcpt_yrs, tt_os_first_met_reg_yrs, os_first_met_reg_status)
+#     )
+#   ),
+#   y = obj_surv,
+#   family = "cox",
+#   nfolds = 5,
+#   type.measure = "C",
+#   alpha = 0.5
+# )
+# 
+# coef(fit, s = "lambda.1se")
+# 
+# # I think if we did a regularized fit with multiple imputation we'd be in better shape.
+# 
