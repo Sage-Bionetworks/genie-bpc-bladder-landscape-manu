@@ -609,4 +609,30 @@ gg_cox_mod_compare_ddr
 
 
 
+```{r}
+dir_line23 <- here('data', 'survival', "line23")
+dft_agents_line23 <- readr::read_rds(
+  here(dir_line23, 'agent_23_line.rds')
+)
+gg_line23_legend <- readr::read_rds(
+  here(dir_line23, 'gg_line23_legend.rds')
+)
+gg_line23_taxane <- readr::read_rds(
+  here(dir_line23, 'gg_line23_taxane.rds')
+)
+```
+
+
+### R3.2.6 Second line therapies    
+
+In August 2024 we discussed looking at second line therapies, specifically with an interest in single agent therapies used in the second line setting, especially taxanes.  Here is a list of all second and third line regimens (limited to those with at least 5 in either line):
+
+```{r}
+#| include: true
+dft_agents_line23 %>%
+  flextable(.) %>% 
+  autofit(.)
+```
+
+
   

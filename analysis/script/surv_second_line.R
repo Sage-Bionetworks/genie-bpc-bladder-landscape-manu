@@ -101,10 +101,39 @@ gg_os_line23_taxane <- plot_one_survfit(
   x_breaks = 0:100
 )
 
-ggsave(
-  plot = gg_os_fmr_ddr_aacr_ss24,
-  height = 4, width = 7,
-  filename = here('output', 'aacr_ss24', 'img', '03_met_ddr.pdf')
+readr::write_rds(
+  x = gg_os_line23_taxane,
+  file = here(dir_output, 'gg_line23_taxane.rds')
+)
+
+# A little extra but I like the idea:
+gg_line23_legend <- tribble(
+  ~drug, ~line,
+  "Paclitaxel", "2L",
+  "Paclitaxel", "3L",
+  "Docetaxel", "2L",
+  "Docetaxel", "3L"
+) %>%
+  mutate(
+    drug = fct_inorder(drug),
+    line = fct_inorder(line),
+    dl = fct_inorder(paste0(drug, line))
+  ) %>%
+  mutate(dl = paste0(drug, line)) %>%
+  ggplot(., aes(x = line, y = drug, fill = dl)) +
+    geom_tile() + 
+    scale_fill_manual(
+      values = c("#ee99aa", "#994455", "#6699cc", "#004488")[c(1,3,2,4)]
+    ) + 
+  theme_void() + 
+  theme(
+    legend.position = "none",
+    axis.text = element_text(size = 15)
+  )
+  
+readr::write_rds(
+  x = gg_line23_legend,
+  file = here(dir_output, 'gg_line23_legend.rds')
 )
 
 
