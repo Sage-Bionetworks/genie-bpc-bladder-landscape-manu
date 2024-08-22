@@ -5,7 +5,7 @@
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
-dir_output <- here('data', 'survival', 'second_line')
+dir_output <- here('data', 'survival', 'line23')
 
 dft_ca_ind <- readr::read_rds(here('data', 'cohort', "ca_ind.rds"))
 dft_reg <- readr::read_rds(here('data', 'cohort', "reg.rds"))
@@ -64,7 +64,7 @@ dft_line23_tax %<>%
 
 readr::write_rds(
   x = dft_line23_tax,
-  file = here('data', 'survival', 'second_line', 'line23_tax_surv_data.rds')
+  file = here(dir_output, 'line23_tax_surv_data.rds')
 )
 
 
@@ -95,10 +95,11 @@ surv_obj_os_line23_taxane <- with(
 gg_os_line23_taxane <- plot_one_survfit(
   dat = dft_line23_tax,
   surv_form = surv_obj_os_line23_taxane ~ reg_line,
-  plot_title = "OS from first line (metastatic) GemCis",
+  plot_title = "OS from 2L/3L taxane",
   plot_subtitle = "Adjusted for (independent) delayed entry",
   pal = c("#ee99aa", "#994455", "#6699cc", "#004488"),
-  x_breaks = 0:100
+  x_breaks = seq(0, 100, by = 0.5),
+  risktable_prop = 0.4
 )
 
 readr::write_rds(
@@ -128,7 +129,7 @@ gg_line23_legend <- tribble(
   theme_void() + 
   theme(
     legend.position = "none",
-    axis.text = element_text(size = 15)
+    axis.text = element_text(size = 11)
   )
   
 readr::write_rds(

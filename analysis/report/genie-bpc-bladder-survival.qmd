@@ -623,7 +623,7 @@ gg_line23_taxane <- readr::read_rds(
 ```
 
 
-### R3.2.6 Second line therapies    
+### *R3.2.6 Second line therapies    
 
 In August 2024 we discussed looking at second line therapies, specifically with an interest in single agent therapies used in the second line setting, especially taxanes.  Here is a list of all second and third line regimens (limited to those with at least 5 in either line):
 
@@ -633,6 +633,29 @@ dft_agents_line23 %>%
   flextable(.) %>% 
   autofit(.)
 ```
+Each person can only have one 2L or 3L regimen, so this is also a count of people.
+
+To me it seems reasonable to look at 2L/3L taxanes based on the numbers we have.  I'm not totally clear about what question we want to pose, so we'll start with an exploratory plot:
+
+```{r}
+#| include: true
+#| fig-height: 0.75
+plot_grid(
+    NULL, gg_line23_legend, NULL,
+    nrow = 1,
+    rel_widths = c(0.4, 0.3, 0.4)
+)
+```
 
 
-  
+```{r}
+#| include: true
+#| fig-height: 6
+gg_line23_taxane
+```
+
+**Notes:**
+
+- There appears to be very little difference between the two taxanes for third line therapy.  For second line therapy there could be something worth exploring.
+- This plot also may be informative to compare to other cohorts without posing any comparative questions.
+- Little censoring in this cohort, almost everyone is observed until death.
