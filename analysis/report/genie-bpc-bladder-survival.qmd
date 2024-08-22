@@ -145,10 +145,16 @@ dft_trunc_test %>%
 
 ## Specific questions
 
-
 ```{r}
+dir_surv_plat <- here('data', 'survival', 'first_line_platinum')
 gg_first_line_platinum <- readr::read_rds(
-  here('data', 'survival', 'first_line_platinum', 'gg_first_line_platinum.rds')
+  here(dir_surv_plat, 'gg_first_line_platinum.rds')
+)
+gg_md_ecog_imp_plat <- readr::read_rds(
+  here(dir_surv_plat, "gg_cox_imputation_md_ecog.rds")
+)
+gg_cox_mod_compare_plat <- readr::read_rds(
+  here(dir_surv_plat, "gg_cox_mod_compare.rds")
 )
 ```
 
@@ -158,14 +164,65 @@ The first exploration we discussed was stating overall survival for first line C
 
 ```{r}
 #| include: true
-
 gg_first_line_platinum
 ```
 
 **Notes:**
 
-- If we sharpen our question more we can certainly start to add coufounders or do statistical testing.
-- Previous GENIE papers have looked at estimates like these to compare to other studies.  These median KM estimates are quite similar to the first study I found addressing this question: https://pubmed.ncbi.nlm.nih.gov/34535437/
+- Previous GENIE papers have looked at estimates like these to compare to other studies.  These median KM estimates are quite similar to the first study that comes up with 12 seconds of Google researh on the topic: https://pubmed.ncbi.nlm.nih.gov/34535437/
+
+
+
+
+
+#### Models
+
+Unsatisfying, we cannot really answer the question "Is there a survival benefit to carboplatin?" from the analysis above.  This follows because people who take carboplatin may be systematically different from those woh take cisplatin.  We talked especially about the possibility that people who start on cisplatin may be more frail than those who start with carboplatin.
+
+This motivates us to model, and include some potential confounders.  Below I will present three models (all are adjusted for left truncation and right censoring):
+
+1. **Univariate**.  A simple Cox model with one covariate: An indicator for carboplatin use.  Because we have only CarboGem and CisGem regimens in our analysis, this means the reference level is Cisplatin.
+2. **Complete Case** A model with the following terms for covariates:
+  - `carboplatin` - same as above.
+  - `bin_prev_plat` - A binary indicator for previous exposure platinum chemotherapy (that is, before the first line regimen, which comes from the metastatic state).
+  - `bin_prev_nonplat` - A binary indicator for previous exposure to any drug other than platinum chemotherapy.
+  - `md_ecog_imp_num` - The last ECOG reported in a medical oncologist note before the person enters the risk set.
+  - `age_reg_start` - Age when they start their first line chemo regimen.
+  - `de_novo_met` - Was this person diagnosed in the metastatic state or some later time?
+  - `female` - An indicator for female sex.
+  - `institution_*` - Indicator for the treating institution.  Reference is MSK (most common).
+  - `race_eth`*` - Indicators for race.
+  - **These factors are up for debate.** I just made a list of things that seemed like plausible causal factors on both choice of platinum chemo (cisplatin vs carbo) and survival.  Let me know if there are others things you (as a clinician) think about when deciding on treatments.
+3. **Multiple imputation** The same as the complete case model, except that we use multiple imputation so that all participants can be included.  In our model the missing data comes from ECOG scores.  These are (in my opinion) highly valuable, but only about 70% of people have an ECOG score reported before the index time.
+  - Our imputation model uses the other variables above (age, sex, etc.) to fill in ECOG scores for people with missing data.  The method is a variant of *predictive mean matching (called MIDAS)* which collects a pool of similar 'donors' (people who are close in age, sex, etc) and uses them to impute ECOG scores.  This is repeated a few times and pooled to factor in our uncertainty here.
+  - The payoff for the extra complexity is we **get to include everyone** in the model, while still taking advantage of ECOG scores as a predictor.  
+  
+The following figure shows what the imputed values look like.  Each dot is one person.  Iteration 0 is the data as-is which has many missing values (not shown).  Each iteration after that is one imputed dataset.  The red dots are imputed values and tbe blue ones are the same non-missing observations.
+  
+```{r}
+#| include: true
+#| fig-height: 3
+gg_md_ecog_imp_plat
+```
+
+*Comments:*
+
+- The distributions of the dots are similar with the imputed and non-imputed values - and we're not imputing anything out of the range of our data.  That's what I'm looking for with diagnostic plots like this.
+- Other imputation methods like using regression trees or PMM with a fixed donor pool gave similar results.
+
+The next plot shows the model results from each of the three models above.  A log(HR) less than zero indicates a lower hazard of death, and a log(HR) above zero indicates an increased risk of death.
+
+```{r}
+#| include: true
+#| fig.height: 5
+gg_cox_mod_compare_plat
+```
+
+- Those who received carboplatin in this setting have a significantly higher hazard of death than those who received cisplatin, even when adjusting for relevant confounders.  We're closer to answering our question and confirming external results.
+- Some of our other hypotheses on strong effects have support as well:  For example, those with previous exposure to platinum chemo have a higher hazard of death, as did female participants and those with de novo metastatic disease.  ECOG scores did not have as strong an effect (though this doesn't mean we don't need to include or impute them).
+- One thing to be clear about:  The site numbers are generally not significant, and certainly don't represent the quality of care given at these institutions.  The reason to include these terms is more adjusting for residual confounding we can't model (SES, for example).
+
+
 
 
 
@@ -469,7 +526,7 @@ dft_onco_ddr_before_entry %<>%
 ```
 
 
-### R3.2.5 DDR pathway
+### *R3.2.5 DDR pathway
 
 Similar to the HDR pathway results, except we use the DDR pathway genes.  Those genes include the following in our cohort:
 
@@ -490,3 +547,66 @@ The KM curves for groups with and without a DDR mutation before entering the ris
 gg_met_ddr
 ```
 
+
+```{r}
+gg_md_ecog_imp_ddr <- readr::read_rds(
+  here(dir_met_ddr, "gg_cox_imputation_md_ecog.rds")
+)
+gg_cox_mod_compare_ddr <- readr::read_rds(
+  here(dir_met_ddr, "gg_cox_mod_compare.rds")
+)
+```
+
+*Note:* We discussed whether there were enough people with second line GemCis to consider including in this model.  There are 10 people who had second line GemCis in this cohort, and only one of them had an oncogenic DDR mutation.  To me this doesn't seem worth it - adding confusion to the interpretation for that small boost in people.
+
+#### Models
+
+The above KM plots could be confounded.  For example, maybe it's the case that people who have a DDR mutation tend to be less sick than those who do not.  Or possibly it occurs in a group of participants who do tend to do better on Cisplatin (based on race or age, for example).  We are modeling to further investigate and see if the effect magnitude or direction changes when we add in potential confounders (some of these may be precision variables, which is fine).
+
+These are the three models I ran:
+
+- **Univariate** A cox model with only one factor:  A binary variable indicating presence or abscence of DDR mutations at the time the person enters the risk set (starts a metastatic regimen and has had their first genomic test).
+- **Complete cases** A model with factors for:
+  - DDR alterations (oncogenic) - same as above.
+  - Age at regimen start.
+  - Sex (reference: male).
+  - Race (reference: White).  Ethnicity is not directly modelled so that we can include UHN's data more easily.
+  - Institution (reference: DFCI).
+  - Last ECOG score - most recent ECOG score (or converted Karnofsky score) from the medical oncologist note data.
+- **Multiple imputation** The complete case model above removes any person with incomplete data.  In our model the missing data comes from ECOG scores.  These are (in my opinion) highly valuable, but only about 60% of people have an ECOG score reported before the index time.
+  - Our imputation model uses the other variables above (age, sex, etc.) to fill in ECOG scores for people with missing data.  The method is a variant of *predictive mean matching (MIDAS)* which collects a pool of similar 'donors' (people who are close in age, sex, etc) and borrows ECOG scores from them.
+  - The payoff for the extra complexity is we get to include everyone in the model, while still taking advantage of ECOG scores as a predictor.
+  
+The following figure shows what the imputed values look like.  Each dot is one person.  Iteration 0 is the data as-is which has many missing values (not shown).  Each iteration after that is one imputed dataset.  The red dots are imputed values and tbe blue ones are the same non-missing observations.
+  
+```{r}
+#| include: true
+#| fig-height: 3
+gg_md_ecog_imp_ddr
+```
+
+*Comments:*
+
+- The distributions of these dots should be reassuring - the imputed values have about the same proportions as the existing values.
+- Other methods like using regression trees or PMM with a fixed donor pool gave similar results.
+
+The next plot shows the model results from each of the three models above.  A log(HR) less than zero indicates a lower hazard of death, and a log(HR) above zero indicates an increased risk of death.
+
+```{r}
+#| include: true
+#| fig.height: 5
+gg_cox_mod_compare_ddr
+```
+
+*Comments:*
+
+- The effect for oncogenic DDR mutations remains similar in direction an magnitude with what we saw above:  These people tend to do better than those without an alteration.
+- The features are not all on the same scale.  For example, age has a very small confidence bound because it is on the scale of 0-100, rather than 0/1 like most features.
+- Some features change dramatically (e.g. unknown/other race and ethnicity) with the multiple imputation model compared to the complete case model.  This makes sense to me: people with unknown/other race or ethnicity tend to have missing ECOG scores, and were excluded from the complete case model.
+- Readers of our paper may benefit from seeing at least one model with multiple imputation, since analysis of complete cases is so common in non-RWD work.  Missing data methods are nearly required to leverage ECOG scores. 
+
+
+
+
+
+  

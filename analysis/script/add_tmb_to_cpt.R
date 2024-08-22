@@ -36,7 +36,8 @@ dft_bed <- readr::read_tsv(
 dft_bed %<>% 
   filter(SEQ_ASSAY_ID %in% vec_relevant_panel)
 
-
+dft_bed %<>% filter(includeInPanel)
+# For some reason ^ does not change the result, which is odd.
 
 
 
@@ -205,6 +206,8 @@ dft_cpt_addon %<>%
     tmb_Mb_onco = numberMutations_onco / (bpsExon / 10^6)
   )
 
+# set.seed(3)
+# dft_cpt_addon %>% filter(str_detect(SEQ_ASSAY_ID, "UHN-555")) %>% dplyr::select(SAMPLE_ID, tidyselect::contains("tmb_Mb")) %>% sample_n(10)
 
 
 

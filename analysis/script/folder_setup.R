@@ -24,5 +24,6 @@ fs::dir_create(here('data', 'survival', 'hrd_onco'))
 fs::dir_create(here('data', 'survival', 'ercc3_plat'))
 fs::dir_create(here('data', 'survival', 'first_line_immuno'))
 fs::dir_create(here('data', 'survival', 'ddr_onco'))
+fs::dir_create(here('data', 'survival', 'second_line'))
 
 

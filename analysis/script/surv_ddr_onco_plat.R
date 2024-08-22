@@ -189,14 +189,12 @@ dft_met_ddr_surv %<>%
 
 
 # Adding a few things here which might be valuable as confounders:
-rc_vec <- c('record_id', 'ca_seq') # space saver.
-dft_extra_var <- dft_met_timing %>%
-  mutate(de_novo_met = if_else(abs(dx_dmet_yrs) < 0.0005, T, F)) %>%
-  select(record_id, ca_seq, dx_dmet_yrs, de_novo_met)
-
-dft_extra_var <- dft_ca_ind %>% 
-  select(record_id, ca_seq, dob_ca_dx_yrs) %>%
-  left_join(dft_extra_var, ., by = rc_vec) 
+dft_extra_var <- readr::read_rds(
+  here('data', 'cohort', 'time_invariant_model_factors.rds')
+) %>%
+  filter(is.na(dx_dmet_yrs)) %>%
+  select(record_id, ca_seq, dx_dmet_yrs, dob_ca_dx_yrs, institution,
+         birth_year, race_eth, female)
 
 dft_reg_start_dob <- left_join(
   select(dft_met_ddr_surv, record_id, ca_seq, dx_reg_start_int_yrs),
@@ -226,28 +224,6 @@ dft_extra_var %<>%
     by = "record_id"
   )
 
-dft_extra_var %<>%
-  left_join(
-    .,
-    select(dft_pt, record_id, institution, birth_year, naaccr_race_code_primary, naaccr_ethnicity_code, naaccr_sex_code),
-    by = "record_id"
-  ) 
-
-dft_extra_var %<>%
-  mutate(
-    race_eth = case_when(
-      # don't think we can support this AND a term for UHN/MSK.
-      # naaccr_ethnicity_code %in% c("Puerto Rican", "Spanish NOS or Hispanic NOS or Latino NOS") ~ "Hispanic",
-      naaccr_race_code_primary %in% c("White") ~ "White",
-      naaccr_race_code_primary %in% c("Black") ~ "Black",
-      
-      naaccr_race_code_primary %in% c("Chinese", "Other Asian", "Asian Indian or Pakistani NOS") ~ "Asian",
-      T ~ "race_other_unk"
-    ),
-    female = if_else(naaccr_sex_code %in% "Female", T, F)
-  ) %>%
-  select(-naaccr_sex_code)
-
 dft_met_ddr_surv <- left_join(
   dft_met_ddr_surv,
   select(dft_extra_var, -dx_dmet_yrs), # no need to double up.
@@ -267,7 +243,7 @@ readr::write_rds(
 
 
 
-# Create the survival plot
+# Create the basic survival plots
 
 dft_met_ddr_surv %<>% 
   remove_trunc_gte_event(
@@ -332,7 +308,26 @@ ggsave(
 
 
 
-
+# Had a question later on about how many people have gemcis as second line therapy.
+# We can count this up:
+dft_met_ddr_surv_2nd_line <- dft_lot %>%
+  filter(
+    line_therapy %in% 2, # only chage here - rest is copy-paste
+    regimen_drugs %in% "Cisplatin, Gemcitabine Hydrochloride"
+  ) %>%
+  select(record_id, ca_seq, regimen_number) %>%
+  left_join(
+    .,
+    dft_post_met_plat,
+    by = c('record_id', 'ca_seq', 'regimen_number')
+  ) %>%
+  left_join(
+    .,
+    dft_onco_ddr_flags,
+    by = c("record_id", "ca_seq")
+  ) 
+dft_met_ddr_surv_2nd_line %>% count(ddr_before_pm_reg) # NA -> false in later step.
+# I'm just going to add this as a manual note rather than saving this dataset.
 
 
 

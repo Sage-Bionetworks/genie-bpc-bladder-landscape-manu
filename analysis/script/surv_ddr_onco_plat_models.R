@@ -8,6 +8,8 @@ dft_met_ddr_surv <- readr::read_rds(
 dir_out <- here('data', 'survival', 'ddr_onco')
 
 
+# Just for clarity:
+dft_met_ddr_surv %<>% rename(ddr_onco_alt = ddr_before_entry)
 
 
 surv_obj_os_fmr <- with(
@@ -25,16 +27,11 @@ dft_cox_univariate <- coxph(
     time = fmr_fcpt_yrs,
     time2 = tt_os_first_met_reg_yrs,
     event = os_first_met_reg_status
-  ) ~ ddr_before_entry,
+  ) ~ ddr_onco_alt,
   data = dft_met_ddr_surv
 ) %>%
   broom::tidy(., conf.int = T)
-
-readr::write_rds(
-  dft_cox_univariate,
-  here(dir_out, "cox_tidy_univariate.rds")
-)
-
+# This gets save below in a big object with the other models.
 
 
 
@@ -48,7 +45,7 @@ dft_met_ddr_surv_mod_ready <- dft_met_ddr_surv %>%
     fmr_fcpt_yrs,
     tt_os_first_met_reg_yrs,
     os_first_met_reg_status,
-    ddr_before_entry,
+    ddr_onco_alt,
     de_novo_met,
     dob_reg_start_yrs,
     md_ecog_imp_num,
@@ -79,11 +76,7 @@ dft_cox_complete_cases <- coxph(
   data = dft_met_ddr_surv_mod_ready
 ) %>%
   broom::tidy(., conf.int = T) 
-
-readr::write_rds(
-  dft_cox_complete_cases,
-  here(dir_out, "cox_tidy_comp_cases.rds")
-)
+# This gets saved below along with the other models.
 
 
 
@@ -109,20 +102,29 @@ pm <- make.predictorMatrix(
     blocks = blocks
   )
 
+# If you treat ECOG scores as an ordinal variable, which is probably
+#   more correct, you get 'polr' as the default method.  I this seems
+#   fine for imputation, but it doesn't make a ton of sense to me for
+#   the model (3 terms).
+
 mids_surv <- mice(
   data = dft_met_ddr_surv_mod_ready, 
   maxit = 5, m = 15, seed = 2341, 
   predictorMatrix = pm, 
   blocks = blocks,
-  print = TRUE
+  print = FALSE,
+  # tended to be pretty similar to predictive mean matching:
+  # method = 'cart'
+  method = 'midastouch' # makes sense to me, gives similar results.
 )
 
 gg_imp <- plot_gg_strip(mids_surv, var = "md_ecog_imp_num",
-                        pt_size = 1)
+                        pt_size = 1) + 
+  labs(y = "Last observed ECOG")
 
 readr::write_rds(
   x = gg_imp,
-  file = here(dir_out, 'cox_imputation_plot_md_ecog.rds')
+  file = here(dir_out, 'gg_cox_imputation_md_ecog.rds')
 )
 
 # # Put the multiply imputed datasets into a list column
@@ -141,7 +143,7 @@ mira_surv <- with(
       time = fmr_fcpt_yrs,
       time2 = tt_os_first_met_reg_yrs,
       event = os_first_met_reg_status
-    ) ~ ddr_before_entry + 
+    ) ~ ddr_onco_alt + 
       de_novo_met + 
       age_reg_start + 
       md_ecog_imp_num + 
@@ -172,7 +174,8 @@ dft_cox_all_mods <- bind_rows(
   mutate(dft_cox_mult_imp, model = "mi")
 ) %>%
   mutate(
-    term = factor(term, levels = dft_cox_mult_imp$term)
+    term = str_replace_all(term, "TRUE$", ""),
+    term = fct_inorder(term)
   )
 
 readr::write_rds(
@@ -180,24 +183,53 @@ readr::write_rds(
   here(dir_out, "cox_tidy_all_models.rds")
 )
 
-ggplot(
+n_uni <- dft_met_ddr_surv_mod_ready %>%
+  filter(!is.na(ddr_onco_alt)) %>%
+  nrow(.)
+n_cc <- dft_met_ddr_surv_mod_ready %>%
+  filter(complete.cases(.)) %>%
+  nrow(.)
+n_mi <- dft_met_ddr_surv_mod_ready %>%
+  nrow(.)
+
+dft_cox_all_mods %<>%
+  mutate(
+    model_disp = fct_inorder(
+        case_when(
+          model %in% "uni" ~ glue("Univariate (n={n_uni})"),
+          model %in% "cc" ~ glue("Complete cases (n={n_cc})"),
+          model %in% "mi" ~ glue("Multiple Imputation (n={n_mi})")
+        )
+    )
+  )
+        
+
+gg_cox_mod_compare <- ggplot(
   dat = mutate(dft_cox_all_mods, term = fct_rev(term)),
   aes(x = estimate, xmin = conf.low, xmax = conf.high, y = term,
-      color = model)
+      color = model_disp)
 ) + 
+  geom_vline(color = 'gray70', linewidth = 2, alpha = 0.5, xintercept = 0) + 
   geom_pointrange(position = position_dodge2(width = 0.5),
                   shape = 124) + 
   theme_bw() + 
   scale_color_highcontrast() +
   labs(y = NULL, 
-       x = "Cumulative hazard ratio")  
+       x = "Cumulative log hazard ratio (95% CI)") + 
+  guides(color = guide_legend(title = NULL)) +
+  theme(legend.position = "bottom")
+
+readr::write_rds(
+  gg_cox_mod_compare,
+  here(dir_out, "gg_cox_mod_compare.rds")
+)
   
 
 
 
 
 
-# Regularization on top of this seems harsh.
+# Regularization on top of this seems a bit much for now.  Let's go slow.
 
 # 
 # 
