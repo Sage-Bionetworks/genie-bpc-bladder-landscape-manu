@@ -2,8 +2,6 @@
 title: "BPC Bladder - Survival"
 author: "Alex Paynter"
 date: "`r Sys.Date()`"
-output:
-  quarto::quarto_html:
 editor_options:
   quarto:
     chunk_output_type: console
@@ -557,7 +555,7 @@ gg_cox_mod_compare_ddr <- readr::read_rds(
 )
 ```
 
-*Note:* We discussed whether there were enough people with second line GemCis to consider including in this model.  There are 10 people who had second line GemCis in this cohort, and only one of them had an oncogenic DDR mutation.  To me this doesn't seem worth it - adding confusion to the interpretation for that small boost in people.
+*Note:* We discussed whether there were enough people with second line GemCis to consider including in this model.  There are 10 people who had second line GemCis in this cohort, and only one of them had an oncogenic DDR mutation.  To me this doesn't seem worth it - adding confusion to the interpretation for that small boost in sample size. 
 
 #### Models
 
@@ -631,9 +629,7 @@ dft_ca_ind_ddr %>%
 **Notes:**
 
 - 33 people appear to be unambiguously receiving neoadjuvant treatment and have a DDR mutation at some time during followup.
-- `ca_tx_pre_path_stage` note from the data guide: "Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = 'No'."  We don't have that variable in the release, but its odd to me that that we have people who had neoadjuvant therapy but `stage_dx_iv = Stage IV`.
-  - It's odd from a data user perspective that many people do have this populated with "No" even though diagnosed at stage IV, presumably using a stage diagnosis from the tumor registry?
-  - Possibly just my misunderstanding about how the staging variables relate!
+- `ca_tx_pre_path_stage` note from the data guide: "Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = 'No'."  We don't have that variable in the release, but its odd to me that that we have people who had neoadjuvant therapy but `stage_dx_iv = Stage IV`.  Chelsea Nichols is helping me look into this.
 
 ```{r}
 dft_neoadj_ddr <- dft_ca_ind_ddr %>% 
@@ -697,6 +693,7 @@ dft_neoadj_ddr %>%
   autofit(.)
 ```
 
+**Observation:**  It's obvious that the coding style for both variables is dramatically different at each site.  We have work to do if we want to make sense of this.
 
 
 
