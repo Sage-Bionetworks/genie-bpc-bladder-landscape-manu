@@ -45,6 +45,8 @@ dft_cpt <- read_wrap_clin("cpt_aug.rds")
 ```
 
 
+
+
 ## Introduction
 
 This document contains analyses related to survival for the GENIE BPC Bladder Cancer Landscape Manuscript group.  The initial report items are borrowed from the prostate cancer group.
@@ -52,6 +54,8 @@ This document contains analyses related to survival for the GENIE BPC Bladder Ca
 The appendix defines (narrowly) a few survival terms.  Looking there may help clarify what I mean in some places, and please ask if not.
 
 ## Basics
+
+
 
 ```{r}
 # now in a separate script.
@@ -61,9 +65,13 @@ gg_os_dx_stage <- readr::read_rds(
 ```
 
 
+
+
 ### R3.1.1 Survival from diagnosis
 
 The following plot shows simple Kaplan-Meier estimates from diagnosis for overall survival.  This is broken into groups based on stage at diagnosis.  These groups could be altered, for example Stage IV could be changed to "metastatic at diagnosis".
+
+
 
 ```{r}
 #| include: true
@@ -71,11 +79,15 @@ The following plot shows simple Kaplan-Meier estimates from diagnosis for overal
 gg_os_dx_stage
 ```
 
+
+
 Notes:
 
 - The counts for At Risk are snapshots in time.  The counts for Censored and Events are cumulative.
 - Everyone is either censored or has an event, so the total n for each group is the sum of the last entry for those two.
 - The risk set for both groups increases after 0 years due to adjustment for delayed entry.  Participants enter the risk set when they enter the cohort, which can be well after diagnosis.
+
+
 
 
 
@@ -88,11 +100,15 @@ gg_os_dmet_adj <- readr::read_rds(
 )
 ```
 
+
+
 ### R3.1.2 Survival from metastasis
 
 Next we show survival from metastasis.  Metastasis is **not** identical to 'advanced disease' in the bladder cancer cohort because stage IV can be diagnosed with or without mets.  The strategy for identifying metastases in this cohort is detailed in another report.  
 
 This is a good opportunity to show curves which are (recommended) and are not adjusted for left truncation.
+
+
 
 ```{r}
 #| include: true
@@ -100,15 +116,13 @@ This is a good opportunity to show curves which are (recommended) and are not ad
 gg_os_dmet_adj
 ```
 
-
-
-
-
 ```{r}
 dft_trunc_test <- readr::read_rds(
   here('data', 'survival', 'trunc_test.rds')
 )
 ```
+
+
 
 
 ### R3.1.3 Testing truncation independence
@@ -118,6 +132,8 @@ The following table shows values for the conditional Kendall Tau statistic.  Ken
 **Interpretation:** A negative test statistic would indicate that longer times to NGS are associated with shorter survival times than would be expected if the two variables were independent.  A positive test statistic would indicate the opposite.
 
 We repeat this several times for different cohorts.  When we index from metastasis, the difference in indexing time is not important but it *is* important that this only includes participants which had a metastasis at some point.  
+
+
 
 ```{r}
 #| include: true
@@ -134,6 +150,8 @@ dft_trunc_test %>%
   autofit(.)
 ```
 
+
+
 **Notes:** 
 
 - Based on the results, we might say the dependence seems more for early stage cases than when limit to the most severe cases (metastatic at diagnosis).  However, all appear to have dependence.
@@ -144,6 +162,8 @@ dft_trunc_test %>%
 
 
 ## Specific questions
+
+
 
 ```{r}
 dir_surv_plat <- here('data', 'survival', 'first_line_platinum')
@@ -158,14 +178,20 @@ gg_cox_mod_compare_plat <- readr::read_rds(
 )
 ```
 
+
+
 ### R3.2.1 First line platinum chemotherapy
 
 The first exploration we discussed was stating overall survival for first line Carboplatin/Cisplatin combined with Gemcitabine.  By definition (for line of therapy) this only includes participants who were metastatic at the start of the drug combination.  We are not currently including more elaborate regimens such as GemCarbo + Paclitaxel.
+
+
 
 ```{r}
 #| include: true
 gg_first_line_platinum
 ```
+
+
 
 **Notes:**
 
@@ -199,11 +225,15 @@ This motivates us to model, and include some potential confounders.  Below I wil
   
 The following figure shows what the imputed values look like.  Each dot is one person.  Iteration 0 is the data as-is which has many missing values (not shown).  Each iteration after that is one imputed dataset.  The red dots are imputed values and tbe blue ones are the same non-missing observations.
   
+
+
 ```{r}
 #| include: true
 #| fig-height: 3
 gg_md_ecog_imp_plat
 ```
+
+
 
 *Comments:*
 
@@ -212,15 +242,21 @@ gg_md_ecog_imp_plat
 
 The next plot shows the model results from each of the three models above.  A log(HR) less than zero indicates a lower hazard of death, and a log(HR) above zero indicates an increased risk of death.
 
+
+
 ```{r}
 #| include: true
 #| fig.height: 5
 gg_cox_mod_compare_plat
 ```
 
+
+
 - Those who received carboplatin in this setting have a significantly higher hazard of death than those who received cisplatin, even when adjusting for relevant confounders.  We're closer to answering our question and confirming external results.
 - Some of our other hypotheses on strong effects have support as well:  For example, those with previous exposure to platinum chemo have a higher hazard of death, as did female participants and those with de novo metastatic disease.  ECOG scores did not have as strong an effect (though this doesn't mean we don't need to include or impute them).
 - One thing to be clear about:  The site numbers are generally not significant, and certainly don't represent the quality of care given at these institutions.  The reason to include these terms is more adjusting for residual confounding we can't model (SES, for example).
+
+
 
 
 
@@ -275,6 +311,8 @@ gg_os_fmr_hrd <- plot_one_survfit(
 
 
 
+
+
 ### R3.2.2 HRD pathway
 
 In our Apr 2024 meeting the group expressed an interest in looking at the HRD pathway.  Further details on this general question are borrowed from the prostate cancer group (which had the same interest).
@@ -289,6 +327,8 @@ These are the restrictions needed to form the cohort for this analysis:
   - Include only alterations which are oncogenic and include a HUGO symbol in the HRD pathway according to Pearl (2015).   appendix.
   
 The following plot shows Kaplan-Meier survival curves for those two groups:
+
+
 
 ```{r}
 #| include: true
@@ -317,7 +357,11 @@ dft_onco_hrd_before_entry %<>%
 
 ```
 
+
+
 The following table shows the mutations which met the criteria above (oncogenic, HRD pathway, sample taken at the right time).  The total here is greater than the number of subjects in the Oncogenic HRD group above because each person can have more than one HRD alteration.
+
+
 
 ```{r}
 #| include: true
@@ -329,9 +373,13 @@ dft_onco_hrd_before_entry %>%
   fix_border_issues(.)
 ```
 
+
+
 *Notes:*
 
 - As expected BRCA2 is prominent here, the tumor-normal vs tumor-only issue may require some thought.
+
+
 
 ```{r}
 dft_hrd_drugs <- dft_met_hrd_surv %>% 
@@ -343,7 +391,11 @@ dft_hrd_drugs <- dft_met_hrd_surv %>%
   rename(` ` = hrd_disp)
 ```
 
+
+
 Finally, this table shows a list of the top 5 regimens in each HRD group which counted as the first regimen after metastasis.
+
+
 
 ```{r}
 #| include: true
@@ -355,9 +407,13 @@ dft_hrd_drugs %>%
   fix_border_issues(.)
 ```
 
+
+
 *Notes:*
 
 - Popular drugs seem similar between groups, with investigational drugs being a notable omission in the HRD group.
+
+
 
 
 
@@ -393,9 +449,6 @@ gg_os_fmr_hrd_no_adj <- plot_one_survfit(
 )
 ```
 
-
-
-
 ```{r}
 # Read in the data related to this analysis
 path_ercc3 <- here('data', 'survival', 'ercc3_plat')
@@ -403,6 +456,8 @@ dft_ercc3_alt <- readr::read_rds(here(path_ercc3, 'ercc3_alt.rds'))
 gg_surv_ercc3 <- readr::read_rds(here(path_ercc3, 'gg_surv_ercc3.rds'))
 dft_surv_plat_ercc3 <- readr::read_rds(here(path_ercc3, 'surv_dat_plat_ercc3.rds'))
 ```
+
+
 
 
 ### R3.2.3 ERCC3, Platinum chemo
@@ -413,6 +468,8 @@ This analysis will unfortunately be limited by sample size in the ERCC3 arm.  We
 
 All the same, we can have a look.  Here are the regimens which qualify as the first platinum chemotherapy:
 
+
+
 ```{r}
 #| include: true
 dft_surv_plat_ercc3 %>% count(regimen_drugs) %>%
@@ -420,23 +477,30 @@ dft_surv_plat_ercc3 %>% count(regimen_drugs) %>%
   autofit(.)
 ```
 
+
+
 KM curves for those with and without ERCC3 alterations are as follows:
+
+
 
 ```{r}
 #| include: true
 gg_surv_ercc3
 ```
- 
- 
+
 ```{r}
 dft_lot <- readr::read_rds(
   here('data', 'dmet', 'lines_of_therapy', 'lot.rds')
 )
 ```
+
+
  
 **Notes**
 
 - We can limit to chemo regimens in the metastatic state (better control, lower concern about dependent truncation), but this will likely further reduce the numbers.
+
+
 
 
 
@@ -451,12 +515,16 @@ readr::read_rds(
   here(dir_fl_imm, 'gg_os_fl_io.rds')
 )
 ```
+
+
  
 ### R3.2.4 First line immunotherapy
 
 The question here may have been "does first line immunotherapy lead to longer survival than alteratives?", but I want to use this first presentation as a chance to clarify the question.
 
 Here are the drugs used in the first **line of therapy** (following all the rules from our clinical report) which appear to be immunotherapy to me:
+
+
 
 ```{r}
 lot_regex <- paste(
@@ -473,7 +541,6 @@ lot_regex <- paste(
 )
 ```
 
-
 ```{r}
 #| include: true
 dft_lot %>% 
@@ -485,9 +552,13 @@ dft_lot %>%
   autofit(.)
 ```
 
+
+
 So there's good news, we probably have the numbers to do an analysis.  With only two immunotherapies used in large numbers, pembrolizumab and atezolizumab, we could choose to try an analysis as "Any immunotherapy vs. None" or separated into Pembro vs. no pembro, atezolizumab vs no atezolizumab.  Narrowing the question will help as we start considering confounders.
 
 **Update:** This was deemed not interesting to pursue further in a June 2023 meeting.
+
+
 
 
 
@@ -507,7 +578,6 @@ dft_surv_met_ddr <- readr::read_rds(
 )
 ```
 
-
 ```{r}
 dft_onco_ddr_before_entry <- dft_alt_onco_ddr %>% 
   filter(dx_path_proc_cpt_yrs < dx_entry) 
@@ -526,9 +596,13 @@ dft_onco_ddr_before_entry %<>%
 ```
 
 
+
+
 ### *R3.2.5 DDR pathway
 
 Similar to the HDR pathway results, except we use the DDR pathway genes.  Those genes include the following in our cohort:
+
+
 
 ```{r}
 #| include: true
@@ -540,13 +614,16 @@ dft_onco_ddr_before_entry %>%
   fix_border_issues(.)
 ```
 
+
+
 The KM curves for groups with and without a DDR mutation before entering the risk set are:
+
+
 
 ```{r}
 #| include: true
 gg_met_ddr
 ```
-
 
 ```{r}
 gg_md_ecog_imp_ddr <- readr::read_rds(
@@ -556,6 +633,8 @@ gg_cox_mod_compare_ddr <- readr::read_rds(
   here(dir_met_ddr, "gg_cox_mod_compare.rds")
 )
 ```
+
+
 
 *Note:* We discussed whether there were enough people with second line GemCis to consider including in this model.  There are 10 people who had second line GemCis in this cohort, and only one of them had an oncogenic DDR mutation.  To me this doesn't seem worth it - adding confusion to the interpretation for that small boost in people.
 
@@ -579,11 +658,15 @@ These are the three models I ran:
   
 The following figure shows what the imputed values look like.  Each dot is one person.  Iteration 0 is the data as-is which has many missing values (not shown).  Each iteration after that is one imputed dataset.  The red dots are imputed values and tbe blue ones are the same non-missing observations.
   
+
+
 ```{r}
 #| include: true
 #| fig-height: 3
 gg_md_ecog_imp_ddr
 ```
+
+
 
 *Comments:*
 
@@ -592,11 +675,15 @@ gg_md_ecog_imp_ddr
 
 The next plot shows the model results from each of the three models above.  A log(HR) less than zero indicates a lower hazard of death, and a log(HR) above zero indicates an increased risk of death.
 
+
+
 ```{r}
 #| include: true
 #| fig.height: 5
 gg_cox_mod_compare_ddr
 ```
+
+
 
 *Comments:*
 
@@ -608,11 +695,15 @@ gg_cox_mod_compare_ddr
 
 
 
+
+
 ```{r}
 dft_ca_ind_ddr <- readr::read_rds(
   here('data', 'survival', 'ddr_neoadj', 'ca_ind_ddr.rds')
 )
 ```
+
+
 
 
 ### *R3.2.6 DDR neoadjuvant
@@ -621,6 +712,8 @@ In our August 2023 meeting we discussed the results above, and the fact that the
 
 The following table is limited to people who have an oncogenic DDR mutation **at any time** (same list as above).  In the rows we're showing the results of the `ca_tx_pre_path_stage` variable.  The columns split the results by `stage_dx_iv` (see notes after the table).
 
+
+
 ```{r}
 #| include: true
 dft_ca_ind_ddr %>%
@@ -628,12 +721,16 @@ dft_ca_ind_ddr %>%
   flextable(.) %>%
   autofit(.)
 ```
+
+
 **Notes:**
 
 - 33 people appear to be unambiguously receiving neoadjuvant treatment and have a DDR mutation at some time during followup.
 - `ca_tx_pre_path_stage` note from the data guide: "Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = 'No'."  We don't have that variable in the release, but its odd to me that that we have people who had neoadjuvant therapy but `stage_dx_iv = Stage IV`.
   - It's odd from a data user perspective that many people do have this populated with "No" even though diagnosed at stage IV, presumably using a stage diagnosis from the tumor registry?
   - Possibly just my misunderstanding about how the staging variables relate!
+
+
 
 ```{r}
 dft_neoadj_ddr <- dft_ca_ind_ddr %>% 
@@ -669,17 +766,25 @@ dfp_staging_sum <- dft_neoadj_ddr %>%
   align(., j = 1, align = 'right')
 ```
 
+
+
 The next step of this inquiry is looking at the pathological and clinical staging for these people to see if the two differ.  Here are the variables we're using to look at this:
 
 - Pathological: If either `naaccr_path_t_cd` or `ca_path_t_stage` are not missing, we consider this completed ("has_path" below).
 - Clinical:  If either `naaccr_clin_t_cd` or `ca_clin_t_stage` are not missing, we consider this completed ("has_clin" below).
+
+
 
 ```{r}
 #| include: true
 dfp_staging_sum
 ```
 
+
+
 So we could look at the difference in clinical and pathological staging in about 29 people.  There are two outstanding issues, the first is dealing with the timing of the DDR mutation (for example, if it's identified 10 years after staging it's hard to see the relevance).  The second is we will have to deal with the free-text in the staging.  Here is what the clinical and pathological staging variables look like for these 29 people (just to give an idea of the heterogeneity of codes):
+
+
 
 ```{r}
 #| include: true
@@ -697,19 +802,6 @@ dft_neoadj_ddr %>%
   autofit(.)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```{r}
 dir_line23 <- here('data', 'survival', "line23")
 dft_agents_line23 <- readr::read_rds(
@@ -726,9 +818,13 @@ gg_line23_taxane <- readr::read_rds(
 
 
 
+
+
 ### *R3.2.7 Second line therapies    
 
 In August 2024 we discussed looking at second line therapies, specifically with an interest in single agent therapies used in the second line setting, especially taxanes.  Here is a list of all second and third line regimens (limited to those with at least 5 in either line):
+
+
 
 ```{r}
 #| include: true
@@ -736,9 +832,13 @@ dft_agents_line23 %>%
   flextable(.) %>% 
   autofit(.)
 ```
+
+
 Each person can only have one 2L or 3L regimen, so this is also a count of people.
 
 To me it seems reasonable to look at 2L/3L taxanes based on the numbers we have.  I'm not totally clear about what question we want to pose, so we'll start with an exploratory plot:
+
+
 
 ```{r}
 #| include: true
@@ -750,15 +850,17 @@ plot_grid(
 )
 ```
 
-
 ```{r}
 #| include: true
 #| fig-height: 6
 gg_line23_taxane
 ```
 
+
+
 **Notes:**
 
 - There appears to be very little difference between the two taxanes for third line therapy.  For second line therapy there could be something worth exploring.
 - This plot also may be informative to compare to other cohorts without posing any comparative questions.
 - Little censoring in this cohort, almost everyone is observed until death.
+
