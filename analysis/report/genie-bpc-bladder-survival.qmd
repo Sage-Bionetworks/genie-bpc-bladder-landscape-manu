@@ -623,7 +623,7 @@ gg_line23_taxane <- readr::read_rds(
 ```
 
 
-### *R3.2.6 Second line therapies    
+### *R3.2.7 Second line therapies    
 
 In August 2024 we discussed looking at second line therapies, specifically with an interest in single agent therapies used in the second line setting, especially taxanes.  Here is a list of all second and third line regimens (limited to those with at least 5 in either line):
 
