@@ -438,6 +438,45 @@ dft_lot <- readr::read_rds(
 
 
 
+
+
+```{r}
+# Read in the data related to this analysis
+path_ercc2 <- here('data', 'survival', 'ercc2_plat')
+dft_ercc2_alt <- readr::read_rds(here(path_ercc2, 'ercc2_alt.rds'))
+gg_surv_ercc2 <- readr::read_rds(here(path_ercc2, 'gg_surv_ercc2.rds'))
+dft_surv_plat_ercc2 <- readr::read_rds(here(path_ercc2, 'surv_dat_plat_ercc2.rds'))
+```
+
+
+### *R3.2.4 ERCC2, Platinum chemo
+
+This is the same as the above analysis, except we substitute ERCC2 for ERCC3.  Requested on Aug 26 meeting.
+
+All the same, we can have a look.  Here are the regimens which qualify as the first platinum chemotherapy:
+
+```{r}
+#| include: true
+dft_surv_plat_ercc2 %>% count(regimen_drugs) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+KM curves for those with and without ERCC2 alterations are as follows:
+
+```{r}
+#| include: true
+gg_surv_ercc2
+```
+ 
+**Notes**
+
+- Notably, this was done after we didn't find anything significant for HRD, DDR or ERCC3. 
+- This differs from the analysis of the DDR pathway below in at least three important ways:  (1) different mutations (2) includes carboplatin regimens (3) includes regimens started before or after metastasis in one analysis.
+  - This last point is important, because the factor we're analyzing is directly related to the entry time (ERCC3 alteration).
+
+
+
 ```{r}
 
 dir_fl_imm <- here('data', 'survival', 'first_line_immuno')
@@ -450,7 +489,7 @@ readr::read_rds(
 )
 ```
  
-### R3.2.4 First line immunotherapy
+### R3.2.5 First line immunotherapy
 
 The question here may have been "does first line immunotherapy lead to longer survival than alteratives?", but I want to use this first presentation as a chance to clarify the question.
 
@@ -524,7 +563,7 @@ dft_onco_ddr_before_entry %<>%
 ```
 
 
-### *R3.2.5 DDR pathway
+### R3.2.6 DDR pathway
 
 Similar to the HDR pathway results, except we use the DDR pathway genes.  Those genes include the following in our cohort:
 
@@ -613,7 +652,7 @@ dft_ca_ind_ddr <- readr::read_rds(
 ```
 
 
-### *R3.2.6 DDR neoadjuvant
+### R3.2.7 DDR neoadjuvant
 
 In our August 2023 meeting we discussed the results above, and the fact that the trial that inspired the look into these specific DDR mutations was in an earlier stage setting than what we've looked at.  To start looking at this, we'll first figure out how big the overlap between the group with DDR mutations and neoadjuvant therapy is.
 
@@ -723,7 +762,7 @@ gg_line23_taxane <- readr::read_rds(
 
 
 
-### *R3.2.7 Second line therapies    
+### R3.2.8 Second line therapies    
 
 In August 2024 we discussed looking at second line therapies, specifically with an interest in single agent therapies used in the second line setting, especially taxanes.  Here is a list of all second and third line regimens (limited to those with at least 5 in either line):
 
