@@ -649,6 +649,10 @@ gg_cox_mod_compare_ddr
 dft_ca_ind_ddr <- readr::read_rds(
   here('data', 'survival', 'ddr_neoadj', 'ca_ind_ddr.rds')
 )
+dft_ddr_stage_diffs <- readr::read_rds(
+  here('data', 'survival', 'ddr_neoadj', 'ddr_neoadj_stage_diffs.rds')
+)
+
 ```
 
 
@@ -670,73 +674,21 @@ dft_ca_ind_ddr %>%
 - 33 people appear to be unambiguously receiving neoadjuvant treatment and have a DDR mutation at some time during followup.
 - `ca_tx_pre_path_stage` note from the data guide: "Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = 'No'."  We don't have that variable in the release, but its odd to me that that we have people who had neoadjuvant therapy but `stage_dx_iv = Stage IV`.  Chelsea Nichols is helping me look into this.
 
-```{r}
-dft_neoadj_ddr <- dft_ca_ind_ddr %>% 
-  filter(ca_tx_pre_path_stage %in% "Yes", !(stage_dx_iv %in% "Stage IV")) 
-
-
-dft_neoadj_ddr %>% count(ca_clin_t_stage, sort = T)
-
-dft_neoadj_ddr %<>% 
-  mutate(
-    naaccr_path_t_cd_filled = !is.na(naaccr_path_t_cd),
-    ca_path_t_stage_filled = !is.na(ca_path_t_stage) & 
-      !(ca_path_t_stage %in% c("Unknown", "Not Applicable")),
-    naaccr_clin_t_cd_filled = !is.na(naaccr_clin_t_cd),
-    ca_clin_t_stage_filled = !is.na(ca_clin_t_stage) & 
-      !(ca_clin_t_stage %in% c("Unknown", "Not Applicable")),
-    has_path = naaccr_path_t_cd_filled | ca_path_t_stage_filled,
-    has_clin = naaccr_clin_t_cd_filled | ca_clin_t_stage_filled,
-    has_both = has_clin & has_path
-  )
-
-dfp_staging_sum <- dft_neoadj_ddr %>%
-  summarize(
-    across(
-      .cols = matches("^has_"),
-      .fns = sum
-    )
-  ) %>%
-  mutate(` ` = "n=") %>%
-  relocate(` `, .before = 1) %>%
-  flextable(.) %>%
-  autofit(.) %>%
-  align(., j = 1, align = 'right')
-```
-
-The next step of this inquiry is looking at the pathological and clinical staging for these people to see if the two differ.  Here are the variables we're using to look at this:
-
-- Pathological: If either `naaccr_path_t_cd` or `ca_path_t_stage` are not missing, we consider this completed ("has_path" below).
-- Clinical:  If either `naaccr_clin_t_cd` or `ca_clin_t_stage` are not missing, we consider this completed ("has_clin" below).
+After discussing on Aug 26, 2024 we decided to look for people with a change in N stage between clinical and pathological staging.  For those with the same N stage, we will look at the difference in T stage.  Here are the cleaned up codes, where `_comb_` takes the tumor registry value if available, and the curated one otherwise:
 
 ```{r}
 #| include: true
-dfp_staging_sum
-```
 
-So we could look at the difference in clinical and pathological staging in about 29 people.  There are two outstanding issues, the first is dealing with the timing of the DDR mutation (for example, if it's identified 10 years after staging it's hard to see the relevance).  The second is we will have to deal with the free-text in the staging.  Here is what the clinical and pathological staging variables look like for these 29 people (just to give an idea of the heterogeneity of codes):
-
-```{r}
-#| include: true
-dft_neoadj_ddr %>%
-  filter(has_both) %>%
-  arrange(record_id) %>%
-  select(
-    record_id,
-    naaccr_path_t_cd,
-    ca_path_t_stage,
-    naaccr_clin_t_cd,
-    ca_clin_t_stage
-  ) %>%
+dft_ddr_stage_diffs %>%
+  arrange(desc(abs(diff_n)), desc(abs(diff_t))) %>%
   flextable(.) %>%
   autofit(.)
 ```
 
-**Observation:**  It's obvious that the coding style for both variables is dramatically different at each site.  We have work to do if we want to make sense of this.
+**Observations**
 
-
-
-
+- Obviously we have missing values after processing.  Examples are entries like "TpA" which tells us nothing.  About 1/3 of these samples can't even be confirmed to have the same N stage betweeen clinical and pathologic staging, and we're down to about 15 people if we want people with a usable T and N stage.
+- The only N stage difference that exists is +3, which seems implausible, probably a typo from the clinical.
 
 
 

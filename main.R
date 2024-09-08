@@ -62,9 +62,11 @@ source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 source(here('analysis', 'script', 'surv_platinum_gem_first_line.R'))
 source(here('analysis', 'script', 'surv_platinum_gem_first_line_model.R'))
 source(here('analysis', 'script', 'surv_ercc3_platinum.R'))
+source(here('analysis', 'script', 'surv_ercc2_platinum.R'))
 source(here('analysis', 'script', 'surv_first_line_immunotherapy.R'))
 source(here('analysis', 'script', 'surv_ddr_onco_plat.R'))
 source(here('analysis', 'script', 'surv_ddr_onco_plat_model.R'))
+source(here('analysis', 'script', 'surv_ddr_neoadj.R'))
 source(here('analysis', 'script', 'surv_second_line.R'))
 # Render the qmd for survival.
 
