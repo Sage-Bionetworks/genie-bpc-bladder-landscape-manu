@@ -240,11 +240,11 @@ dft_tnm %<>%
   mutate(
     across(
       .cols = c(clin_group_stage, path_group_stage),
-      .fns = \(z) factor(z, levels = lev_stage_groups)
+      .fns = \(z) factor(z, levels = lev_stage_groups, ordered = T)
     ),
     across(
       .cols = c(clin_group_clust, path_group_clust),
-      .fns = \(z) factor(z, levels = lev_stage_clust)
+      .fns = \(z) factor(z, levels = lev_stage_clust, ordered = T)
     )
   )
 

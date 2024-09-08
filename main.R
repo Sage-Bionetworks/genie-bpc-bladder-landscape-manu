@@ -30,6 +30,8 @@ rmarkdown::render(
 )
 # Not used directly here, but could be later on:
 source(here('analysis', 'script', 'create_time_invariant_model_factors.R'))
+source(here('analysis', 'script', 'staging_clin_path.R'))
+
 
 
 

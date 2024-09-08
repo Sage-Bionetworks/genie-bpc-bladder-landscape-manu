@@ -10,14 +10,32 @@ dir_output <- here('data', 'survival', 'ddr_neoadj')
 
 dft_ca_ind <- readr::read_rds(here('data', 'cohort', "ca_ind.rds"))
 dft_reg <- readr::read_rds(here('data', 'cohort', "reg.rds"))
-dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
+# dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
+dft_alt <- readr::read_rds(here('data', 'genomic','alterations.rds'))
 dft_cpt <- readr::read_rds(here('data', 'cohort', "cpt_aug.rds"))
+dft_tnm <- readr::read_rds(here('data', 'cohort', 'tnm_path_clin_details.rds'))
 
 
+dft_neoadj <- dft_ca_ind %>% 
+  select(record_id, ca_seq, ca_tx_pre_path_stage, stage_dx_iv) %>%
+  left_join(
+    .,
+    select(dft_tnm, record_id, ca_seq, clin_group_clust, path_group_clust),
+    by = c('record_id', 'ca_seq')
+  )
 
+# Talked to MSK curating team about this a bit - there is no reason people who
+#.  are stage IV at dx should have ca_tx_pre_path_stage filled out.
+#.  Should be all NA or Unknown.   We will just limit to people not stage IV.
 
+dft_neoadj %<>%
+  filter(!(stage_dx_iv %in% "Stage IV")) %>%
+  filter(ca_tx_pre_path_stage %in% "Yes")
 
-# First step:  how many people we got with a ddr mutation?
+# We'll merge in the DDR stuff, write this out, then filter down to those that
+#   have clinical and pathological staging.  This allows us to more easily look
+#   at who is missing (due to missing one of those).
+
 
 custom_ddr_list <- c(
   'ERCC2', 'ERCC5', 
@@ -25,7 +43,18 @@ custom_ddr_list <- c(
   'ATR', 'FANCC'
 )
 
-dft_onco_ddr <- dft_alt %>% 
+# Change: taking only the first CPT test for DDR alterations.  It makes no sense
+#   to get people who had one pop up later on for this analysis.
+# This took the count from 128 to 123 (for alterations).
+dft_onco_ddr <- dft_cpt %>%
+  group_by(record_id, ca_seq) %>%
+  arrange(cpt_number) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  select(sample_id = cpt_genie_sample_id) %>%
+  left_join(
+    ., dft_alt, by = 'sample_id'
+  ) %>%
   filter(hugo %in% custom_ddr_list) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic"))
 
@@ -43,160 +72,83 @@ dft_onco_ddr <- dft_cpt %>%
     by = c(sample_id = "cpt_genie_sample_id")
   )
 
-# First step part 2: How many of those people have neoadjuvant therapy according
-#   to the index cancer dataset?
+dft_onco_ddr_sum <- dft_onco_ddr %>%
+  group_by(record_id, ca_seq) %>%
+  summarize(onco_ddr = T) 
 
-dft_ca_ind_ddr <- dft_onco_ddr %>%
-  select(record_id, ca_seq) %>%
-  distinct(.) %>%
-  left_join(., dft_ca_ind, by = c('record_id', 'ca_seq'))
-
-readr::write_rds(
-  dft_ca_ind_ddr,
-  here(dir_output, 'ca_ind_ddr.rds')
-)
-
-
-
-
-
-
-
-dft_neoadj_ddr <- dft_ca_ind_ddr %>% 
-  filter(ca_tx_pre_path_stage %in% "Yes", !(stage_dx_iv %in% "Stage IV")) 
-
-dft_neoadj_ddr <- dft_neoadj_ddr %>%
-  select(
-    record_id,
-    naaccr_path_t_cd,
-    ca_path_t_stage,
-    naaccr_clin_t_cd,
-    ca_clin_t_stage,
-    
-    naaccr_path_n_cd,
-    ca_path_n_stage,
-    naaccr_clin_n_cd,
-    ca_clin_n_stage
+dft_neoadj %<>%
+  left_join(
+    .,
+    dft_onco_ddr_sum,
+    by = c('record_id', 'ca_seq')
   ) %>%
-  # Just make the unknown entries into actual NA's for ease:
-  mutate(
-    across(
-      .cols = -record_id,
-      .fns = \(z) if_else(
-        z %in% "Unknown",
-        NA_character_,
-        z
-      )
-    )
-  )
+  replace_na(list(onco_ddr = F))
 
-dft_neoadj_ddr_long_before <- dft_neoadj_ddr %>%
-  pivot_longer(
-    cols = -record_id,
-    values_to = "before"
-  )
-# Checking that worked:
-purrr::walk(
-  .x = names(dft_neoadj_ddr)[-1],
-  .f = \(z) count(dft_neoadj_ddr, .data[[z]], sort = T) %>% print
+
+# Save a version so you can see who's missing
+readr::write_rds(
+  dft_neoadj,
+  here(dir_output, 'ddr_neoadj_unfiltered.rds')
 )
 
-# Remove all the redundant (with col names), inconsistent and troublingly error prone stuff
-#   at the beginning.  We just want those digits.
-dft_neoadj_ddr %<>%
-  mutate(
-    across(
-      .cols = -record_id,
-      .fns = \(z) 
-      str_replace_all(
-        z, "^[TtPpNnCc]*", ""
-      )
-    )
+dft_neoadj %<>%
+  filter(
+    !is.na(clin_group_clust) & !is.na(path_group_clust)
   )
 
-# A few special cases:
-dft_neoadj_ddr %<>%
-  mutate(
-    across(
-      .cols = -record_id,
-      .fns = \(z) {
-        case_when(
-          z %in% "IS" ~ "0",
-          z %in% "X" ~ NA_character_,
-          T ~ z
-        )
-      }
-    )
-  )
-
-# Now let's get the number.  I'm expecting this to be the first char.
-dft_neoadj_ddr %<>%
-  mutate(
-    across(
-      .cols = -record_id,
-      .fns = \(z) {
-        str_extract(z, "^[0-9]")
-      }
-    )
-  )
-
-dft_neoadj_ddr_long_after <- dft_neoadj_ddr %>%
-  pivot_longer(
-    cols = -record_id,
-    values_to = "after"
-  )
-
-# Check the mapping if desired:
-# full_join(
-#   dft_neoadj_ddr_long_before,
-#   dft_neoadj_ddr_long_after,
-#   by = c('record_id', 'name')
-# ) %>%
-#   select(name, before, after) %>%
-#   distinct(.) %>%
-#   print(n = 500)
-
-dft_neoadj_ddr %<>%
-  mutate(
-    across(
-      .cols = -record_id,
-      .fns = as.numeric
-    )
-  )
+lev_gs_change <- c(
+  "Stage lower at path",
+  "No change in stage",
+  "Stage higher at path"
+)
   
-dft_neoadj_ddr %<>%
+
+dft_neoadj %<>%
   mutate(
-    path_comb_n = case_when(
-      !is.na(naaccr_path_n_cd) ~ naaccr_path_n_cd,
-      T ~ ca_path_n_stage
+    group_stage_change_num = case_when(
+      path_group_clust == clin_group_clust ~ 0L,
+      path_group_clust > clin_group_clust ~ 1L,
+      path_group_clust < clin_group_clust ~ -1L,
+      T ~ NA_integer_ # should never happen
     ),
-    clin_comb_n = case_when(
-      !is.na(naaccr_clin_n_cd) ~ naaccr_clin_n_cd,
-      T ~ ca_clin_n_stage
+    group_stage_change_f = case_when(
+      path_group_clust == clin_group_clust ~ lev_gs_change[2],
+      path_group_clust > clin_group_clust ~ lev_gs_change[3],
+      path_group_clust < clin_group_clust ~ lev_gs_change[1]
     ),
-    path_comb_t = case_when(
-      !is.na(naaccr_path_t_cd) ~ naaccr_path_t_cd,
-      T ~ ca_path_t_stage
-    ),
-    clin_comb_t = case_when(
-      !is.na(naaccr_clin_t_cd) ~ naaccr_clin_t_cd,
-      T ~ ca_clin_t_stage
+    group_stage_change_f = factor(group_stage_change_f, levels = lev_gs_change),
+    onco_ddr_disp = factor(
+      case_when(
+        onco_ddr ~ "DDR alt.",
+        T ~ "No oncogenic DDR"
+      )
     )
   )
 
-dft_neoadj_ddr %<>%
-  select(
-    record_id,
-    contains("comb")
-  ) %>%
-  mutate(
-    diff_n = path_comb_n - clin_comb_n,
-    diff_t = path_comb_t - clin_comb_t
+readr::write_rds(
+  dft_neoadj,
+  here(dir_output, 'ddr_neoadj.rds')
+)
+
+gg_neoadj_ddr_mosaic <- ggplot(
+  data = dft_neoadj
+) + 
+  geom_mosaic(
+    aes(x = product(onco_ddr_disp), fill = group_stage_change_f)
+  ) + 
+  theme_mosaic() + 
+  scale_fill_viridis_d(
+    name = NULL,
+    option = "magma", begin = 0, end = 0.5
+  ) +
+  theme(
+    axis.title = element_blank()
   )
 
-
-
 readr::write_rds(
-  dft_neoadj_ddr,
-  here(dir_output, 'ddr_neoadj_stage_diffs.rds')
+  gg_neoadj_ddr_mosaic,
+  here(dir_output, 'gg_neoadj_ddr_mosaic.rds')
 )
+      
+      
+
