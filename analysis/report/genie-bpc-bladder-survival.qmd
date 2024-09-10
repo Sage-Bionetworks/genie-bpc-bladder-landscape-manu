@@ -646,49 +646,105 @@ gg_cox_mod_compare_ddr
 
 
 ```{r}
-dft_ca_ind_ddr <- readr::read_rds(
-  here('data', 'survival', 'ddr_neoadj', 'ca_ind_ddr.rds')
+dft_ddr_neo <- readr::read_rds(
+  here('data', 'survival', 'ddr_neoadj', 'ddr_neoadj.rds')
 )
-dft_ddr_stage_diffs <- readr::read_rds(
-  here('data', 'survival', 'ddr_neoadj', 'ddr_neoadj_stage_diffs.rds')
+gg_ddr_neo_mosaic <- readr::read_rds(
+  here('data', 'survival', 'ddr_neoadj', 'gg_neoadj_ddr_mosaic.rds')
 )
+gg_clin_path_group_stage <- readr::read_rds(
+  here('data', 'survival', 'ddr_neoadj', 'gg_clin_path_group_stage.rds')
+)
+
 
 ```
 
 
-### R3.2.7 DDR neoadjuvant
+### *R3.2.7 DDR neoadjuvant
 
-In our August 2023 meeting we discussed the results above, and the fact that the trial that inspired the look into these specific DDR mutations was in an earlier stage setting than what we've looked at.  To start looking at this, we'll first figure out how big the overlap between the group with DDR mutations and neoadjuvant therapy is.
+*Note:* This section was scrapped and rebuilt after our Aug 26, 2024 meeting.
 
-The following table is limited to people who have an oncogenic DDR mutation **at any time** (same list as above).  In the rows we're showing the results of the `ca_tx_pre_path_stage` variable.  The columns split the results by `stage_dx_iv` (see notes after the table).
+The goal of this analysis is looking at the difference in group stage at the pathological and clinical points among those receiving neoadjuvant therapy.  By requiring that participants have both clinical and pathological staging, we expect to have only people who had an excision (to obtain the pathology sample), but maybe not 100% of the people in that cohort.
+
+The hypothesis is that those with a DDR mutation may receive more benefit from neoadjuvant therapy.  We would expect this to manifest as a higher proportion of people who have a lower group stage at pathological staging than at clinical.  We are taking the DDR mutation information from the first NGS test in each person.  This leaves open a possiblity that they didn't have a DDR mutation at the time they received neoadjuvant therapy, since many of these are long after pathological staging (and neoadjuvant therapy).
+
+
+```{r}
+ft_ajcc_explain <- tribble(
+  ~`When T is...`, ~`And N is...`, ~`And M is...`, ~`Then the stage group is...`, ~`Analysis level`,
+  "Ta", "N0", "M0", "0a", 1,
+  "Tis", "N0", "M0", "0is", 1,
+  "T1", "N0", "M0", "I", 1,
+  "T2a", "N0", "M0", "II", 2,
+  "T2b", "N0", "M0", "II", 2, 
+  "T3a,T3b,T4a", "N0", "M0", "IIIA", 3,
+  "T1-T4a", "N1", "M0", "IIIA", 4,
+  "T1-T4a", "N2,N3", "M0", "IIIB", 5,
+  "T4b", "Any N", "M0", "IVA", NA_real_,
+  "Any T", "Any N", "M1a", "IVA", NA_real_,
+  "Any T", "Any N", "M1b", "IVA", NA_real_,
+)
+
+ft_ajcc_explain %<>%
+  flextable(.) %>%
+  autofit(.) %>%
+  bg(i = c(1:3, 6, 8), bg = "#cdb6be") %>%
+  bg(i = c(4:5, 7), bg = "#d1b589") %>% 
+  bg(i = 9:11, bg = '#a3a3a3') %>%
+  merge_v(j = 5) %>%
+  align(j = 5, align = 'left')
+
+```
+
+
+To do this, there's copious processing on the TNM codes supplied in the cancer index dataset.  There are some appendix tables showing those transformations for anyone interested in checking.  Rather than come up with bespoke categories for TNM, we based this on the AJCC manual and clustered the existing categories.  The following table shows the "AJCC Prognostic Stage Groups" table for bladder cancer, and the clusters we'll be using are shaded in colors:
 
 ```{r}
 #| include: true
-dft_ca_ind_ddr %>%
-  tabyl(ca_tx_pre_path_stage, stage_dx_iv) %>%
-  flextable(.) %>%
-  autofit(.)
+
+ft_ajcc_explain
 ```
-**Notes:**
 
-- 33 people appear to be unambiguously receiving neoadjuvant treatment and have a DDR mutation at some time during followup.
-- `ca_tx_pre_path_stage` note from the data guide: "Populated only if cancer was not diagnosed at stage IV ([ca_stage_iv] = 'No'."  We don't have that variable in the release, but its odd to me that that we have people who had neoadjuvant therapy but `stage_dx_iv = Stage IV`.  Chelsea Nichols is helping me look into this.
+- Stage IV (dark gray) is excluded from this analysis because we don't expect these people to have neoadjuvant therapy by definition.
+- Not-so-amusingly this table has some gaps (for example, M1 with no letter, or T0).  We made decisions that I think are reasonable, but again see the appendix.
 
-After discussing on Aug 26, 2024 we decided to look for people with a change in N stage between clinical and pathological staging.  For those with the same N stage, we will look at the difference in T stage.  Here are the cleaned up codes, where `_comb_` takes the tumor registry value if available, and the curated one otherwise:
+The upcoming plot is a mosaic plot, which shows the proportion of participants by area.  Keep in mind that the number of people here is relatively small (n = `r nrow(dft_ddr_neo)` overall).
+
+```{r}
+#| eval: true
+#| include: true
+gg_ddr_neo_mosaic
+```
+
+*Notes:*
+
+- This shows that a greater proportion of participants with a DDR mutation had no change in stage or a lower stage at path, compared with clin.
+- The narrowness of the DDR column shows that we have fewer people in that group (n = `r nrow(filter(dft_ddr_neo, onco_ddr_disp %in% "DDR alt."))`).
+
+It is also useful to look at the actual values for clinical and pathological group stages in these two groups:
 
 ```{r}
 #| include: true
-
-dft_ddr_stage_diffs %>%
-  arrange(desc(abs(diff_n)), desc(abs(diff_t))) %>%
-  flextable(.) %>%
-  autofit(.)
+gg_clin_path_group_stage
 ```
 
-**Observations**
+*Notes:*
 
-- Obviously we have missing values after processing.  Examples are entries like "TpA" which tells us nothing.  About 1/3 of these samples can't even be confirmed to have the same N stage betweeen clinical and pathologic staging, and we're down to about 15 people if we want people with a usable T and N stage.
-- The only N stage difference that exists is +3, which seems implausible, probably a typo from the clinical.
+- The changes we're seeing appear to be driven by much greater proportions of non-DDR people being classified as IIIA at pathological staging (both N0 and N1).
+- There are also several more participants who are stage 0/I in the DDR-altered group at path staging.
+- No IVA or IVB is by design - stage IV people were excluded, excuse the legend for the moment.
+
+**Next steps:**
+
+- An appropriate model for this situation is probably a proportional odds model.  We could fit this using our 5 analysis levels over time, showing whether DDR mutations have a propensity to shift more than non-DDR mutated people.
+- "Grouped linear" (use the analysis levels above as numbers in the outcome) and a model for change status (improve, same, worsen) would be good checks or backups.
+- A sankey or jittered slope plot would be good to show within-person differences over the two time points.
+
+
+
+
+
+
 
 
 
@@ -750,3 +806,51 @@ gg_line23_taxane
 - There appears to be very little difference between the two taxanes for third line therapy.  For second line therapy there could be something worth exploring.
 - This plot also may be informative to compare to other cohorts without posing any comparative questions.
 - Little censoring in this cohort, almost everyone is observed until death.
+
+
+
+
+## *Appendicies
+
+```{r}
+dft_tnm_strip_qc <- readr::read_rds(
+  here('data', 'cohort', 'tnm_path_clin_stripping_qc.rds')
+)
+
+dft_tnm_class_qc <- readr::read_rds(
+  here('data', 'cohort', 'tnm_classification_qc.rds')
+)
+
+dt_wrapper <- function(x, font.size = '10pt') {
+  DT::datatable(
+    x,
+    style = "bootstrap4",
+    fillContainer = F,
+    options=list(
+      initComplete = htmlwidgets::JS(
+        "function(settings, json) {",
+        paste0("$(this.api().table().container()).css({'font-size': '", font.size, "'});"),
+        "}")
+    ) 
+  )
+}
+```
+
+
+### *TNM classifications
+
+The first step in our group stage data processing is homogenizing the free text.  For example, the strings `T2B`, `Tc2B` and `TcT2b` for `naaccr_clin_t_cd` all clearly mean the same thing.  In this step our goal is to get them all recoded as "2b".  The following table lists every unique case (defined by variable `name` and `before`) and what we translated it into (`after`).  `cases` is just how many times we observed the case.  Blanks in this table represent missing data (NA):
+
+```{r}
+#| include: true
+dt_wrapper(dft_tnm_strip_qc)
+```
+
+Step 2 is taking those refined codes and assigning a stage based on the TNM inputs.  This is done using the AJCC guides, except that we assume a blank M entry is the same as M0 in the logic (as does the AJCC, starting in the 8th edition).  In the table below `comb_*` means the combination of tumor registry and curated data, prioritizing the registry data when available. `group_clust` is the analysis group.  Here are those cases:
+
+```{r}
+#| include: true
+dt_wrapper(dft_tnm_class_qc)
+```
+
+*Note:* While the logic is the same for time = path and time = clin, they are in separate rows to keep the QC purpose of this (I could have made an error in just one).

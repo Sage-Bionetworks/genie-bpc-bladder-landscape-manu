@@ -219,18 +219,22 @@ dft_tnm %<>%
     )
   )
 
-lev_stage_clust <- c("0/I", "II", "IIIA", "IIIB", "IVA", "IVB")
+lev_stage_clust <- c("0/I", "II", "IIIA(N0)", "IIIA(N1)", "IIIB", "IVA", "IVB")
 
 dft_tnm %<>%
   mutate(
     clin_group_clust = case_when(
       is.na(clin_group_stage) ~ NA_character_,
       clin_group_stage %in% lev_stage_groups[1:4] ~ "0/I",
+      clin_group_stage %in% "IIIA" & clin_comb_n %in% "0" ~ "IIIA(N0)",
+      clin_group_stage %in% "IIIA" & clin_comb_n %in% "1" ~ "IIIA(N1)",
       T ~ clin_group_stage
     ),
     path_group_clust = case_when(
       is.na(path_group_stage) ~ NA_character_,
       path_group_stage %in% lev_stage_groups[1:3] ~ "0/I",
+      path_group_stage %in% "IIIA" & path_comb_n %in% "0" ~ "IIIA(N0)",
+      path_group_stage %in% "IIIA" & path_comb_n %in% "1" ~ "IIIA(N1)",
       T ~ path_group_stage
     )
   )
@@ -248,6 +252,10 @@ dft_tnm %<>%
     )
   )
 
+readr::write_rds(
+  dft_tnm,
+  here('data', 'cohort', 'tnm_path_clin_details.rds')
+)
 
 dft_tnm_classification_qc <- dft_tnm %>% 
   select(
@@ -273,13 +281,12 @@ dft_tnm_classification_qc <- dft_tnm %>%
   select(cases, everything()) %>%
   arrange(group_clust, comb_m, comb_n, comb_t)
 
-dft_tnm_classification_qc %>% print(n = 500)
+readr::write_rds(
+  dft_tnm_classification_qc,
+  here('data', 'cohort', 'tnm_classification_qc.rds')
+)
     
 
-readr::write_rds(
-  dft_tnm,
-  here('data', 'cohort', 'tnm_path_clin_details.rds')
-)
   
 
 

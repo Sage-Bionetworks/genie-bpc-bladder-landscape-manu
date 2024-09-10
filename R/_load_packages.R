@@ -33,6 +33,7 @@ library(plotly)
 library(colorspace)
 library(viridis)
 library(khroma)
+library(ggmosaic)
 
 library(knitr)
 library(quarto)

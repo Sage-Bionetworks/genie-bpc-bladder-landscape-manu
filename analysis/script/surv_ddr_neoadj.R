@@ -149,6 +149,40 @@ readr::write_rds(
   gg_neoadj_ddr_mosaic,
   here(dir_output, 'gg_neoadj_ddr_mosaic.rds')
 )
+
+gg_clin_path_group_stage <- dft_neoadj %>%
+  select(record_id, onco_ddr_disp,
+         clin_group_clust, path_group_clust) %>%
+  pivot_longer(
+    cols = contains("group_clust")
+  ) %>%
+  mutate(name = str_sub(name, 1, 4)) %>%
+  ggplot(
+    data = .,
+  ) + 
+  geom_mosaic(
+    aes(x = product(name), fill = value)
+  ) + 
+  theme_mosaic() + 
+  scale_fill_viridis_d(
+    name = NULL,
+    option = "turbo", begin = 0, end = 1,
+    guide = guide_legend(reverse = T)
+  ) +
+  theme(
+    axis.title = element_blank(),
+    legend.position = "left",
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank()
+  ) + 
+  facet_wrap(vars(onco_ddr_disp), nrow = 1) 
+
+readr::write_rds(
+  gg_clin_path_group_stage,
+  here(dir_output, 'gg_clin_path_group_stage.rds')
+)
+
+
       
       
 
