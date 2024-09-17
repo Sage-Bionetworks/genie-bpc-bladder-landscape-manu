@@ -192,10 +192,11 @@ dft_met_ddr_surv %<>%
 dft_extra_var <- readr::read_rds(
   here('data', 'cohort', 'time_invariant_model_factors.rds')
 ) %>%
-  filter(is.na(dx_dmet_yrs)) %>%
+  filter(!is.na(dx_dmet_yrs)) %>%
   select(record_id, ca_seq, dx_dmet_yrs, dob_ca_dx_yrs, institution,
          birth_year, race_eth, female)
 
+rc_vec <- c('record_id', 'ca_seq')
 dft_reg_start_dob <- left_join(
   select(dft_met_ddr_surv, record_id, ca_seq, dx_reg_start_int_yrs),
   select(dft_ca_ind, record_id, ca_seq, dob_ca_dx_yrs),
@@ -302,32 +303,6 @@ ggsave(
 
 
 
-
-
-
-
-
-
-# Had a question later on about how many people have gemcis as second line therapy.
-# We can count this up:
-dft_met_ddr_surv_2nd_line <- dft_lot %>%
-  filter(
-    line_therapy %in% 2, # only chage here - rest is copy-paste
-    regimen_drugs %in% "Cisplatin, Gemcitabine Hydrochloride"
-  ) %>%
-  select(record_id, ca_seq, regimen_number) %>%
-  left_join(
-    .,
-    dft_post_met_plat,
-    by = c('record_id', 'ca_seq', 'regimen_number')
-  ) %>%
-  left_join(
-    .,
-    dft_onco_ddr_flags,
-    by = c("record_id", "ca_seq")
-  ) 
-dft_met_ddr_surv_2nd_line %>% count(ddr_before_pm_reg) # NA -> false in later step.
-# I'm just going to add this as a manual note rather than saving this dataset.
 
 
 

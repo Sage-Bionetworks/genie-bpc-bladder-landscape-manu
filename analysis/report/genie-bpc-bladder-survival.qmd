@@ -592,6 +592,9 @@ gg_md_ecog_imp_ddr <- readr::read_rds(
 gg_cox_mod_compare_ddr <- readr::read_rds(
   here(dir_met_ddr, "gg_cox_mod_compare.rds")
 )
+dft_mod_tidy_ddr <- readr::read_rds(
+  here(dir_met_ddr, 'cox_tidy_all_models.rds')
+)
 ```
 
 *Note:* We discussed whether there were enough people with second line GemCis to consider including in this model.  There are 10 people who had second line GemCis in this cohort, and only one of them had an oncogenic DDR mutation.  To me this doesn't seem worth it - adding confusion to the interpretation for that small boost in sample size. 
@@ -641,6 +644,28 @@ gg_cox_mod_compare_ddr
 - The features are not all on the same scale.  For example, age has a very small confidence bound because it is on the scale of 0-100, rather than 0/1 like most features.
 - Some features change dramatically (e.g. unknown/other race and ethnicity) with the multiple imputation model compared to the complete case model.  This makes sense to me: people with unknown/other race or ethnicity tend to have missing ECOG scores, and were excluded from the complete case model.
 - Readers of our paper may benefit from seeing at least one model with multiple imputation, since analysis of complete cases is so common in non-RWD work.  Missing data methods are nearly required to leverage ECOG scores. 
+
+
+```{r}
+#| eval: false
+dft_mod_tidy_ddr %>% 
+  filter(term %in% "ddr_onco_alt") %>% 
+  select(model, term, estimate, contains("conf"), p.value) %>%
+  mutate(
+    across(
+      .cols = c(estimate, conf.low, conf.high),
+      .fns = \(z) exp(z)
+    )
+  )
+
+dft_ddr <- readr::read_rds(
+  here('data', 'survival', 'ddr_onco', 'met_ddr_surv_mod_ready.rds')
+)
+
+
+
+
+```
 
 
 
@@ -740,6 +765,14 @@ gg_clin_path_group_stage
 - "Grouped linear" (use the analysis levels above as numbers in the outcome) and a model for change status (improve, same, worsen) would be good checks or backups.
 - A sankey or jittered slope plot would be good to show within-person differences over the two time points.
 
+```{r}
+#| eval: false
+
+# Some numbers for the abstract:
+
+dft_ddr_neo %>% glimpse
+
+```
 
 
 

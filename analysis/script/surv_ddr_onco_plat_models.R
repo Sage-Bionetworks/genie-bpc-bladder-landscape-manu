@@ -37,6 +37,12 @@ dft_cox_univariate <- coxph(
 
 
 
+dft_met_ddr_surv %<>%
+  mutate(
+    de_novo_met = if_else(
+      dx_dmet_yrs > 0, 1, 0
+    )
+  )
 
 
 dft_met_ddr_surv_mod_ready <- dft_met_ddr_surv %>%
@@ -265,3 +271,32 @@ readr::write_rds(
 # 
 # # I think if we did a regularized fit with multiple imputation we'd be in better shape.
 # 
+
+
+
+dft_alt_onco_ddr <- readr::read_rds(
+  here('data', 'survival', 'ddr_onco',
+       'alt_onco_ddr.rds')
+)
+
+ercc2_altered <- dft_alt_onco_ddr %>%
+  filter(hugo %in% 'ERCC2') %>%
+  pull(record_id)
+
+dft_met_ddr_surv %<>%
+  mutate(
+    ercc2 = record_id %in% ercc2_altered
+  )
+
+surv_ddr <- with(
+  dft_met_ddr_surv,
+  Surv(
+    time = fmr_fcpt_yrs,
+    time2 = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  )
+)
+
+survfit(surv_ddr ~ ercc2, data = dft_met_ddr_surv)
+coxph(surv_ddr ~ ercc2, data = dft_met_ddr_surv)
+
