@@ -185,6 +185,12 @@ surv_obj_os_dmet_lt_adj <- with(
   )
 )
 
+# Get the median surv in months.  The rest is nonsense:
+survfit(surv_obj_os_dmet_lt_adj ~ 1) %>%
+  summary %>%
+  `$`(.,'table') %>%
+  multiply_by(.,12)
+
 surv_obj_os_dmet_no_lt_adj <- with(
   dft_surv_dmet,
   Surv(
