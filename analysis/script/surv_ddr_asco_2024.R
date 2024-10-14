@@ -152,11 +152,13 @@ dft_onco_ddr %<>%
     )
   )
 
+
 dft_onco_ddr_flags <- dft_onco_ddr %>%
   group_by(record_id, ca_seq) %>%
+  # half day tolerance for rounding aroudn each of these:
   summarize(
-    ddr_before_pm_reg = sum(dx_path_proc_cpt_yrs < dx_first_post_met_reg_yrs, na.rm = T) >= 1,
-    ddr_before_entry = sum(dx_path_proc_cpt_yrs < dx_entry, na.rm = T) >= 1,
+    ddr_before_pm_reg = sum(dx_path_proc_cpt_yrs < dx_first_post_met_reg_yrs + 0.5/365, na.rm = T) >= 1,
+    ddr_before_entry = sum(dx_path_proc_cpt_yrs < dx_entry + 0.5/365 , na.rm = T) >= 1,
     .groups = "drop"
   )
 
@@ -307,7 +309,7 @@ dft_met_ddr_surv_grouped %<>%
             event = os_first_met_reg_status
           )) ~ ddr_before_entry
         ) %>%
-          broom::tidy(., conf.int = T)
+          broom::tidy(., conf.int = T, exponentiate = F) # will exp later.
       }
     )
   )
@@ -334,8 +336,6 @@ dft_met_ddr_surv_grouped %<>%
     )
   )
   
-  
-test <- dft_met_ddr_surv_grouped %>% slice(1) %>% pull(data) %>% `[[`(.,1)
 
 
 
@@ -355,7 +355,8 @@ dft_met_ddr_surv_grouped %>%
       .cols = c(estimate, conf.low, conf.high),
       .fns = exp
     )
-  )
+  ) %>%
+  select(1,3,6:8)
 
 dft_met_ddr_surv_grouped %>%
   select(analysis_group, median_surv) %>%
@@ -364,7 +365,7 @@ dft_met_ddr_surv_grouped %>%
   mutate(
     across(
       .cols = c(median, lower, upper),
-      .fns = \(z) z * 12
+      .fns = \(z) z * 12.0148 # previously 12, makes almost no difference.
     )
   ) %>%
   # for now we just care about the medians:
