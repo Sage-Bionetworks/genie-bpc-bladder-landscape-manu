@@ -18,7 +18,8 @@ geno_files_included <- c(
   "data_mutations_extended.txt",
   "data_CNA.txt",
   "data_fusions.txt",
-  "data_cna_hg19.seg"
+  'data_sv.txt',
+  # "data_cna_hg19.seg"
   # don't see a genomic information file
 )
 
@@ -36,12 +37,23 @@ if (any(stringr::str_detect(df_clin_children$name, ".csv^"))) {
   warning("Non-CSV files unexpectedly contained in {synid_clin_data}.")
 }
 
-syn_store_in_dataraw <- function(sid) {
-  synGet(
-    entity = sid, 
-    downloadLocation = here("data-raw"),
-    ifcollision = 'overwrite.local'
-  )
+syn_store_in_dataraw <- function(sid, loc = here('data-raw'), v = NULL) {
+  
+  # not sure how to do this with synGet, so we'll do a conditional for the version.
+  if (is.null(v)) {
+    synGet(
+      entity = sid, 
+      downloadLocation = loc,
+      ifcollision = 'overwrite.local'
+    ) 
+  } else {
+    synGet(
+      entity = sid, 
+      downloadLocation = loc,
+      ifcollision = 'overwrite.local',
+      version = v
+    ) 
+  }
 }
 
 purrr::walk(.x = df_clin_children$id, 
@@ -66,23 +78,51 @@ df_geno_children %<>%
   ) %>%
   filter(is_panel | is_included) 
 
-syn_store_in_dataraw_geno <- function(sid, v = NULL) {
-  synGet(
-    entity = sid, 
-    downloadLocation = here("data-raw", "genomic"),
-    ifcollision = 'overwrite.local',
-    version = v
-  )
-}
-
 purrr::walk(.x = df_geno_children$id, 
-            .f = syn_store_in_dataraw_geno)
+            .f = \(z) {
+              syn_store_in_dataraw(z, loc = here("data-raw", "genomic"))
+            })
 
 
-syn_store_in_dataraw_geno(
-  synid_assay_info
+syn_store_in_dataraw(
+  synid_assay_info,
+  loc = here('data-raw', 'genomic')
 )
-# Insanely slow, maybe the versioned bed file is in colder storage? 
-syn_store_in_dataraw_geno(
-  synid_bed_file, v = synid_bed_file_version
+# Insanely slow, probably due partially to the zillions of extra rows.
+syn_store_in_dataraw(
+  synid_bed_file,
+  loc = here('data-raw', 'genomic'),
+  v = synid_bed_file_version
 )
+
+
+
+
+
+# Main GENIE downloads.
+# latest, 17.5 at writing.  Using the link to the 17.5 release doesn't work.
+main_genie_folder <- 'syn5521835' 
+df_main_children <- synGetChildren(main_genie_folder) %>%
+  as.list %>%
+  purrr::map_dfr(.x = .,
+                 .f = as_tibble)
+
+# Don't think we need the panel files here.
+df_main_children %<>%
+  filter(name %in% c(geno_files_included, 
+                     'genomic_information.txt',
+                     'data_clinical_patient.txt',
+                     'data_clinical_sample.txt'))
+
+purrr::walk(.x = df_main_children$id, 
+            .f = \(z) {
+              syn_store_in_dataraw(
+                z, 
+                loc = here("data-raw", "genomic" , 'main_genie')
+              )})
+
+
+
+
+
+

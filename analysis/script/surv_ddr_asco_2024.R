@@ -383,7 +383,7 @@ dft_met_ddr_surv_grouped %>%
   count(ddr_before_entry)
 
 
-# It just never ends.
+# It just never ends - a few more asks here:
 dft_ca_ind %>%
   filter(record_id %in% dft_met_timing$record_id) %>%
   select(age_dx, ca_type) %>%
@@ -393,3 +393,4 @@ dft_pt %>%
   filter(record_id %in% dft_met_timing$record_id) %>%
   select(naaccr_sex_code) %>%
   tbl_summary(.)
+

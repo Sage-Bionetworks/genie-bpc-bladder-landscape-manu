@@ -50,7 +50,14 @@ rmarkdown::render(
   output_file = '02-genie-bpc-bladder-genomic.html',
   output_dir = here('output', 'report')
 )
-#  
+
+
+
+# Main genie genomic reprise
+source(here('analysis', 'script', 'prepare_data_for_oncokb_annotate_main_genie.R'))
+# Run annotate_oncokb_main_genie.sh - see instructions there in comments.
+source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
+
 
 
 
