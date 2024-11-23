@@ -225,7 +225,35 @@ readr::write_rds(
 # Hoping that I don't need any of the rest of the script - see the NON main 
 #   genie version for that if you need to pull from it.
 
+# The one piece we will need is the dataframe listing who was tested for what genes.
+# We will use the bed file to do that here.
 
+samp_bladder <- read_rds(here(dir_input, 'bladder_samples_mg.rds'))
+clin_samp_bladder <- readr::read_tsv(
+  here('data-raw', 'genomic', 'main_genie', 'data_clinical_sample.txt'),
+  skip = 4
+) %>% rename_all(tolower) %>%
+  filter(sample_id %in% samp_bladder)
+
+panels_used <- clin_samp_bladder %>% pull(seq_assay_id) %>% unique(.)
+
+mg_bed <- readr::read_tsv(
+  here('data-raw', 'genomic', 'main_genie', 'genomic_information.txt')
+) 
+
+testing_df <- mg_bed %<>% 
+  rename_all(tolower) %>%
+  filter(includeinpanel %in% T) %>%
+  filter(seq_assay_id %in% panels_used)
+
+testing_df <- mg_bed %>%
+  select(seq_assay_id, hugo_symbol) %>%
+  mutate(tested = T) %>%
+  tidyr::complete(seq_assay_id, hugo_symbol, fill = list(tested = F))
+
+# Need to complete the transformation into the style of dataset I had for non-main
+#   GENIE next, then save, then create the co-occurence plots.
+  
 
 
 

@@ -34,6 +34,11 @@ samp_bladder <- clin_samp %>%
   filter(oncotree_code %in% onco_bladder) %>%
   pull(sample_id)
 
+readr::write_rds(
+  samp_bladder,
+  here(dir_output, 'bladder_samples_mg.rds')
+)
+
 dft_mut %<>% filter(Tumor_Sample_Barcode %in% samp_bladder)
 dft_cna %<>% select(Hugo_Symbol, any_of(samp_bladder))
 dft_fus %<>% filter(Tumor_Sample_Barcode %in% samp_bladder)
