@@ -247,12 +247,114 @@ testing_df <- mg_bed %<>%
   filter(seq_assay_id %in% panels_used)
 
 testing_df <- mg_bed %>%
+  filter(!is.na(hugo_symbol)) %>%
   select(seq_assay_id, hugo_symbol) %>%
+  distinct(.) %>%
   mutate(tested = T) %>%
   tidyr::complete(seq_assay_id, hugo_symbol, fill = list(tested = F))
 
-# Need to complete the transformation into the style of dataset I had for non-main
-#   GENIE next, then save, then create the co-occurence plots.
+testing_df %>% filter(seq_assay_id %in% "WAKE-CLINICAL-DX1", hugo_symbol %in% "TERT")
+
+sample_hugo_index <- clin_samp_bladder %>% 
+  select(sample_id, patient_id, seq_assay_id, sample_type)
+
+sample_hugo_index <- 
+  left_join(
+    sample_hugo_index,
+    testing_df,
+    by = 'seq_assay_id',
+    relationship = 'many-to-many'
+  ) 
+
+sample_hugo_index %<>% rename(hugo = hugo_symbol)
+
+sample_hugo_index <- dft_alt %>% 
+  group_by(sample_id, hugo) %>%
+  summarize(
+    any_alt = T,
+    # for QC:
+    any_mut = any(alt_type %in% "Mutation"),
+    any_alt_onco = any(oncogenic %in% c('Oncogenic', 'Likely Oncogenic')),
+    .groups = 'drop'
+  ) %>%
+  left_join(
+    sample_hugo_index,
+    .,
+    by = c('sample_id', 'hugo')
+  )
+
+# QC curiousity:
+# sample_hugo_index %>%
+#   filter(!tested & any_mut) %>%
+#   count(seq_assay_id, hugo, sort = T)
+# The TERT examples are interesting.  The id says TERT and the hugo symbol
+#   does not, meaning the site thought it was on TERT and the Sage remap
+#   say it isn't.  This brings up an interesting question: Why do we only
+#   remap the bed file regions and not the results?  We're releasing TERT
+#   results even when the bed file indicates no TERT coverage - insanity.
+
+# For now we will do a hideous hack and assume that any altered sample
+#   was tested.  Which is true, but does not actually adjust correctly for
+#   many samples which were not altered.
+sample_hugo_index %<>%
+  filter(any_mut) %>%
+  select(seq_assay_id, hugo) %>%
+  distinct(.) %>%
+  mutate(panel_has_pos_test = T) %>%
+  left_join(
+    sample_hugo_index,
+    .,
+    by = c('seq_assay_id', 'hugo')
+  )
+
+n_row_sh <- nrow(sample_hugo_index)
+n_hacked <- sample_hugo_index %>%
+  filter(!tested & panel_has_pos_test) %>% nrow
+sample_hugo_index %<>%
+  mutate(tested = case_when(
+    panel_has_pos_test ~ T,
+    T ~ F
+  ))
+cli::cli_alert_warning(
+  "{n_hacked} of the {n_row_sh} rows were changed to indicate testing based on a positive result in the panel for that hugo symbol (despite the bed file not indicating testing).  Not ideal but it prevents paradoxes.")
+
+# This is a fairly large file to save, but it's the core of what we're doing.
+readr::write_rds(
+  sample_hugo_index,
+  here(dir_output, 'sample_hugo_index.rds')
+)
+  
+
+hugo_sum <- sample_hugo_index %>%
+  group_by(hugo) %>%
+  summarize(
+    n_tested = n(),
+    n_tested_chk = length(unique(sample_id)), # will remove.
+    n_alt = length(unique(sample_id[any_alt])),
+    n_alt_onco = length(unique(sample_id[any_alt_onco])),
+  ) 
+
+if (any(hugo_sum$n_tested != hugo_sum$n_tested_chk)) { 
+  cli_abort("sample_hugo_index does not have unique sample/hugo rows.")
+} else {
+  hugo_sum %<>% select(-n_tested_chk)
+}
+
+hugo_sum %<>%
+  mutate(
+    prop_alt = n_alt / n_tested,
+    prop_alt_onco = n_alt / n_tested
+  )
+    
+readr::write_rds(
+  hugo_sum,
+  here(dir_output, 'hugo_summary.rds')
+)
+
+
+
+
+
   
 
 
