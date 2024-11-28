@@ -1,12 +1,15 @@
-# Create the co-occurence plots.  This is now a ton of code.
+# Create the co-occurence plots. 
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
 
 in_dir <- here('data', 'genomic', 'main_genie')
-out_dir <- here('data', 'genomic', 'gene_corr')
+out_dir <- here('data', 'genomic', 'gene_corr', 'main_genie')
 
 
 dft_alt <- readr::read_rds(here(in_dir, 'alterations.rds'))
+hugo_sum <- readr::read_rds(here(in_dir, 'hugo_summary.rds'))
+bladder_samp <- readr::read_rds(here(in_dir, 'bladder_samples_mg.rds'))
+sample_hugo_index <- readr::read_rds(here(in_dir, 'sample_hugo_index.rds'))
 
 clin_samp <- readr::read_tsv(
   here('data-raw', 'genomic', 'main_genie', 'data_clinical_sample.txt'),
@@ -28,67 +31,25 @@ dft_alt <- clin_samp %>%
     by = 'sample_id',
     relationship = 'many-to-one'
   )
-  
-
-  
-
-dft_inst_freq <- dft_gt_any_alt %>%
-  select(
-    sample_id,
-    hugo,
-    tested,
-    any_alt,
-    any_alt_onco
-  ) %>%
-  left_join(
-    .,
-    select(
-      dft_cpt, 
-      sample_id = cpt_genie_sample_id,
-      institution
-    ),
-    by = "sample_id",
-    relationship = 'many-to-one'
-  )
-
-dft_inst_freq %<>%
-  group_by(institution, hugo) %>%
-  summarize(
-    n_tested = sum(tested, na.rm = T),
-    n_alt = sum(any_alt, na.rm = T),
-    n_alt_onco = sum(any_alt_onco, na.rm = T),
-    
-    prop_alt = n_alt/n_tested,
-    prop_alt_onco = n_alt_onco/n_tested,
-    .groups = "drop"
-  ) 
-
-dft_inst_freq_all <- dft_inst_freq %>%
-  group_by(hugo) %>%
-  summarize(
-    across(
-      .cols = c(n_alt, n_alt_onco, n_tested),
-      .fns = sum
-    ),
-    .groups = 'drop'
-  ) %>%
-  mutate(
-    prop_alt = n_alt/n_tested,
-    prop_alt_onco = n_alt_onco/n_tested
-  ) %>%
-  mutate(institution = "All")
 
 
 
+# ggplot(
+#   hugo_sum,
+#   aes(x = prop_alt_onco)
+# ) + 
+#   stat_ecdf()
 
+clin_samp_bladder <- clin_samp %>%
+  filter(sample_id %in% bladder_samp)
 
 #########################################
 # Build the whole-cohort co-occur plots #
 #########################################
 
-vec_co_occur_genes <- dft_inst_freq_all %>% 
+vec_co_occur_genes <- hugo_sum %>% 
   mutate(prop_tested = n_tested/max(n_tested)) %>%
-  filter(prop_alt_onco > 0.1, prop_tested > 0.85) %>%
+  filter(prop_alt_onco > 0.1, prop_tested > 0.9) %>%
   pull(hugo)
 
 dft_top_gene_bin <- dft_alt %>% 
@@ -96,7 +57,7 @@ dft_top_gene_bin <- dft_alt %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
   make_binary_gene_matrix(
     dat_alt = .,
-    vec_sample = dft_cpt$cpt_genie_sample_id
+    vec_sample = bladder_samp
   ) %>%
   select(sample_id, any_of(vec_co_occur_genes), everything())
 
@@ -121,7 +82,7 @@ readr::write_rds(
   gg_gene_assoc_all,
   # "All samples" here refers to tested or not.  Implicit assumption that 
   #    untested is negative.
-  file = here('data', 'genomic', 'gene_corr', 'gg_mat_fisher_all_samples.rds')
+  file = here(out_dir, 'gg_mat_fisher_all_samples.rds')
 )
 
 
@@ -135,47 +96,45 @@ vec_genes_in_co_occur_plot <- dft_gene_assoc_all$var1_lab %>%
     ., "[:space:].*", ""
   )
 
-vec_panels_with_all_top <- dft_gp_all %>%
-  filter(
-    hugo %in% vec_genes_in_co_occur_plot
-  ) %>%
-  select(cpt_seq_assay_id, hugo, tested) %>% 
-  group_by(cpt_seq_assay_id) %>%
+panel_sum_co_occur <- sample_hugo_index %>%
+  filter(tested) %>%
+  select(seq_assay_id, hugo) %>%
+  distinct(.) %>%
+  group_by(seq_assay_id) %>%
   summarize(
-    has_all_top = n() >= length(vec_genes_in_co_occur_plot) # those with tested = F are implicitly missing currently.
-  ) %>%
-  filter(has_all_top) %>%
-  pull(cpt_seq_assay_id) %>%
-  as.character(.)
+    has_all_genes = all(vec_genes_in_co_occur_plot %in% hugo),
+    .groups = 'drop'
+  )
+
+vec_panels_with_all_top <- pull(filter(panel_sum_co_occur, has_all_genes), seq_assay_id)
 
 dft_alt_full_top_tested <- dft_alt %>%
   left_join(
     ., 
-    select(dft_cpt, sample_id = cpt_genie_sample_id, cpt_seq_assay_id),
+    select(clin_samp, sample_id, seq_assay_id),
     by = 'sample_id'
   ) %>%
-  filter(cpt_seq_assay_id %in% vec_panels_with_all_top)
-
+  filter(seq_assay_id %in% vec_panels_with_all_top)
 
 
 
 
 # Update: We will also limit to one sample per person here.
 
-vec_sample_one_per_person <- dft_cpt %>%
-  filter(cpt_seq_assay_id %in% vec_panels_with_all_top) %>%
+vec_sample_one_per_person <- clin_samp_bladder %>%
+  filter(seq_assay_id %in% vec_panels_with_all_top) %>%
   mutate(
-    .is_met = sample_type_simple_f %in% "Metastasis",
-    .is_primary = sample_type_simple_f %in% "Primary"
+    .is_met = sample_type %in% "Metastasis",
+    .is_primary = sample_type %in% "Primary"
   ) %>%
-  group_by(record_id) %>%
+  group_by(patient_id) %>%
   arrange(
     # priority:  met first if they have it.  then by most recent.
-    desc(.is_met), desc(.is_primary), desc(dx_cpt_rep_days)
+    desc(.is_met), desc(.is_primary), desc(age_at_seq_report_days)
   ) %>%
   slice(1) %>%
   ungroup(.) %>%
-  pull(cpt_genie_sample_id)
+  pull(sample_id)
   
 
 # Now we copy-paste the same code from above:

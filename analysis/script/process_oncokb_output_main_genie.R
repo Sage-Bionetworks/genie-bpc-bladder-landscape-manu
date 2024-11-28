@@ -273,15 +273,16 @@ sample_hugo_index <- dft_alt %>%
   summarize(
     any_alt = T,
     # for QC:
-    any_mut = any(alt_type %in% "Mutation"),
-    any_alt_onco = any(oncogenic %in% c('Oncogenic', 'Likely Oncogenic')),
+    any_mut = any(alt_type %in% "Mutation", na.rm = T),
+    any_alt_onco = any(oncogenic %in% c('Oncogenic', 'Likely Oncogenic'), na.rm = T),
     .groups = 'drop'
   ) %>%
   left_join(
     sample_hugo_index,
     .,
     by = c('sample_id', 'hugo')
-  )
+  ) %>%
+  replace_na(list(any_alt = F, any_mut = F, any_alt_onco = F))
 
 # QC curiousity:
 # sample_hugo_index %>%
@@ -297,7 +298,7 @@ sample_hugo_index <- dft_alt %>%
 #   was tested.  Which is true, but does not actually adjust correctly for
 #   many samples which were not altered.
 sample_hugo_index %<>%
-  filter(any_mut) %>%
+  filter(any_alt) %>%
   select(seq_assay_id, hugo) %>%
   distinct(.) %>%
   mutate(panel_has_pos_test = T) %>%
@@ -312,8 +313,9 @@ n_hacked <- sample_hugo_index %>%
   filter(!tested & panel_has_pos_test) %>% nrow
 sample_hugo_index %<>%
   mutate(tested = case_when(
+    is.na(panel_has_pos_test) ~ tested,
     panel_has_pos_test ~ T,
-    T ~ F
+    T ~ tested
   ))
 cli::cli_alert_warning(
   "{n_hacked} of the {n_row_sh} rows were changed to indicate testing based on a positive result in the panel for that hugo symbol (despite the bed file not indicating testing).  Not ideal but it prevents paradoxes.")
@@ -328,8 +330,9 @@ readr::write_rds(
 hugo_sum <- sample_hugo_index %>%
   group_by(hugo) %>%
   summarize(
-    n_tested = n(),
-    n_tested_chk = length(unique(sample_id)), # will remove.
+    n_samples = n(), # should be the same for every gene.
+    n_tested = sum(tested),
+    n_tested_chk = length(unique(sample_id[tested])), # will remove.
     n_alt = length(unique(sample_id[any_alt])),
     n_alt_onco = length(unique(sample_id[any_alt_onco])),
   ) 
@@ -342,6 +345,7 @@ if (any(hugo_sum$n_tested != hugo_sum$n_tested_chk)) {
 
 hugo_sum %<>%
   mutate(
+    prop_tested = n_tested / n_samples,
     prop_alt = n_alt / n_tested,
     prop_alt_onco = n_alt / n_tested
   )
