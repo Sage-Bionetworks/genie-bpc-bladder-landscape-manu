@@ -68,8 +68,8 @@ source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
 # Survival #
 ############
 source(here('analysis', 'script', 'basic_survival_descriptive.R'))
-source(here('analysis', 'script', 'surv_platinum_gem_first_line.R'))
-source(here('analysis', 'script', 'surv_platinum_gem_first_line_model.R'))
+source(here('analysis', 'script', 'surv_platinum_first_line.R'))
+source(here('analysis', 'script', 'surv_platinum_first_line_model.R'))
 source(here('analysis', 'script', 'surv_ercc3_platinum.R'))
 source(here('analysis', 'script', 'surv_ercc2_platinum.R'))
 source(here('analysis', 'script', 'surv_first_line_immunotherapy.R'))

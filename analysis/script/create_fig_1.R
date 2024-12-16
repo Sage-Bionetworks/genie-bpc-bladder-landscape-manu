@@ -10,6 +10,6 @@ os_by_stage <- readr::read_rds(
 
 plot_grid(
   ggsurvfit_build(os_by_stage),
-  
+  ggsurvfit_build(os
   labels = "AUTO"
 )
