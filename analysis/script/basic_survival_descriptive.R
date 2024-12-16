@@ -72,7 +72,7 @@ readr::write_rds(
   file = here(surv_desc_fp, 'os_dx_by_stage.rds')
 )
 
-gg_os_dx_stage_aacr_ss24 <- plot_one_survfit(
+gg_os_dx_stage_manu <- plot_one_survfit(
   dat = dft_surv_dx,
   surv_form = surv_obj_os_dx ~ stage_custom,
   plot_title = "OS from diagnosis",
@@ -84,8 +84,16 @@ gg_os_dx_stage_aacr_ss24 <- plot_one_survfit(
 ) + 
   coord_cartesian(xlim = c(0, 5), ylim = c(0, 1.01))
 
+gg_os_dx_stage_manu <- gg_os_dx_stage_manu +
+  labs(subtitle = NULL, title = "Overall survival from dx")
+
+readr::write_rds(
+  x = gg_os_dx_stage_manu,
+  file = here(surv_desc_fp, 'os_dx_by_stage_manu.rds')
+)
+
 ggsave(
-  gg_os_dx_stage_aacr_ss24,
+  gg_os_dx_stage_manu, # changed the name to "manu" as the project evolved.
   height = 5, width = 8,
   filename = here(
     'output', 'aacr_ss24', 'img',
