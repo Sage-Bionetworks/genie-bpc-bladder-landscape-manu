@@ -16,7 +16,7 @@ get_med_onc_by_timing <- function(
     dat_med_onc %<>% filter(!(md_ecog_imputed %in% "Not documented in note"))
   }
   
-  dat_cutoff %<>% select(record_id, .cut = .data[[var_cutoff]])
+  dat_cutoff %<>% select(record_id, .cut = all_of(var_cutoff))
   
   rtn <- left_join(
     dat_med_onc,

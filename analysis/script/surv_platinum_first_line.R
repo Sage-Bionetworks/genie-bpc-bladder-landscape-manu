@@ -25,11 +25,24 @@ dft_lot <- readr::read_rds(
 dft_cases <- dft_lot %>%
   filter(line_therapy %in% 1) %>%
   filter(
-    # so not including things like GemCis + paclitaxel which seem common.
-    regimen_drugs %in% c(
-      "Cisplatin, Gemcitabine Hydrochloride",
-      "Carboplatin, Gemcitabine Hydrochloride"
-    )
+    str_detect(regimen_drugs, 'Cisplatin|Carboplatin')
+  )
+
+
+# There was one case that contained both carboplatin and cisplatin.
+# It's a zero-day regimen, so we're just going to exclude it.
+dft_cases %<>%
+  filter(!(str_detect(regimen_drugs, "Carbo") & 
+             str_detect(regimen_drugs, "Cisplat"))) 
+
+dft_cases %<>%
+  mutate(
+    reg_group = case_when(
+      str_detect(regimen_drugs, "Carboplatin") ~ "Carboplatin-based",
+      str_detect(regimen_drugs, "Cisplatin") ~ "Cisplatin-based",
+      T ~ NA_character_
+    ),
+    reg_group = factor(reg_group)
   )
 
 dft_cases <- left_join(
@@ -136,7 +149,7 @@ dft_cases %<>%
 dft_cases %<>%
   mutate(
     carboplatin = if_else(
-      str_detect(regimen_drugs, "Carboplatin"),
+      str_detect(reg_group, "Carboplatin-based"),
       T,
       F
     )
@@ -178,7 +191,7 @@ surv_obj_cases <- with(
 
 gg_first_line_platinum <- plot_one_survfit(
   dat = dft_cases,
-  surv_form = surv_obj_cases ~ regimen_drugs,
+  surv_form = surv_obj_cases ~ reg_group,
   plot_title = "OS, from start of first line platinum-based chemotherapy",
   plot_subtitle = "Adjusted for truncation assuming independence",
   x_exp = 0.1,
@@ -191,19 +204,28 @@ readr::write_rds(
   here(dir_output, 'gg_first_line_platinum.rds')
 )
 
-gg_first_line_platinum_aacr_ss24 <- plot_one_survfit(
+gg_first_line_platinum_manu <- plot_one_survfit(
   dat = dft_cases,
-  surv_form = surv_obj_cases ~ regimen_drugs,
+  surv_form = surv_obj_cases ~ reg_group,
   plot_title = "OS, from start of first line platinum-based chemotherapy",
-  plot_subtitle = "Adjusted for truncation assuming independence",
   x_exp = 0.1,
-  x_breaks = 0:100
+  x_breaks = seq(0, 100, by = 0.5)
 ) + 
   add_quantile(y_value = 0.5, linetype = 81, alpha = 0.75) + 
   coord_cartesian(xlim = c(0,5), ylim = c(0, 1.01))
 
+gg_first_line_platinum_manu <- gg_first_line_platinum_manu + 
+  theme(
+    plot.title.position = 'panel'
+  )
+
+readr::write_rds(
+  gg_first_line_platinum_manu,
+  here(dir_output, 'gg_first_line_platinum.rds')
+)
+
 ggsave(
-  gg_first_line_platinum_aacr_ss24,
+  gg_first_line_platinum_manu,
   height = 5, width = 8,
   filename = here(
     'output', 'aacr_ss24', 'img',

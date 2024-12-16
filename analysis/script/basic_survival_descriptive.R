@@ -85,7 +85,8 @@ gg_os_dx_stage_manu <- plot_one_survfit(
   coord_cartesian(xlim = c(0, 5), ylim = c(0, 1.01))
 
 gg_os_dx_stage_manu <- gg_os_dx_stage_manu +
-  labs(subtitle = NULL, title = "Overall survival from dx")
+  labs(subtitle = NULL, title = "Overall survival from dx") +
+  theme(plot.title.position = 'panel')
 
 readr::write_rds(
   x = gg_os_dx_stage_manu,
