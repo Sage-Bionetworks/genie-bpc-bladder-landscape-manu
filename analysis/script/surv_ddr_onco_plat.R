@@ -52,7 +52,7 @@ dft_onco_ddr <- dft_cpt %>%
 
 # Find the people who had a metastasis and took a platinum therapy after:
 dft_post_met_plat <- dft_reg %>%
-  filter(regimen_drugs %in% "Cisplatin, Gemcitabine Hydrochloride") %>%
+  filter(str_detect(regimen_drugs, "Cisplatin|Carboplatin")) %>%
   select(
     record_id, ca_seq, contains("regimen_number"),
     regimen_drugs,
@@ -142,7 +142,7 @@ dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
 dft_met_ddr_surv <- dft_lot %>%
   filter(
     line_therapy %in% 1,
-    regimen_drugs %in% "Cisplatin, Gemcitabine Hydrochloride"
+    str_detect(regimen_drugs, "Cisplatin|Carboplatin")
   ) %>%
   select(record_id, ca_seq, regimen_number) %>%
   left_join(
@@ -274,7 +274,7 @@ dft_met_ddr_surv %<>%
 gg_os_fmr_ddr <- plot_one_survfit(
   dat = dft_met_ddr_surv,
   surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first line (metastatic) GemCis",
+  plot_title = "OS from first line platinum chemo",
   plot_subtitle = "Adjusted for (independent) delayed entry"
 )
 
@@ -286,17 +286,22 @@ readr::write_rds(
 
 # Make a truncated version:
 
-gg_os_fmr_ddr_aacr_ss24 <- plot_one_survfit(
+gg_os_fmr_ddr_manu <- plot_one_survfit(
   dat = dft_met_ddr_surv,
   surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first line (metastatic) GemCis",
-  plot_subtitle = "Adjusted for (independent) delayed entry",
+  plot_title = "OS from first line platinum chemo",
   x_breaks = seq(0, 100, by = 0.5)
 ) + 
-  coord_cartesian(xlim = c(0,5))
+  coord_cartesian(xlim = c(0,5)) +
+  theme(plot.title.position = 'panel')
+
+readr::write_rds(
+  gg_os_fmr_ddr_manu,
+  file = here(dir_out, "gg_met_ddr_manu.rds")
+)
 
 ggsave(
-  plot = gg_os_fmr_ddr_aacr_ss24,
+  plot = gg_os_fmr_ddr_manu,
   height = 4, width = 7,
   filename = here('output', 'aacr_ss24', 'img', '03_met_ddr.pdf')
 )

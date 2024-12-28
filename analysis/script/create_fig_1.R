@@ -13,11 +13,15 @@ first_line_platinum <- readr::read_rds(
   file = here('data', 'survival', 'first_line_platinum', 'gg_first_line_platinum.rds')
 )
 
+first_line_by_ddr <- readr::read_rds(
+  file = here('data', 'survival', 'ddr_onco', 
+              'gg_met_ddr_manu.rds')
+)
 
 fig1_comb <- plot_grid(
   ggsurvfit_build(os_by_stage),
   ggsurvfit_build(first_line_platinum),
-  NULL,
+  ggsurvfit_build(first_line_by_ddr),
   NULL,
   labels = "AUTO",
   align = 'hv',
