@@ -1,0 +1,69 @@
+---
+title: "BPC Bladder - DDR pathways"
+author: "Alex Paynter"
+date: "`r Sys.Date()`"
+editor_options:
+  quarto:
+    chunk_output_type: console
+format:
+  html:
+    embed-resources: true
+    toc: true
+    theme: sandstone 
+execute:
+  echo: false
+  include: false
+  warning: false
+  message: false
+  fig.width: 7
+  fig.height: 5
+---
+
+```{r}
+library(purrr); library(here); library(fs)
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
+```
+
+```{r}
+dir_ddr <- here('data', 'genomic', 'ddr_def_compare')
+gg_def_compare_heatmap <- readr::read_rds(here(dir_ddr, 'gg_def_compare_heatmap.rds'))
+ft_ddr_def <- readr::read_rds(here(dir_ddr, 'ft_ddr_def.rds'))
+```
+
+## Introduction
+
+DDR pathway alterations have been hypothesized to have predictive value for those taking regimens containing both platinum-based chemotherapy and immunotherapies.  The definition of a gene being included in the DDR pathway varies widely depending on the institution or author or cancer type.  We will leverage both urothelial carcinoma main GENIE data (defined by oncotree code) and the subset selected for GENIE BPC to study the proportion who are "DDR altered" using various definitions.
+
+### R4.1 Panel coverage
+
+We identified a few papers which have furnished DDR pathway gene lists.  These include:
+
+- Teo 2017 (https://doi.org/10.1158/1078-0432.CCR-16-2520) - MSK
+- Galsky 2018 (https://doi.org/10.1016/j.eururo.2017.12.001) - Mount Sinai.
+- Iyer 2018 (http://ascopubs.org/doi/full/10.1200/JCO.2017.75.0158) - MSK.
+- Yin 2020 (http://dx.doi.org/10.1634/theoncologist.2019-0851) - Ohio State.
+
+Additionally, we created an empirical gene subset from GENIE.  This includes all genes that are a part of every GENIE BPC panel, and in at least one of the papers above.  We had to exclude small panels (around 50 genes) to get a reasonable set, as several panels had 0 or 2 genes included.
+
+The following heatmap shows the coverage of these four papers plus the GENIE intersection (GENIE int):
+
+```{r}
+#| include: true
+#| fig-height: 2
+gg_def_compare_heatmap + 
+  theme(
+    axis.text.x = element_text(size = 6),
+    legend.position = 'bottom',
+    axis.title.y = element_blank()
+  )
+
+```
+
+### R4.2
+
+Next we apply these gene lists to our data to find the number of people who have a DDR alteration.  We repeat this (in columns) for main GENIE and BPC, and using OncoKB to limit to only oncogenic alterations.
+
+```{r}
+#| include: true
+```
+
