@@ -28,42 +28,67 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packag
 dir_ddr <- here('data', 'genomic', 'ddr_def_compare')
 gg_def_compare_heatmap <- readr::read_rds(here(dir_ddr, 'gg_def_compare_heatmap.rds'))
 ft_ddr_def <- readr::read_rds(here(dir_ddr, 'ft_ddr_def.rds'))
+gg_ddr_panel <- readr::read_rds(here(dir_ddr, 'gg_ddr_panel.rds'))
+
 ```
 
 ## Introduction
 
-DDR pathway alterations have been hypothesized to have predictive value for those taking regimens containing both platinum-based chemotherapy and immunotherapies.  The definition of a gene being included in the DDR pathway varies widely depending on the institution or author or cancer type.  We will leverage both urothelial carcinoma main GENIE data (defined by oncotree code) and the subset selected for GENIE BPC to study the proportion who are "DDR altered" using various definitions.
+DDR pathway alterations have been hypothesized to have predictive value for those taking regimens containing both platinum-based chemotherapy and immunotherapy.  The definition of a gene being included in the DDR pathway varies widely depending on the institution, author and cancer type under study.  We will leverage both the urothelial carcinoma main GENIE subset (defined by oncotree code) and the subset selected for GENIE BPC to study the proportion who are "DDR altered" using various definitions.
 
 ### R4.1 Panel coverage
 
-We identified a few papers which have furnished DDR pathway gene lists.  These include:
+We (especially Michal) identified a few papers which have furnished DDR pathway gene lists.  These include:
 
 - Teo 2017 (https://doi.org/10.1158/1078-0432.CCR-16-2520) - MSK
 - Galsky 2018 (https://doi.org/10.1016/j.eururo.2017.12.001) - Mount Sinai.
 - Iyer 2018 (http://ascopubs.org/doi/full/10.1200/JCO.2017.75.0158) - MSK.
 - Yin 2020 (http://dx.doi.org/10.1634/theoncologist.2019-0851) - Ohio State.
 
-Additionally, we created an empirical gene subset from GENIE.  This includes all genes that are a part of every GENIE BPC panel, and in at least one of the papers above.  We had to exclude small panels (around 50 genes) to get a reasonable set, as several panels had 0 or 2 genes included.
+Additionally, we created an empirical gene subset from GENIE.  This includes all genes that are a part of every GENIE BPC panel, and in at least one of the papers above.  We had to exclude small panels (those around 50 genes, used in few participants) to get a reasonable set, as several panels had 0 or 2 genes in the DDR pathway included.
 
-The following heatmap shows the coverage of these four papers plus the GENIE intersection (GENIE int):
+The following heatmap shows the coverage of these four papers plus the intersection of GENIE panels (GENIE int):
 
 ```{r}
 #| include: true
 #| fig-height: 2
-gg_def_compare_heatmap + 
-  theme(
-    axis.text.x = element_text(size = 6),
-    legend.position = 'bottom',
-    axis.title.y = element_blank()
-  )
+gg_def_compare_heatmap  
+  
 
 ```
 
-### R4.2
+### R4.2 DDR-altered patient counts
 
 Next we apply these gene lists to our data to find the number of people who have a DDR alteration.  We repeat this (in columns) for main GENIE and BPC, and using OncoKB to limit to only oncogenic alterations.
 
+In addition to the definitions above we also include two more:
+
+- Pearl, 2015 (https://doi.org/10.1038/nrc3891).  This is an academic ancestor of the papers above, and includes a huge number of genes which MAY be DDR-related.  This is included to give us a "maximal" comparison.  Two versions are included:
+  - Pearl 2015 full:  every gene in the paper.
+  - Pearl 2015 - select.  A subset of the pathways in the paper, specifically the pathways mentioned in the papers above ("MMR", "HR", "FA", "NHEJ", "BER", "NER").  The list of genes for each of these pathways is larger in the Pearl paper, so this is still a superset for comparison.
+
+The Pearl lists were not included in the plot above mostly because they include too many genes and plot gets hard to read.
+
+The following table shows the percentage having at least one ddr mutation (number of people):
+
 ```{r}
 #| include: true
+ft_ddr_def
 ```
 
+**Notes**
+
+- The main GENIE (GENIE-UC) and GENIE-BPC percentages are similar (but consistently slightly higher for BPC).  This gives some reassurance that we don't have an insanely biased sample.
+- Comparing the "any alt." to "oncogenic" columns, the number of patients is generally 50-70% smaller when using the OncoKB oncogenic filter. 
+- Except for the Pearl examples given for comparison, the proportion of main genie and BPC which has at least one oncogenic DDR alteration is between 19 and 24% for main genie and 18-26% for BPC.
+
+### R4.3 - Panel coverage for DDR genes
+
+The following plot takes the genes included in the paper/definition comparison (R4.1) and shows the panel coverage in GENIE.  The axis is grouped to have the BPC-used panels at the top.  After that the axis is ordered by the number of samples tested (m).
+
+```{r}
+#| include: true
+#| fig-height: 7
+
+gg_ddr_panel
+```

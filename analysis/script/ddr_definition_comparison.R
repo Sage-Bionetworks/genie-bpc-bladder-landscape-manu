@@ -113,7 +113,11 @@ gg_def_compare <- ggplot(
   scale_y_discrete(expand = c(0,0)) + 
   scale_x_discrete(expand = c(0,0)) + 
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(
+    axis.text.x = element_text(size = 6, angle = 90, hjust = 1),
+    legend.position = 'bottom',
+    axis.title.y = element_blank()
+  )
 
 # gg_def_compare
 
@@ -210,6 +214,7 @@ pt_counts_ddr_def %<>%
 
 # Load in the cohort file from BPC and repeat this process for BPC.
 cpt <- readr::read_rds(here('data', 'cohort', 'cpt.rds'))
+ca_ind <- readr::read_rds(here('data', 'cohort', 'ca_ind.rds'))
 
 alt_bpc <- readr::read_rds(
   here('data', 'genomic', 'alterations.rds')
@@ -220,7 +225,21 @@ alt_bpc <- readr::read_rds(
 ddr_def_nest_bpc <- ddr_def_nest %>% select(source, gene_list)
 
 first_sample_bpc <- first_sample_main %>%
-  filter(sample_id %in% cpt$cpt_genie_sample_id)
+  filter(patient_id %in% unique(cpt$record_id))
+
+# Sidenote here:  If you try to subset by sample_id above you get different samples (probably the order is switched after curation or extra detail provided by curation), and a few people go missing as a result.
+# Here are the people who differ:
+# first_cpt <- get_first_cpt(ca_ind, cpt, include_sample_id = T)
+# people_not_in_main_genie <- first_cpt %>%
+#   filter(
+#     cpt_genie_sample_id %in% setdiff(
+#       first_cpt$cpt_genie_sample_id, 
+#       first_sample_main$sample_id
+#     )
+#   ) %>%
+#   pull(record_id) 
+# filter(first_sample_main, patient_id %in% people_not_in_main_genie)
+
 
 ddr_def_nest_bpc %<>%
   mutate(
@@ -302,7 +321,7 @@ new_header <- names(ft_ddr_def) %>%
                        col_keys, delim = '|', cols_remove = F,
                        too_few = 'align_start')
 
-ft_ddr_def %>%
+ft_ddr_def <- ft_ddr_def %>%
   flextable(.) %>%
   flextable::set_header_df(mapping = new_header, key = 'col_keys') %>%
   theme_booktabs(.) %>%
@@ -312,6 +331,77 @@ readr::write_rds(
   ft_ddr_def,
   here(dir_out, 'ft_ddr_def.rds')
 )
-  
+
+
+
+
+
+
+# Figure: pull in the main genie panel data and look at coverage of the DDR genes.
+panels_main <- count(sample_main, seq_assay_id)
+panels_main <- panels_main %>%
+  mutate(bpc_panel = seq_assay_id %in% unique(cpt$cpt_seq_assay_id))
+gi <- data.table::fread(
+  here('data-raw', 'genomic', 'main_genie', 'genomic_information.txt')
+)
+gi %<>% 
+  rename_all(tolower) %>%
+  filter(seq_assay_id %in% panels_main$seq_assay_id) %>%
+  # the best information I have currently is that includeInPanel = F means the gene is not tested.  Frustratingly we can't seem to get a real answer about that.
+  filter(includeinpanel) 
+
+genes_in_ddr_cov_plot <- ddr_def %>% 
+  filter(!str_detect(source, "pearl")) %>% 
+  pull(gene) %>% 
+  unique
+
+ddr_panel_cov <- gi %>%
+  filter(hugo_symbol %in% genes_in_ddr_cov_plot)
+
+ddr_panel_cov <- ddr_panel_cov %>% 
+  group_by(seq_assay_id, hugo_symbol) %>%
+  summarize(tested = T, .groups = 'drop') %>%
+  mutate(hugo = factor(hugo_symbol, levels = genes_in_ddr_cov_plot)) %>%
+  select(seq_assay_id, hugo, tested) %>%
+  complete(seq_assay_id, hugo, fill = list(tested = F))
+
+ddr_panel_cov %<>%
+  left_join(., panels_main, by = 'seq_assay_id') %>%
+  mutate(assay_str = case_when(
+    bpc_panel ~ glue("<span style = 'color:#B12F00;'>{seq_assay_id} (m={n})</span>"),
+    T ~ glue("{seq_assay_id} (m={n})")
+    )
+  ) %>%
+  arrange(desc(bpc_panel), desc(n), seq_assay_id) %>% 
+  mutate(assay_str = fct_inorder(assay_str),
+         assay_str = fct_rev(assay_str)) %>% # rev for plotting.
+  rename(gene = hugo)
+
+gg_ddr_panel <- ggplot(
+  ddr_panel_cov,
+  aes(x = gene, y = assay_str, fill = tested)
+) + 
+  geom_tile(color = 'gray60') + 
+  scale_fill_manual(values = c("gray90", '#366885')) + 
+  scale_y_discrete(expand = c(0,0), position = 'right') + 
+  scale_x_discrete(expand = c(0,0)) + 
+  theme_classic() +
+  labs(
+    title = "GENIE Urothelial Carinoma panel coverage of DDR genes",
+    subtitle = "GENIE BPC panels noted in <span style = 'color:#B12F00;'>orange</span>, m = main GENIE samples."
+  ) + 
+  theme(
+    axis.text.x = element_text(size = 6, angle = 90, hjust = 1),
+    axis.text.y = element_markdown(size = 6),
+    legend.position = 'bottom',
+    axis.title.y = element_blank(),
+    title = element_markdown()
+  )
+
+readr::write_rds(
+  gg_ddr_panel,
+  here(dir_out, 'gg_ddr_panel.rds')
+)
+
             
 
