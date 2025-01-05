@@ -113,3 +113,37 @@ readr::write_rds(
 )
 
 
+
+
+
+
+# Addon for the moment:  Immunotherapy lines
+io_lot <- dft_lot %>% 
+  filter(!is.na(line_therapy)) %>%
+  mutate(
+    has_atezolizumab = str_detect(tolower(regimen_drugs), 'atezolizumab'),
+    has_pembrolizumab = str_detect(tolower(regimen_drugs), 'pembrolizumab'),
+    has_avelumab = str_detect(tolower(regimen_drugs), 'avelumab'),
+    has_durvalumab = str_detect(tolower(regimen_drugs), 'durvalumab'),
+    has_ipilizumab = str_detect(tolower(regimen_drugs), 'ipilizumab'),
+    has_nivolumab = str_detect(tolower(regimen_drugs), 'nivolumab'),
+    has_any_io = has_atezolizumab | has_pembrolizumab | has_avelumab | 
+        has_durvalumab | has_ipilizumab | has_nivolumab
+  ) %>%
+  mutate(line_therapy = if_else(line_therapy > 3, "4+", as.character(line_therapy))) %>%
+  group_by(line_therapy) %>%
+  summarize(
+    across(
+      .cols = matches('has_'),
+      .fns = sum
+    )
+  )
+
+readr::write_csv(
+  io_lot,
+  here('analysis', 'explore', 'io_lot.csv')
+)
+    
+  
+
+

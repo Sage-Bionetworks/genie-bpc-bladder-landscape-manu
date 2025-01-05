@@ -312,3 +312,63 @@ ggsave(
 
 
 
+
+
+
+# Request:  Also do this split by carboplatin and cisplatin.
+dft_met_ddr_surv %<>%
+  mutate(
+    carbo = str_detect(regimen_drugs, "arboplatin"),
+    cis = str_detect(regimen_drugs, 'isplatin')
+  ) %>%
+  filter(!(carbo & cis)) %>% # one case, not real (0 length)
+  mutate(
+    ddr_plat_comb = case_when(
+      ddr_before_entry & carbo ~ "Carbo, DDR+",
+      ddr_before_entry & cis ~ "Cis, DDR+",
+      carbo ~ "Carbo, DDR-",
+      cis ~ "Cis, DDR-"
+    )
+  ) %>%
+  mutate(ddr_plat_comb = factor(ddr_plat_comb))
+
+surv_obj_os_fmr <- with(
+  dft_met_ddr_surv,
+  Surv(
+    time = fmr_fcpt_yrs,
+    time2 = tt_os_first_met_reg_yrs,
+    event = os_first_met_reg_status
+  )
+)
+
+gg_os_fmr_ddr_manu_plat_split <- plot_one_survfit(
+  dat = dft_met_ddr_surv,
+  surv_form = surv_obj_os_fmr ~ ddr_plat_comb,
+  plot_title = "OS from first line platinum chemo",
+  x_breaks = seq(0, 100, by = 0.5),
+  pal = c("#ee99aa", "#994455", "#6699cc", "#004488")
+) + 
+  coord_cartesian(xlim = c(0,5)) +
+  theme(plot.title.position = 'panel')
+
+gg_os_fmr_ddr_manu_plat_split
+
+readr::write_rds(
+  gg_os_fmr_ddr_manu_plat_split,
+  file = here(dir_out, "gg_met_ddr_plat_split.rds")
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

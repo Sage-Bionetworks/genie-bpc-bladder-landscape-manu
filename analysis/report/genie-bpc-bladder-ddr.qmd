@@ -88,7 +88,7 @@ The following plot takes the genes included in the paper/definition comparison (
 
 ```{r}
 #| include: true
-#| fig-height: 7
+#| fig-height: 8
 
 gg_ddr_panel
 ```

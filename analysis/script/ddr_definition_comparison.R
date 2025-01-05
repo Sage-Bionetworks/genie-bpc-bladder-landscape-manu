@@ -114,7 +114,7 @@ gg_def_compare <- ggplot(
   scale_x_discrete(expand = c(0,0)) + 
   theme_classic() +
   theme(
-    axis.text.x = element_text(size = 6, angle = 90, hjust = 1),
+    axis.text.x = element_text(size = 6, angle = 90, hjust = 1, vjust = 0.5),
     legend.position = 'bottom',
     axis.title.y = element_blank()
   )
@@ -391,7 +391,7 @@ gg_ddr_panel <- ggplot(
     subtitle = "GENIE BPC panels noted in <span style = 'color:#B12F00;'>orange</span>, m = main GENIE samples."
   ) + 
   theme(
-    axis.text.x = element_text(size = 6, angle = 90, hjust = 1),
+    axis.text.x = element_text(size = 6, angle = 90, hjust = 1, vjust = 0.5),
     axis.text.y = element_markdown(size = 6),
     legend.position = 'bottom',
     axis.title.y = element_blank(),

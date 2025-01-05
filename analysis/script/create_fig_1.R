@@ -18,11 +18,17 @@ first_line_by_ddr <- readr::read_rds(
               'gg_met_ddr_manu.rds')
 )
 
+first_line_by_ddr_plat <- readr::read_rds(
+  file = here('data', 'survival', 'ddr_onco', 
+              'gg_met_ddr_plat_split.rds')
+)
+
+
 fig1_comb <- plot_grid(
   ggsurvfit_build(os_by_stage),
   ggsurvfit_build(first_line_platinum),
   ggsurvfit_build(first_line_by_ddr),
-  NULL,
+  ggsurvfit_build(first_line_by_ddr_plat),
   labels = "AUTO",
   align = 'hv',
   axis = 't'
