@@ -85,6 +85,13 @@ ddr_def <- bind_rows(
   tibble(
     source = 'GENIE int 2024',
     gene = genie_intersect_panel,
+  ),
+  # also adding in definition we used for the ASCO abstract:
+  tibble(
+    source = '2025 ASCO GU abstract',
+    gene = c('ERCC2', 'ERCC5', 
+             'BRCA1', 'BRCA2', 'RECQL4', 'RAD51C', 'ATM', 
+             'ATR', 'FANCC')
   )
 )
 
@@ -404,4 +411,5 @@ readr::write_rds(
 )
 
             
+
 

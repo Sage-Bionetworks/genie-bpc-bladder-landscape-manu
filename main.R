@@ -23,6 +23,7 @@ source(here('analysis', 'script', 'create_dmet_data.R'))
 source(here('analysis', 'script', 'estimate_reg_year.R'))
 source(here('analysis', 'script', 'create_neoadj_dat.R'))
 source(here('analysis', 'script', 'derive_lines_of_therapy.R'))
+source(here('analysis', 'script', 'derive_custom_time_to_met.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-clinical.rmd'),
   output_file = '01-genie-bpc-bladder-clinical.html',

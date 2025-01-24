@@ -45,6 +45,22 @@ set_flextable_defaults(
 
 ```
 
+```{r}
+dt_wrapper <- function(x, font.size = '10pt') {
+  DT::datatable(
+    x,
+    style = "bootstrap4",
+    fillContainer = F,
+    options=list(
+      initComplete = htmlwidgets::JS(
+        "function(settings, json) {",
+        paste0("$(this.api().table().container()).css({'font-size': '", font.size, "'});"),
+        "}")
+    ) 
+  )
+}
+```
+
 
 ```{r, warning = T}
 read_wrap <- function(p) {
@@ -935,6 +951,43 @@ As a first pass, I am re-using my function for timing intervals, so some of thes
 ```{r, include = T, fig.height = 8}
 gg_met_loc_timing
 ```
+
+
+
+
+```{r}
+met_time_custom <- readr::read_rds(here('data', 'cohort', 'met_time_custom.rds'))
+
+met_yn_cohort <- left_join(
+    select(dft_pt, record_id),
+    met_time_custom,
+    by = 'record_id'
+  ) %>%
+  # True for those with a met time listed, false otherwise
+  mutate(
+    across(
+      .cols = -c(record_id),
+      .fns = \(x) !is.na(x)
+    )
+  )
+  
+      
+```
+
+### R1.1.6e:  Reanalysis of met locations
+
+The above classifications are all based on the derived variables provided with the BPC data.  UC physicians on the team let us know that these were suboptimal, for example "thorax" and "abdomen" are heterogeneous groups that don't mean a ton in light of the established conventions in the field.  This sections starts from the raw imaging data and maps the ICD codes into groups that should be more meaningful.
+
+The table showing the mappings from ICD codes can be found in the appendices.  The following summary table shows the number of participants (%) who had a metastasis at any time to an anatomic location:
+
+```{r, include = TRUE}
+gtsummary::tbl_summary(
+    data = select(met_yn_cohort, -record_id)
+) 
+```
+
+**Note:** Local mets are **not shown** at all in this table.  See the appendix for image codes that I categorized as local (builds on the data guide appendix provided by the MSK stats team).  And let me know if there are mistakes, of course.
+
 
 
 
@@ -1923,6 +1976,33 @@ Notes:
 - Several which are not a problem at all:  BCG vaccine or those stopped days after dx.
 - Mostly platinum-based chemo regimens otherwise.
 - Possible actions: (1) ignore them, default solution or (2) split  regimens at metastasis so they are counted in LoT tables.
+
+
+```{r}
+icd_map_custom <- readr::read_csv(
+  here(
+    'data-raw', 'manual', 'icd_map_custom.csv'
+  )
+)
+```
+
+#### Custom met locations
+
+The table shown in R1.6e works from the imaging data and creates new categories for metastasis.  This requires mapping ICD codes from the image that showed evidence of cancer to a category.  This table shows those mapping choices.
+
+Definitions of the columns shown here:
+
+- `is_local`: Is this icd code a local location to bladder cancer?  The starting point for these choices was revewing the data guide, created by the MSK stats team.  If `is_local = TRUE` then this ICD code will not represent a distant metastasis in our re-analysis.
+- `map_custom`: Our new categories.
+- `icd_code`: The ICD code, pulled from {`image_casite1`, ...,  `image_casite15`} in the BPC data.
+- `n_times_reported`: The total number of times this `icd_code` pops up in our data (more than one per person possible).
+
+```{r, include = TRUE}
+icd_map_custom %>%
+  select(-c(Map,notes)) %>% # confusing, Map is an intermediary map provided by Neil. 
+  dt_wrapper(.)
+```
+
 
 
 
