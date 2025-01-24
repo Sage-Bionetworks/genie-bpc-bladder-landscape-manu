@@ -97,8 +97,6 @@ ddr_def <- bind_rows(
 
 
 
-
-
 ddr_def_plot <- ddr_def %>%
   filter(!str_detect(source, 'pearl')) %>%
   mutate(year = readr::parse_number(source)) %>%
@@ -111,9 +109,17 @@ ddr_def_plot <- ddr_def_plot %>%
   mutate(included = TRUE) %>%
   complete(source_f, gene, fill = list(included = FALSE))
 
+ddr_def_plot %<>%
+  group_by(source_f) %>%
+  mutate(num_genes = sum(included)) %>%
+  mutate(source_f_gene_count = forcats::fct_inorder(
+    glue('{source_f} (p={num_genes})')
+  )) %>%
+  select(-num_genes)
+
 gg_def_compare <- ggplot(
   ddr_def_plot,
-  aes(x = gene, y = source_f, fill = included)
+  aes(x = gene, y = source_f_gene_count, fill = included)
 ) + 
   geom_tile(color = 'gray60') + 
   scale_fill_manual(values = c("gray90", '#366885')) + 
@@ -310,6 +316,8 @@ readr::write_rds(
   here(dir_out, 'pt_count_tidy.rds')
 )
 
+# just going to redo this here:
+
 ft_ddr_def <- pt_counts_ddr_def %>%
   mutate(
     col_title = paste0(data, '|',
@@ -320,7 +328,8 @@ ft_ddr_def <- pt_counts_ddr_def %>%
   pivot_wider(
     names_from = 'col_title',
     values_from = 'str'
-  ) 
+  )
+  
 
 new_header <- names(ft_ddr_def) %>% 
   tibble(col_keys = .) %>%
@@ -384,6 +393,17 @@ ddr_panel_cov %<>%
          assay_str = fct_rev(assay_str)) %>% # rev for plotting.
   rename(gene = hugo)
 
+gene_panel_gene_order <- ddr_def %>% 
+  group_by(gene) %>%
+  summarize(
+    in_asco_panel = any(str_detect(source, "ASCO"))
+  ) %>%
+  arrange(desc(in_asco_panel), gene) %>%
+  pull(gene)
+    
+ddr_panel_cov %<>%
+  mutate(gene = factor(gene, levels = gene_panel_gene_order))
+
 gg_ddr_panel <- ggplot(
   ddr_panel_cov,
   aes(x = gene, y = assay_str, fill = tested)
@@ -391,14 +411,14 @@ gg_ddr_panel <- ggplot(
   geom_tile(color = 'gray60') + 
   scale_fill_manual(values = c("gray90", '#366885')) + 
   scale_y_discrete(expand = c(0,0), position = 'right') + 
-  scale_x_discrete(expand = c(0,0)) + 
+  scale_x_discrete(expand = c(0,0), position = 'top') + 
   theme_classic() +
   labs(
     title = "GENIE Urothelial Carinoma panel coverage of DDR genes",
     subtitle = "GENIE BPC panels noted in <span style = 'color:#B12F00;'>orange</span>, m = main GENIE samples."
   ) + 
   theme(
-    axis.text.x = element_text(size = 6, angle = 90, hjust = 1, vjust = 0.5),
+    axis.text.x.top = element_text(size = 6, angle = 90, hjust = 0, vjust = 0.5),
     axis.text.y = element_markdown(size = 6),
     legend.position = 'bottom',
     axis.title.y = element_blank(),

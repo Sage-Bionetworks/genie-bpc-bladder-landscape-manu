@@ -86,6 +86,8 @@ ft_ddr_def
 
 The following plot takes the genes included in the paper/definition comparison (R4.1) and shows the panel coverage in GENIE.  The axis is grouped to have the BPC-used panels at the top.  After that the axis is ordered by the number of samples tested (m).
 
+The X axis puts the genes in the panel we used to define DDR first.  After that, it's alphabetical.  Coloring or similar is possible but ran out of time.
+
 ```{r}
 #| include: true
 #| fig-height: 8
