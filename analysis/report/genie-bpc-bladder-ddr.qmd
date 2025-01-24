@@ -82,7 +82,53 @@ ft_ddr_def
 - Comparing the "any alt." to "oncogenic" columns, the number of patients is generally 50-70% smaller when using the OncoKB oncogenic filter. 
 - Except for the Pearl examples given for comparison, the proportion of main genie and BPC which has at least one oncogenic DDR alteration is between 19 and 24% for main genie and 18-26% for BPC.
 
-### R4.3 - Panel coverage for DDR genes
+
+
+
+
+
+```{r}
+bpc_asco_2025_panel <- readr::read_rds(
+  here('data', 'genomic', 'ddr_def_compare', 'bpc_asco_2025_panel.rds')
+)
+bpc_onco_mmr_flags <- readr::read_rds(
+  here('data', 'genomic', 'ddr_def_compare', 'bpc_onco_mmr_flags.rds')
+)
+```
+
+
+### R4.3 - Alteration frequency by gene
+
+The following table shows the proportion of subjects whose first sample had an oncogenic alteration in each gene.  The genes included in this table are those in our 2025 ASCO manuscript definition of DDR altered.
+
+```{r}
+#| include: true
+gtsummary::tbl_summary(
+  select(bpc_asco_2025_panel, -c(sample_id, patient_id)) %>%
+    select(sort(tidyselect::peek_vars()))
+)
+```
+
+The following table does the same, for all the genes which were in the MMR pathway in some of the abstracts.
+
+```{r}
+#| include: true
+gtsummary::tbl_summary(
+  select(bpc_onco_mmr_flags, -c(sample_id, patient_id))
+)
+```
+
+**Note:** Originally we included some of the genes which were in the Pearl paper but not those abstracts - the rates were basically zero for those so we removed that complication.  The above table does not consider the number of people tested for each of these genes.  The heatmap below shows that the common panels *do* cover these genes well though, so we're probably not drastically off as a result.
+
+
+
+
+
+
+
+
+
+### R4.4 - Panel coverage for DDR genes
 
 The following plot takes the genes included in the paper/definition comparison (R4.1) and shows the panel coverage in GENIE.  The axis is grouped to have the BPC-used panels at the top.  After that the axis is ordered by the number of samples tested (m).
 

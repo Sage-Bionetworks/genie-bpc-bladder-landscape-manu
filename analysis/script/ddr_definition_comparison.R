@@ -80,6 +80,10 @@ genie_intersect_panel <- gp_ddr_coverage %>%
   pull(gene_overlap) %>%
   purrr::reduce(.x = ., .f = intersect)
 
+asco_2025_genes <- c('ERCC2', 'ERCC5', 
+                     'BRCA1', 'BRCA2', 'RECQL4', 'RAD51C', 'ATM', 
+                     'ATR', 'FANCC')
+
 ddr_def <- bind_rows(
   ddr_def,
   tibble(
@@ -89,9 +93,7 @@ ddr_def <- bind_rows(
   # also adding in definition we used for the ASCO abstract:
   tibble(
     source = '2025 ASCO GU abstract',
-    gene = c('ERCC2', 'ERCC5', 
-             'BRCA1', 'BRCA2', 'RECQL4', 'RAD51C', 'ATM', 
-             'ATR', 'FANCC')
+    gene = asco_2025_genes,
   )
 )
 
@@ -328,7 +330,31 @@ ft_ddr_def <- pt_counts_ddr_def %>%
   pivot_wider(
     names_from = 'col_title',
     values_from = 'str'
-  )
+  ) 
+
+# Just going to redo the names here:
+ft_ddr_def <- ddr_def_nest %>% 
+  mutate(
+    gene_counts = purrr::map_dbl(
+      .x = gene_list,
+      .f = \(x) {
+        length(unique(x))
+      }
+    ),
+    source_f_gene_counts = fct_inorder(
+      glue('{source} (p={gene_counts})')
+    )
+  ) %>%
+  select(source, source_f_gene_counts) %>%
+  # doing a join and replace here is weird, but ensures we don't mislabel things.
+  left_join(
+    ft_ddr_def,
+    .,
+    by = 'source'
+  ) %>%
+  select(-source) %>%
+  rename(source = source_f_gene_counts) %>%
+  relocate(source)
   
 
 new_header <- names(ft_ddr_def) %>% 
@@ -431,5 +457,78 @@ readr::write_rds(
 )
 
             
+
+# Some genes are not covered but alterations are reported (fusions)
+# Some genes are tested but never positive (obvious)
+genes_observed_or_tested <- unique(c(
+  as.character(alt_bpc$hugo),
+  as.character(gp_all$hugo)
+))
+
+onco_alt_flags <- alt_bpc %>% 
+  filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
+  group_by(sample_id, hugo) %>%
+  summarize(onco_alt = T, .groups = 'drop') %>%
+  mutate(hugo = factor(hugo, levels = sort(genes_observed_or_tested))) %>%
+  complete(sample_id, hugo, fill = list(onco_alt = F)) %>%
+  pivot_wider(
+    names_from = 'hugo',
+    values_from = 'onco_alt',
+    values_fill = F
+  )
+
+readr::write_rds(
+  onco_alt_flags,
+  here('data', 'genomic', 'ddr_def_compare', 'onco_alt_flags.rds')
+)
+
+bpc_asco_2025_panel <- first_sample_bpc %>%
+  select(sample_id, patient_id) %>%
+  left_join(
+    .,
+    select(onco_alt_flags, sample_id, all_of(asco_2025_genes)),
+    by = 'sample_id'
+  ) %>%
+  mutate(
+    across(
+      .cols = -c(sample_id, patient_id),
+      .fns = \(x) if_else(is.na(x), F, x)
+    )
+  )
+
+readr::write_rds(
+  bpc_asco_2025_panel,
+  here('data', 'genomic', 'ddr_def_compare', 'bpc_asco_2025_panel.rds')
+)
+  
+
+mmr_genes_from_abstracts <- c('MLH1', 'MSH2', 'MSH6', 'PMS1', 'PMS2')
+
+bpc_onco_mmr_flags <- first_sample_bpc %>%
+  select(sample_id, patient_id) %>%
+  left_join(
+    .,
+    select(
+      onco_alt_flags, sample_id, 
+      all_of(mmr_genes_from_abstracts)
+    ),
+    # this didn't show anything:
+    # any_of(setdiff(
+    #   sort(pull(filter(ddr_pearl, pathway %in% "MMR"), gene)),
+    #   mmr_genes_from_abstracts
+    # ))),
+    by = 'sample_id'
+  ) %>%
+  mutate(
+    across(
+      .cols = -c(sample_id, patient_id),
+      .fns = \(x) if_else(is.na(x), F, x)
+    )
+  )
+
+readr::write_rds(
+  bpc_onco_mmr_flags,
+  here('data', 'genomic', 'ddr_def_compare', 'bpc_onco_mmr_flags.rds')
+)
 
 
