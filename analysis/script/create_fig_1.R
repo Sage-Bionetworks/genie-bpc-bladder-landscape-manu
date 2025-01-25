@@ -23,15 +23,23 @@ first_line_by_ddr_plat <- readr::read_rds(
               'gg_met_ddr_plat_split.rds')
 )
 
+second_line_by_ddr_io <- readr::read_rds(
+  file = here('data', 'survival', 'ddr_onco', 
+              'gg_os_2l_io_ddr.rds')
+)
+
+
 
 fig1_comb <- plot_grid(
   ggsurvfit_build(os_by_stage),
   ggsurvfit_build(first_line_platinum),
   ggsurvfit_build(first_line_by_ddr),
   ggsurvfit_build(first_line_by_ddr_plat),
+  ggsurvfit_build(second_line_by_ddr_io),
   labels = "AUTO",
   align = 'hv',
-  axis = 't'
+  axis = 't',
+  ncol = 2
 )
 
 
@@ -39,11 +47,11 @@ fig1_comb <- plot_grid(
 ggsave(
   plot = fig1_comb,
   filename = here(dir_out, 'fig1.pdf'),
-  height = 5, width = 7, scale = 1.8
+  height = 7.5, width = 7, scale = 1.8
 )
 
 ggsave(
   plot = fig1_comb,
   filename = here(dir_out, 'fig1.png'),
-  height = 5, width = 7, scale = 1.8
+  height = 7.5, width = 7, scale = 1.8
 )
