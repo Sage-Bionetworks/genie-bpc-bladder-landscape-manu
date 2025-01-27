@@ -295,9 +295,23 @@ gg_os_fmr_ddr_manu <- plot_one_survfit(
   coord_cartesian(xlim = c(0,5)) +
   theme(plot.title.position = 'panel')
 
+gg_os_fmr_ddr_manu_no_rt <- plot_one_survfit_no_risktable(
+  dat = dft_met_ddr_surv,
+  surv_form = surv_obj_os_fmr ~ ddr_disp,
+  plot_title = "OS from first line platinum chemo",
+  x_breaks = seq(0, 100, by = 0.5)
+) + 
+  coord_cartesian(xlim = c(0,5)) +
+  theme(plot.title.position = 'panel')
+
 readr::write_rds(
   gg_os_fmr_ddr_manu,
   file = here(dir_out, "gg_met_ddr_manu.rds")
+)
+
+readr::write_rds(
+  gg_os_fmr_ddr_manu_no_rt,
+  file = here(dir_out, "gg_met_ddr_manu_no_rt.rds")
 )
 
 ggsave(
@@ -351,12 +365,29 @@ gg_os_fmr_ddr_manu_plat_split <- plot_one_survfit(
   coord_cartesian(xlim = c(0,5)) +
   theme(plot.title.position = 'panel')
 
-gg_os_fmr_ddr_manu_plat_split
+gg_os_fmr_ddr_manu_plat_split_no_rt <- plot_one_survfit_no_risktable(
+  dat = dft_met_ddr_surv,
+  surv_form = surv_obj_os_fmr ~ ddr_plat_comb,
+  plot_title = "OS from first line platinum chemo",
+  x_breaks = seq(0, 100, by = 0.5),
+  pal = c("#ee99aa", "#994455", "#6699cc", "#004488")
+) + 
+  coord_cartesian(xlim = c(0,5)) +
+  theme(plot.title.position = 'panel')
+
+gg_os_fmr_ddr_manu_plat_split_no_rt
+
 
 readr::write_rds(
   gg_os_fmr_ddr_manu_plat_split,
   file = here(dir_out, "gg_met_ddr_plat_split.rds")
 )
+
+readr::write_rds(
+  gg_os_fmr_ddr_manu_plat_split_no_rt,
+  file = here(dir_out, "gg_met_ddr_plat_split_no_rt.rds")
+)
+
 
 
 

@@ -301,6 +301,16 @@ dft_cohort_ddr %>%
   gtsummary::tbl_summary(.)
 
 dft_met_ddr_surv_grouped %>%
+  mutate(
+    pt_counts = purrr::map(
+      .x = data,
+      .f = \(x) count(x, ddr_before_entry)
+    )
+  ) %>%
+  select(analysis_group, pt_counts) %>%
+  unnest(pt_counts)
+
+dft_met_ddr_surv_grouped %>%
   select(analysis_group, cox_ddr) %>%
   unnest(cox_ddr) %>%
   # put the estimates on the HR scale (not log HR):
@@ -377,7 +387,24 @@ gg_os_2l_io_ddr <- plot_one_survfit(
   x_exp = 0.05
 )
 
+# A no-risktable version for the poster.
+gg_os_2l_io_ddr_no_rt <- plot_one_survfit_no_risktable(
+  dat = dft_met_ddr_surv,
+  surv_form = surv_obj_os_fmr ~ ddr_disp,
+  plot_title = "OS from second line pembrolizumab or atezolizumab",
+  plot_subtitle = "Adjusted for (independent) delayed entry",
+  x_breaks = seq(0, 10, by = 0.5),
+  x_exp = 0.05
+)
+
+
 readr::write_rds(
   gg_os_2l_io_ddr,
   here('data', 'survival', 'ddr_onco', 'gg_os_2l_io_ddr.rds')
 )
+
+readr::write_rds(
+  gg_os_2l_io_ddr_no_rt,
+  here('data', 'survival', 'ddr_onco', 'gg_os_2l_io_ddr_no_rt.rds')
+)
+
