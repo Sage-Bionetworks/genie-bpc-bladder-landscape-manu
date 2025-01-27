@@ -80,6 +80,7 @@ source(here('analysis', 'script', 'surv_second_line.R'))
 # Render the qmd for survival.
 
 
+source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures.R'))
 source(here('analysis', 'script', 'create_fig_1.R'))
 
 

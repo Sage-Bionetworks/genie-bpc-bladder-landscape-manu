@@ -1392,6 +1392,15 @@ dfp_lot_common_met %>%
 
 
 
+
+
+
+
+
+
+
+
+
 ```{r, eval = T}
 # Regimen dataset, joined with and limited to lines of therapy.
 dft_reg_lot <- dft_reg_dmet_s %>%
@@ -1452,7 +1461,7 @@ dfp_lot_stats %<>% rename(` ` = Quantity)
 ```
 
 
-### R1.2.4c Lines of therapy - time stats
+### R1.2.4d Lines of therapy - time stats
 
 Time statistics for lines of therapy from both diagnosis (dx) and metastasis (met).  
 
@@ -1538,7 +1547,7 @@ dft_stats_by_line <- dft_rad %>%
 ```
 
 
-### *R1.2.4d Lines of therapy - people stats 
+### *R1.2.4e Lines of therapy - people stats 
 
 The following table shows the followup time for those who received exactly zero, one, two, or three+ lines of therapy according to our definition.
 
