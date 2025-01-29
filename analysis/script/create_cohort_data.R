@@ -137,6 +137,41 @@ dft_cpt %<>%
 
 
 
+# There's a row in the regimen dataset that has a fairly clear data error.
+# Both carboplatin and cisplatin were used, but the cisplatin starts and ends
+#   on the same day.  I'm declaring this a data error, or at least something
+# I feel comforatble fixing.
+# Note that I'm not fixing the drug-level data, just the regimen name.
+# This is a hard code, but I'm adding a whole bunch of conditions to make it
+#   only fire precisely while this data remains unchanged.  
+# Impressive coding, I know.
+dft_reg %<>%
+  mutate(
+    regimen_drugs = case_when(
+      record_id %in% "GENIE-DFCI-006944" &
+        ca_seq %in% 3 &
+        str_detect(drugs_drug_1, "Cisplatin") &
+        dx_drug_start_int_1 %in% 281 & 
+        dx_drug_end_int_1 %in% 281 ~ "Carboplatin, Paclitaxel",
+      T ~ regimen_drugs
+    )
+  )
+
+dft_reg %<>%
+  mutate(
+    regimen_drugs = case_when(
+      record_id %in% "GENIE-MSK-P-0018142" &
+        ca_seq %in% 2 &
+        str_detect(drugs_drug_1, "Cisplatin") &
+        dx_drug_start_int_1 %in% 3867 & 
+        dx_drug_end_int_1 %in% 3867 ~ "Carboplatin, Paclitaxel",
+      T ~ regimen_drugs
+    )
+  )
+
+        
+
+
 
 
 

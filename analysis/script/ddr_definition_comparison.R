@@ -228,7 +228,7 @@ pt_counts_ddr_def %<>%
 
 
 # Load in the cohort file from BPC and repeat this process for BPC.
-cpt <- readr::read_rds(here('data', 'cohort', 'cpt.rds'))
+cpt <- readr::read_rds(here('data', 'cohort', 'cpt_aug.rds'))
 ca_ind <- readr::read_rds(here('data', 'cohort', 'ca_ind.rds'))
 
 alt_bpc <- readr::read_rds(
@@ -248,11 +248,11 @@ first_sample_bpc <- first_sample_main %>%
 # people_not_in_main_genie <- first_cpt %>%
 #   filter(
 #     cpt_genie_sample_id %in% setdiff(
-#       first_cpt$cpt_genie_sample_id, 
+#       first_cpt$cpt_genie_sample_id,
 #       first_sample_main$sample_id
 #     )
 #   ) %>%
-#   pull(record_id) 
+#   pull(record_id)
 # filter(first_sample_main, patient_id %in% people_not_in_main_genie)
 
 
@@ -532,3 +532,106 @@ readr::write_rds(
 )
 
 
+
+
+
+
+
+
+# One more thing:  Comparison of TMB for DDR/not
+first_sample_bpc <- get_first_cpt(ca_ind, cpt, include_sample_id = T) %>%
+  select(
+    patient_id = record_id, sample_id = cpt_genie_sample_id
+  )
+
+tmb_ddr <- count_pts_gene_list(
+  first_sample_bpc, 
+  alt_df = filter(alt_bpc, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
+  gene_list = asco_2025_genes
+) %>%
+  rename(ddr = any_alt) %>%
+  mutate(ddr = as.logical(ddr))
+
+tmb_mmr <- count_pts_gene_list(
+  first_sample_bpc, 
+  alt_df = filter(alt_bpc, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
+  gene_list = mmr_genes_from_abstracts
+) %>%
+  rename(mmr = any_alt) %>%
+  mutate(mmr = as.logical(mmr))
+
+tmb_comp <- full_join(
+  tmb_ddr,
+  tmb_mmr,
+  by = c('patient_id', 'sample_id')
+)
+
+tmb_comp %<>%
+  left_join(
+    .,
+    select(cpt, sample_id = cpt_genie_sample_id, n_mut, tmb_Mb, tmb_Mb_onco),
+    by = 'sample_id'
+  )
+
+readr::write_rds(
+  tmb_comp,
+  here('data', 'genomic', 'ddr_def_compare', 'tmb_comp.rds')
+)
+
+
+# There's a problem with the comparison of DDR to not for TMB (same for MMR).
+# Having a DDR alteration strictly bounds the number of mutations at 1, which
+#   directly impacts TMB.  So our preditor is a part of the outcome definition, which just won't do.
+# We will build a better control, and stack it into the data to show this.
+tmb_stack_ddr <- bind_rows(
+  (tmb_comp %>%
+    mutate(
+      grp = case_when(
+        ddr ~ "DDR+",
+        T ~ "DDR-"
+      )
+    )),
+  (tmb_comp %>%
+     filter(n_mut >= 1 & !ddr) %>%
+     mutate(
+       grp = "DDR-, >0 mut"
+     ))
+)
+
+tmb_stack_ddr %<>% 
+  select(patient_id, grp, tmb_Mb, tmb_Mb_onco) %>%
+  mutate(grp = forcats::fct_inorder(grp))
+
+readr::write_rds(
+  tmb_stack_ddr,
+  here('data', 'genomic', 'ddr_def_compare', 'tmb_stack_ddr.rds')
+)
+
+
+# Repeat for mmr:
+
+tmb_stack_mmr <- bind_rows(
+  (tmb_comp %>%
+     mutate(
+       grp = case_when(
+         mmr ~ "MMR+",
+         T ~ "MMR-"
+       )
+     )),
+  (tmb_comp %>%
+     filter(n_mut >= 1 & !mmr) %>%
+     mutate(
+       grp = "MMR-, >0 mut"
+     ))
+)
+
+tmb_stack_mmr %<>% 
+  select(patient_id, grp, tmb_Mb, tmb_Mb_onco) %>%
+  mutate(grp = forcats::fct_inorder(grp))
+
+readr::write_rds(
+  tmb_stack_mmr,
+  here('data', 'genomic', 'ddr_def_compare', 'tmb_stack_mmr.rds')
+)
+
+  

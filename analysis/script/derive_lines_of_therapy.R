@@ -32,8 +32,12 @@ dft_reg_dmet_s %<>%
 excluded_drug_strings <- c(
   "BCG Vaccine",
   "BCG Solution",
-  "Mitomycin"
+  "Mitomycin",
+  # discussed adding this on Jan 27 meeting:
+  "Autologous Melanoma Lysate Pulsed Dendritic Cell Vaccine, Other NOS" 
 )
+
+      
 # Report those out so they can go in a report section:
 readr::write_rds(
   x = excluded_drug_strings,

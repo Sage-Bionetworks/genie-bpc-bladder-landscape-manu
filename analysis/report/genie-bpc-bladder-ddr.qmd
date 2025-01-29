@@ -140,3 +140,64 @@ The X axis puts the genes in the panel we used to define DDR first.  After that,
 
 gg_ddr_panel
 ```
+
+
+
+
+```{r}
+tmb_stack_ddr <- readr::read_rds(
+  here(dir_ddr, 'tmb_stack_ddr.rds')
+)
+tmb_stack_mmr <- readr::read_rds(
+  here(dir_ddr, 'tmb_stack_mmr.rds')
+)
+tmb_comp <- readr::read_rds(
+  here(dir_ddr, 'tmb_comp.rds')
+)
+
+```
+
+
+### R4.5 - TMB related to these panels
+
+The goal of this section was to compare the tumor mutation burden of those with a DDR alteration to those who do not.  There's a problem with this - those with a DDR alteration have at least one mutation, while the cohort with no DDR alterations could have zero.  Therefore we're systematically biasing the outcome by having a deterministic link between number of mutations (TMB) and being DDR+.
+
+A third column has been added to make a more fair comparison.  This is those without a DDR alteration, but who have at least one other mutation.  This way the control is bounded below by 1 mutation, just like the DDR+ positive group.  It would be my recommendation to use that column in our poster even if it is just a footnote or legend note.
+
+The group of samples included is first samples for each index cancer in the BPC bladder cohort.
+
+```{r}
+#| include: true
+tmb_stack_ddr %>% 
+  select(grp, tmb_Mb, tmb_Mb_onco) %>%
+  gtsummary::tbl_summary(
+    ., 
+    by = grp
+  )
+```
+Here is the same table for MMR+: 
+
+```{r}
+#| include: true
+tmb_stack_mmr %>% 
+  select(grp, tmb_Mb, tmb_Mb_onco) %>%
+  gtsummary::tbl_summary(
+    ., 
+    by = grp
+  )
+```
+
+*Notes:*
+
+- As expected the group with DDR and MMR alterations has higher TMB at all listed percentiles.
+- TMB is listed in mutations per megabase (the usual).  The "onco" version only counts oncogenic mutations per megabase.  This is not standard really, but I think it is probably more relevant to our analyes.
+- There are only 21 samples with zero mutations, so the issue I pointed out has a minor impact.
+
+
+
+```{r}
+
+```
+
+
+

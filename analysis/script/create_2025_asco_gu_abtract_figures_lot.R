@@ -17,7 +17,6 @@ lot_cat_lev <- c(
   'pemetrexed monotherapy',
   'other'
 )
-  
 
 categorize_lines <- function(reg_vec, factorize = T) {
   reg_vec <- tolower(reg_vec)
@@ -25,7 +24,8 @@ categorize_lines <- function(reg_vec, factorize = T) {
   lot_cat_lev <- c(
     'investigational (masked)',
     'immunotherapy',
-    'platinum chemo',
+    'cisplatin-based',
+    'carboplatin-based',
     'taxane monotherapy',
     'pemetrexed monotherapy',
     'other'
@@ -36,9 +36,10 @@ categorize_lines <- function(reg_vec, factorize = T) {
     #   it's not in the 2L io figure.
     str_detect(reg_vec, 'investigation') ~ lot_cat_lev[1],
     str_detect(reg_vec, 'atezoliz|pembroliz|nivolum') ~ lot_cat_lev[2],
-    str_detect(reg_vec, 'carbo|cis') ~ lot_cat_lev[3],
-    reg_vec %in% c('docetaxel', 'paclitaxel') ~ lot_cat_lev[4],
+    str_detect(reg_vec, 'cisplatin') ~ lot_cat_lev[3],
+    str_detect(reg_vec, 'carboplatin') ~ lot_cat_lev[4],
     reg_vec %in% c('docetaxel', 'paclitaxel') ~ lot_cat_lev[5],
+    reg_vec %in% c('docetaxel', 'paclitaxel') ~ lot_cat_lev[6],
     T ~ lot_cat_lev[6]
   )
   
@@ -48,6 +49,12 @@ categorize_lines <- function(reg_vec, factorize = T) {
   
   return(rtn)
 }
+
+
+# before we do this, we need to fix the row which has carbo and cis both.
+# it happens to have a 0 day duration of cisplatin, so I'm declaring this a
+#   mistake.
+
 
 
 dft_lot %<>% 
