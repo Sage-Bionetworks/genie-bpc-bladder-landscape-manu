@@ -81,6 +81,9 @@ source(here('analysis', 'script', 'surv_second_line.R'))
 
 
 source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures.R'))
+source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures_lot.R'))
+source(here('analysis', 'script', 'create_2025_asco_gu_abstract_demo.R'))
+
 source(here('analysis', 'script', 'create_fig_1.R'))
 
 

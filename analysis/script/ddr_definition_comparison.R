@@ -552,6 +552,11 @@ tmb_ddr <- count_pts_gene_list(
   rename(ddr = any_alt) %>%
   mutate(ddr = as.logical(ddr))
 
+readr::write_rds(
+  tmb_ddr,
+  here('data', 'genomic', 'ddr_def_compare', 'ddr_flags_first_sample.rds')
+)
+
 tmb_mmr <- count_pts_gene_list(
   first_sample_bpc, 
   alt_df = filter(alt_bpc, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
@@ -606,6 +611,20 @@ readr::write_rds(
   tmb_stack_ddr,
   here('data', 'genomic', 'ddr_def_compare', 'tmb_stack_ddr.rds')
 )
+
+
+tmb_stack_ddr %>%
+  left_join(
+    .,
+    distinct(select(ca_ind, patient_id = record_id, institution)),
+    by = 'patient_id'
+  ) %>%
+  group_by(institution, grp) %>%
+  summarize(
+    med = median(tmb_Mb),
+    iqr = glue('({paste(round(quantile(tmb_Mb, probs = c(0.25, 0.75)), 1), collapse = ", ")})'),
+    .groups = 'drop'
+  )
 
 
 # Repeat for mmr:

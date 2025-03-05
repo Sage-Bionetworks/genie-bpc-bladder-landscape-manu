@@ -190,14 +190,8 @@ tmb_stack_mmr %>%
 *Notes:*
 
 - As expected the group with DDR and MMR alterations has higher TMB at all listed percentiles.
-- TMB is listed in mutations per megabase (the usual).  The "onco" version only counts oncogenic mutations per megabase.  This is not standard really, but I think it is probably more relevant to our analyes.
+- TMB is listed in mutations per megabase (the usual).  The "onco" version only counts oncogenic mutations per megabase.  This is not standard really, but I think it is probably more relevant to our analyses.
 - There are only 21 samples with zero mutations, so the issue I pointed out has a minor impact.
-
-
-
-```{r}
-
-```
 
 
 
