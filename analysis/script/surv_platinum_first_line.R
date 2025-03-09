@@ -189,20 +189,8 @@ surv_obj_cases <- with(
   )
 )
 
-gg_first_line_platinum <- plot_one_survfit(
-  dat = dft_cases,
-  surv_form = surv_obj_cases ~ reg_group,
-  plot_title = "OS, from start of first line platinum-based chemotherapy",
-  plot_subtitle = "Adjusted for truncation assuming independence",
-  x_exp = 0.1,
-  x_breaks = 0:100
-) + 
-  add_quantile(y_value = 0.5, linetype = 81, alpha = 0.75)
 
-readr::write_rds(
-  gg_first_line_platinum,
-  here(dir_output, 'gg_first_line_platinum.rds')
-)
+
 
 gg_first_line_platinum_manu <- plot_one_survfit(
   dat = dft_cases,

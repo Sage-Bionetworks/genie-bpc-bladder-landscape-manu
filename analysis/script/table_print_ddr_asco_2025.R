@@ -1,5 +1,5 @@
-# Create analysis dataset for a specific case identified by our physicians:
-# Oncogenic DDR from first platinum therapy after metastasis is the main outcome.
+# Yet another iteration of this question, rephrased by Michal and Neil for the
+# 2024 ASCO urinary abstract deadline.
 
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also load
@@ -13,14 +13,12 @@ dft_med_onc <- readr::read_rds(here('data', 'cohort', "med_onc.rds"))
 dft_med_onc %<>%
   augment_med_onc_imputed_ecog(., add_numeric = T)
 
-dir_out <- here('data', 'survival', 'ddr_onco')
+dir_out <- here('data', 'survival', 'asco_2025_analysis')
 
 
 
 # Find the people who had a metastasis:
 dft_met_timing <- get_dmet_time(dft_ca_ind)
-
-
 
 # Provided by Michal Sternschuss from a trial:
 custom_ddr_list <- c(
@@ -36,6 +34,58 @@ dft_onco_ddr <- dft_alt %>%
   filter(hugo %in% custom_ddr_list) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic"))
 
+# First question:  How many people in the cohort have an oncogenic DDR mutation?
+dft_cohort_ddr <- dft_onco_ddr %>% 
+  mutate(feature = paste0(hugo, "_", str_sub(tolower(alt_type), 1, 3))) %>%
+  select(sample_id, feature) %>%
+  mutate(alt = 1)
+
+dft_cohort_ddr <- dft_cpt %>%
+  select(sample_id = cpt_genie_sample_id, 
+         record_id,
+         ca_seq) %>%
+  left_join(., dft_cohort_ddr, by = c('sample_id')) %>%
+  select(record_id, feature, alt) %>%
+  filter(!is.na(feature))
+
+skel_cohort_ddr <- tidyr::expand_grid(
+  record_id = unique(dft_ca_ind$record_id),
+  feature = unique(dft_cohort_ddr$feature)
+)
+
+dft_cohort_ddr <- left_join(
+  skel_cohort_ddr,
+  dft_cohort_ddr,
+  by = c('record_id', 'feature')
+) %>%
+  replace_na(list(alt = 0))
+
+dft_cohort_ddr <- dft_cohort_ddr %>%
+  # summarize so that if any sample is positive for a feature, we count them.
+  group_by(record_id, feature) %>%
+  summarize(alt = any(alt %in% 1), .groups = 'drop') %>%
+  pivot_wider(names_from = feature, values_from = alt)
+
+# Add a count for any DDR mut.
+dft_cohort_ddr %<>%
+  mutate(
+    any_ddr = rowSums(
+      (dft_cohort_ddr %>% select(-record_id))
+    ) > 0
+  ) %>%
+  relocate(any_ddr, .after = record_id)
+
+readr::write_rds(
+  dft_cohort_ddr,
+  file = here(dir_out, "cohort_ddr.rds")
+)
+
+
+
+
+
+# Back to the main thread for the rest of the questions.
+  
 # Add in the relevant stuff from CPT data:
 dft_onco_ddr <- dft_cpt %>%
   select(
@@ -52,7 +102,10 @@ dft_onco_ddr <- dft_cpt %>%
 
 # Find the people who had a metastasis and took a platinum therapy after:
 dft_post_met_plat <- dft_reg %>%
-  filter(str_detect(regimen_drugs, "Cisplatin|Carboplatin")) %>%
+  # A change here, any platinum rather than just GemCis or GemCarbo.
+  filter(
+    str_detect(regimen_drugs, "Cisplatin|Carboplatin")
+  ) %>% 
   select(
     record_id, ca_seq, contains("regimen_number"),
     regimen_drugs,
@@ -66,7 +119,6 @@ dft_post_met_plat <- dft_reg %>%
     ., 
     by = c("record_id", "ca_seq")
   )
-
 
 dft_post_met_plat %<>%
   # half day tolerance on the cutoff:
@@ -100,42 +152,17 @@ dft_onco_ddr %<>%
     )
   )
 
-# dft_onco_ddr %>% 
-#   ggplot(., aes(x = dx_path_proc_cpt_yrs, y = dx_entry)) + 
-#   geom_point() + coord_equal()
-
-
-readr::write_rds(
-  dft_onco_ddr,
-  here(dir_out, 'alt_onco_ddr.rds')
-)
-
-
-
-
 
 dft_onco_ddr_flags <- dft_onco_ddr %>%
   group_by(record_id, ca_seq) %>%
+  # half day tolerance for rounding aroudn each of these:
   summarize(
-    ddr_before_pm_reg = sum(dx_path_proc_cpt_yrs < dx_first_post_met_reg_yrs, na.rm = T) >= 1,
-    ddr_before_entry = sum(dx_path_proc_cpt_yrs < dx_entry, na.rm = T) >= 1,
+    ddr_before_pm_reg = sum(dx_path_proc_cpt_yrs < dx_first_post_met_reg_yrs + 0.5/365, na.rm = T) >= 1,
+    ddr_before_entry = sum(dx_path_proc_cpt_yrs < dx_entry + 0.5/365 , na.rm = T) >= 1,
     .groups = "drop"
   )
 
-readr::write_rds(
-  dft_onco_ddr_flags,
-  here(dir_out, 'alt_onco_ddr_flags.rds')
-)
 
-
-# Two Options here.
-
-# Option 1: To just select the first regimen, no matter how it falls in lines:
-# dft_met_ddr_surv <- dft_post_met_plat %>%
-#   group_by(record_id, ca_seq) %>%
-#   arrange(dx_reg_start_int_yrs) %>%
-#   slice(1) %>%
-#   ungroup(.)
 
 # Option 2: To select only first line therapy:
 dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
@@ -153,7 +180,7 @@ dft_met_ddr_surv <- dft_lot %>%
 
 
 
-
+ 
 dft_met_ddr_surv <- left_join(
   dft_met_ddr_surv,
   dft_onco_ddr_flags,
@@ -188,7 +215,9 @@ dft_met_ddr_surv %<>%
 
 
 
-# Adding a few things here which might be valuable as confounders:
+# Adding a few things here which might be valuable as confounders.
+# Even though this isn't currently used I'm leaving it in because it's where
+#   we should be going.
 dft_extra_var <- readr::read_rds(
   here('data', 'cohort', 'time_invariant_model_factors.rds')
 ) %>%
@@ -231,20 +260,18 @@ dft_met_ddr_surv <- left_join(
   by = rc_vec
 )
 
+# At this point I noticed one case where both carboplatin and cisplatin were documented.
+# However, the carboplatin started and ended on the same day, so I feel confident
+#   removing it.
+# This is absolutely a hard code, and not durable to changes.
+dft_met_ddr_surv %<>%
+  mutate(
+    regimen_drugs = case_when(
+      record_id %in% 'GENIE-DFCI-006944' & ca_seq %in% 3 & regimen_number %in% 2 ~ "Cisplatin, Paclitaxel",
+      T ~ regimen_drugs
+    )
+  )
 
-readr::write_rds(
-  dft_met_ddr_surv,
-  here(dir_out, 'met_ddr_surv.rds')
-)
-
-
-
-
-
-
-
-
-# Create the basic survival plots
 
 dft_met_ddr_surv %<>% 
   remove_trunc_gte_event(
@@ -254,152 +281,116 @@ dft_met_ddr_surv %<>%
 
 dft_met_ddr_surv %<>% mutate(fmr_fcpt_yrs = ifelse(fmr_fcpt_yrs < 0, 0, fmr_fcpt_yrs))
 
-surv_obj_os_fmr <- with(
-  dft_met_ddr_surv,
-  Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
-  )
+dft_met_ddr_surv_grouped <- bind_rows(
+  (dft_met_ddr_surv %>% mutate(analysis_group = "any_plat")),
+  (dft_met_ddr_surv %>% 
+     filter(str_detect(regimen_drugs, "Cisplatin")) %>%
+     mutate(analysis_group = "cisplatin_based")),
+  (dft_met_ddr_surv %>% 
+     filter(str_detect(regimen_drugs, "Carboplatin")) %>%
+     mutate(analysis_group = "carboplatin_based"))
 )
 
-dft_met_ddr_surv %<>%
+dft_met_ddr_surv_grouped %<>%
+  nest(.by = analysis_group)
+
+
+
+dft_met_ddr_surv_grouped %<>%
   mutate(
-    ddr_disp = case_when(
-      ddr_before_entry ~ "Oncogenic DDR",
-      T ~ "No Onco. DDR"
+    cox_ddr = purrr::map(
+      .x = data,
+      .f = \(z) {
+        coxph(
+          data = z,
+          with(z, Surv(
+            time = fmr_fcpt_yrs,
+            time2 = tt_os_first_met_reg_yrs,
+            event = os_first_met_reg_status
+          )) ~ ddr_before_entry
+        ) %>%
+          broom::tidy(., conf.int = T, exponentiate = F) # will exp later.
+      }
     )
   )
 
-gg_os_fmr_ddr <- plot_one_survfit(
-  dat = dft_met_ddr_surv,
-  surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first line platinum chemo",
-  plot_subtitle = "Adjusted for (independent) delayed entry"
-)
 
-readr::write_rds(
-  gg_os_fmr_ddr,
-  file = here(dir_out, "gg_met_ddr.rds")
-)
-
-
-# Make a truncated version:
-
-gg_os_fmr_ddr_manu <- plot_one_survfit(
-  dat = dft_met_ddr_surv,
-  surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first line platinum chemo",
-  x_breaks = seq(0, 100, by = 0.5)
-) + 
-  coord_cartesian(xlim = c(0,5)) +
-  theme(plot.title.position = 'panel')
-
-gg_os_fmr_ddr_manu_no_rt <- plot_one_survfit_no_risktable(
-  dat = dft_met_ddr_surv,
-  surv_form = surv_obj_os_fmr ~ ddr_disp,
-  plot_title = "OS from first line platinum chemo",
-  x_breaks = seq(0, 100, by = 0.5)
-) + 
-  coord_cartesian(xlim = c(0,5)) +
-  theme(plot.title.position = 'panel')
-
-readr::write_rds(
-  gg_os_fmr_ddr_manu,
-  file = here(dir_out, "gg_met_ddr_manu.rds")
-)
-
-readr::write_rds(
-  gg_os_fmr_ddr_manu_no_rt,
-  file = here(dir_out, "gg_met_ddr_manu_no_rt.rds")
-)
-
-ggsave(
-  plot = gg_os_fmr_ddr_manu,
-  height = 4, width = 7,
-  filename = here('output', 'aacr_ss24', 'img', '03_met_ddr.pdf')
-)
-
-
-
-
-
-
-
-
-
-
-# Request:  Also do this split by carboplatin and cisplatin.
-dft_met_ddr_surv %<>%
+dft_met_ddr_surv_grouped %<>%
   mutate(
-    carbo = str_detect(regimen_drugs, "arboplatin"),
-    cis = str_detect(regimen_drugs, 'isplatin')
-  ) %>%
-  filter(!(carbo & cis)) %>% # one case, not real (0 length)
+    median_surv = purrr::map(
+      .x = data,
+      .f = \(z) {
+        survfit(
+          data = z,
+          with(z, Surv(
+            time = fmr_fcpt_yrs,
+            time2 = tt_os_first_met_reg_yrs,
+            event = os_first_met_reg_status
+          )) ~ ddr_before_entry
+        ) %>%
+          summary %>%
+          `$`(.,'table') %>%
+          as_tibble(., rownames = 'group') %>%
+          rename(lower = `0.95LCL`, upper = `0.95UCL`)
+      }
+    )
+  )
+  
+
+
+
+
+
+# Print out these results (move later on):
+dft_cohort_ddr %>% 
+  select(-record_id) %>%
+  gtsummary::tbl_summary(.)
+
+dft_met_ddr_surv_grouped %>%
+  select(analysis_group, cox_ddr) %>%
+  unnest(cox_ddr) %>%
+  # put the estimates on the HR scale (not log HR):
   mutate(
-    ddr_plat_comb = case_when(
-      ddr_before_entry & carbo ~ "Carbo, DDR+",
-      ddr_before_entry & cis ~ "Cis, DDR+",
-      carbo ~ "Carbo, DDR-",
-      cis ~ "Cis, DDR-"
+    across(
+      .cols = c(estimate, conf.low, conf.high),
+      .fns = exp
     )
   ) %>%
-  mutate(ddr_plat_comb = factor(ddr_plat_comb))
+  select(1,3,6:8)
 
-surv_obj_os_fmr <- with(
-  dft_met_ddr_surv,
-  Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
-  )
-)
-
-gg_os_fmr_ddr_manu_plat_split <- plot_one_survfit(
-  dat = dft_met_ddr_surv,
-  surv_form = surv_obj_os_fmr ~ ddr_plat_comb,
-  plot_title = "OS from first line platinum chemo",
-  x_breaks = seq(0, 100, by = 0.5),
-  pal = c("#ee99aa", "#994455", "#6699cc", "#004488")
-) + 
-  coord_cartesian(xlim = c(0,5)) +
-  theme(plot.title.position = 'panel')
-
-gg_os_fmr_ddr_manu_plat_split_no_rt <- plot_one_survfit_no_risktable(
-  dat = dft_met_ddr_surv,
-  surv_form = surv_obj_os_fmr ~ ddr_plat_comb,
-  plot_title = "OS from first line platinum chemo",
-  x_breaks = seq(0, 100, by = 0.5),
-  pal = c("#ee99aa", "#994455", "#6699cc", "#004488")
-) + 
-  coord_cartesian(xlim = c(0,5)) +
-  theme(plot.title.position = 'panel')
-
-gg_os_fmr_ddr_manu_plat_split_no_rt
+dft_met_ddr_surv_grouped %>%
+  select(analysis_group, median_surv) %>%
+  unnest(median_surv) %>%
+  # put the estimates in months:
+  mutate(
+    across(
+      .cols = c(median, lower, upper),
+      .fns = \(z) z * 12.0148 # previously 12, makes almost no difference.
+    )
+  ) %>%
+  # for now we just care about the medians:
+  select(1,2, median, lower, upper)
+  
+dft_cohort_ddr %>% 
+  select(-record_id) %>%
+  gtsummary::tbl_summary(.)
 
 
-readr::write_rds(
-  gg_os_fmr_ddr_manu_plat_split,
-  file = here(dir_out, "gg_met_ddr_plat_split.rds")
-)
-
-readr::write_rds(
-  gg_os_fmr_ddr_manu_plat_split_no_rt,
-  file = here(dir_out, "gg_met_ddr_plat_split_no_rt.rds")
-)
+dft_met_ddr_surv_grouped %>% 
+  slice(2) %>%
+  pull(data) %>%
+  `[[`(.,1) %>%
+  count(ddr_before_entry)
 
 
+# It just never ends - a few more asks here:
+dft_ca_ind %>%
+  filter(record_id %in% dft_met_timing$record_id) %>%
+  select(age_dx, ca_type) %>%
+  tbl_summary(.)
 
-
-
-
-
-
-
-
-
-
-
-
-
+dft_pt %>%
+  filter(record_id %in% dft_met_timing$record_id) %>%
+  select(naaccr_sex_code) %>%
+  tbl_summary(.)
 
