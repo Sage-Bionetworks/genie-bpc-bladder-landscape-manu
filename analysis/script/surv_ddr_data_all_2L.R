@@ -124,6 +124,19 @@ rel_reg %<>%
     by = "record_id"
   )
 
+# Add in de novo met indicator:
+rel_reg <- get_dmet_time(dft_ca_ind, annotate_type = T) %>% 
+  mutate(de_novo_met = case_when(
+    .met_type %in% "stage_iv_with_immediate_dmet" ~ T,
+    T ~ F
+  )) %>%
+  select(record_id, ca_seq, de_novo_met) %>%
+  left_join(
+    rel_reg,
+    .,
+    by = c('record_id', 'ca_seq')
+  )
+
 rel_reg <- rel_reg %>%
   # int is less clear than days
   rename(dx_reg_start_days = dx_reg_start_int,

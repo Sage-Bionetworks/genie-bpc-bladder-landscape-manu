@@ -56,7 +56,7 @@ individual_km <- met_ddr_surv %>%
   mutate(
     km_tidy = purrr::map(
       .x = data,
-      .f = \(x) get_no_covariate_km(
+      .f = \(x) km_tidy_no_covariate(
         dat = x,
         trunc_time = 'reg_fcpt_yrs',
         event_time = 'tt_os_g_yrs',

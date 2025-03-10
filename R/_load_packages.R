@@ -34,6 +34,7 @@ library(colorspace)
 library(viridis)
 library(khroma)
 library(ggmosaic)
+library(ggsci)
 
 library(knitr)
 library(quarto)
