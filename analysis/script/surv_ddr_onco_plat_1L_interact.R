@@ -129,5 +129,8 @@ gg_km_1L <- plot_km_forest(
 model_bundle <- c(model_bundle, list(gg_km_1L))
 
 readr::write_rds(
+  model_bundle,
+  here('data', 'survival', 'ddr_onco_1L', 'model_interact_bundle.rds')
+)
        
 # First output: Kaplan Meier estimates for
