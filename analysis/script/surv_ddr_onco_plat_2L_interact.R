@@ -5,8 +5,10 @@
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
+dir_out <- here('data', 'survival', 'ddr_onco_2L')
+
 met_ddr_surv <- readr::read_rds(
-  here('data', 'survival', 'ddr_onco_1L', 'met_ddr_surv_all_1L.rds')
+  here('data', 'survival', 'ddr_onco_2L', 'met_ddr_surv_all_2L.rds')
 )
 
 met_ddr_surv %<>% rename(ddr_onco_alt = ddr_before_entry)
@@ -16,9 +18,15 @@ met_ddr_surv %<>%
   mutate(
     regimen_cat_km = forcats::fct_collapse(
       regimen_cat,
-      Other = c("Taxane monotherapy",
-                "Pemetrexed monotherapy",
-                "Other")
+      Other = c(
+        "IO (other)",
+        "Taxane monotherapy",
+        "Pemetrexed monotherapy",
+        "Other"),
+      `Platinum-based` = c(
+        "Cisplatin-based",
+        "Carboplatin-based"
+      )
     )
   )
 
@@ -38,7 +46,7 @@ met_ddr_surv %<>%
                 T ~ "DDR-")
     )
   )
-                
+
 
 model_bundle <- list(data = met_ddr_surv)
 
@@ -73,23 +81,23 @@ individual_km %<>%
 model_bundle <- c(model_bundle, list(individual_km = individual_km))
 
 
-gg_km_1L <- plot_km_forest(
+gg_km_2L <- plot_km_forest(
   individual_km,
   y = "ddr_drug_axis",
   plot_infinite = T
 ) +
   labs(
-    title = "KM median/CI for 1L",
+    title = "KM median/CI for 2L",
     subtitle = "Each estimate is specific to one drug/ddr group",
     y = NULL,
     x = "Median overall survival (years)"
   )
 
-model_bundle <- c(model_bundle, list(gg_km_1L))
+model_bundle <- c(model_bundle, list(gg_km_2L))
 
 readr::write_rds(
   model_bundle,
-  here('data', 'survival', 'ddr_onco_1L', 'model_interact_bundle.rds')
+  here(dir_out, 'model_interact_bundle.rds')
 )
-       
+
 # First output: Kaplan Meier estimates for
