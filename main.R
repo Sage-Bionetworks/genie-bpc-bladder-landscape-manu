@@ -77,7 +77,7 @@ source(here('analysis', 'script', 'surv_first_line_immunotherapy.R'))
 
 
 # 1L DDR-related analyses
-source(here('analysis', 'script', 'surv_ddr_onco_plat_data.R')) # prep data
+source(here('analysis', 'script', 'surv_ddr_onco_plat_data_all_1L.R')) # all 1L data created for big model.
 source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R')) # base idea
 
 cli_alert("Need to update/split models in ...plat_model still")

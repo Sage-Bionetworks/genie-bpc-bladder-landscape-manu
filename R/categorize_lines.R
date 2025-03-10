@@ -4,13 +4,13 @@ categorize_lines <- function(reg_vec, factorize = T) {
   reg_vec <- tolower(reg_vec)
   
   lot_cat_lev <- c(
-    'investigational (masked)',
-    'immunotherapy',
-    'cisplatin-based',
-    'carboplatin-based',
-    'taxane monotherapy',
-    'pemetrexed monotherapy',
-    'other'
+    'Investigational (masked)',
+    'Immunotherapy',
+    'Cisplatin-based',
+    'Carboplatin-based',
+    'Taxane monotherapy',
+    'Pemetrexed monotherapy',
+    'Other'
   )
   
   rtn <- case_when(
