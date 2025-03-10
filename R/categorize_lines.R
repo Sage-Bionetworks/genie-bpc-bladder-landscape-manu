@@ -1,7 +1,7 @@
 
 # Lines of therapy categories, originally for the 2025 ASCO poster.
 categorize_lines <- function(reg_vec, factorize = T) {
-  reg_vec <- tolower(reg_vec)
+  reg_vec <- tolower(reg_vec) # not permanent.
   
   lot_cat_lev <- c(
     'Investigational (masked)',
@@ -21,7 +21,7 @@ categorize_lines <- function(reg_vec, factorize = T) {
     str_detect(reg_vec, 'cisplatin') ~ lot_cat_lev[3],
     str_detect(reg_vec, 'carboplatin') ~ lot_cat_lev[4],
     reg_vec %in% c('docetaxel', 'paclitaxel') ~ lot_cat_lev[5],
-    reg_vec %in% c('pemetrex') ~ lot_cat_lev[6],
+    str_detect(reg_vec, 'pemetrex') ~ lot_cat_lev[6],
     T ~ lot_cat_lev[7]
   )
   
