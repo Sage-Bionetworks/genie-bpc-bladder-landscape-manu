@@ -22,49 +22,112 @@ met_ddr_surv %<>%
     )
   )
 
+# Interval from regimen to first cancer panel test - make zero if neg.
+met_ddr_surv %<>% mutate(reg_fcpt_yrs = ifelse(reg_fcpt_yrs < 0, 0, reg_fcpt_yrs))
+# These people wouldn't exist if we had proper cohort entry, but we can't do much with them:
+met_ddr_surv %<>% 
+  remove_trunc_gte_event(
+    trunc_var = 'reg_fcpt_yrs',
+    event_var = 'tt_os_g_yrs'
+  )
+
+met_ddr_surv %<>%
+  mutate(
+    ddr_lab = factor(
+      case_when(ddr_onco_alt ~ "DDR+",
+                T ~ "DDR-")
+    )
+  )
+                
+
 model_bundle <- list(data = met_ddr_surv)
 
 
-test <- met_ddr_surv %>%
-  nest(.by = c(regimen_cat_km, ddr_onco_alt)) %>%
-  slice(1) %>%
-  pull(data) %>%
-  `[[`(.,1)
-
-get_no_covariate_km(dat = test,
-                    trunc_time = 'reg_fcpt_yrs',
-                    event_time = 'tt_os_g_yrs',
-                    event_ind = 'os_g_status')
-
-surv_obj <- with(
-  test,
-  Surv(
-    time = reg_fcpt_yrs,
-    time2 = tt_os_g_yrs,
-    event = os_g_status
+individual_km <- met_ddr_surv %>%
+  nest(.by = c(regimen_cat_km, ddr_lab)) %>%
+  mutate(
+    km_tidy = purrr::map(
+      .x = data,
+      .f = \(x) get_no_covariate_km(
+        dat = x,
+        trunc_time = 'reg_fcpt_yrs',
+        event_time = 'tt_os_g_yrs',
+        event_ind = 'os_g_status'
+      )
+    )
   )
-)
 
-survfit(surv_obj ~ 1) %>%
-  broom::glance(.)
+individual_km %<>% 
+  select(-data) %>%
+  unnest(km_tidy)
 
-km_tidy_no_covariate <- function(
+individual_km %<>%
+  group_by(regimen_cat_km) %>%
+  mutate(drug_n = sum(records)) %>%
+  ungroup() %>%
+  arrange(desc(drug_n), regimen_cat_km, desc(ddr_lab)) %>%
+  mutate(ddr_drug_axis = fct_inorder(
+    glue('(n={records}) {regimen_cat_km} {ddr_lab}')
+  ))
+
+model_bundle <- c(model_bundle, list(individual_km = individual_km))
+
+plot_km_forest <- function(
     dat,
-    event_time,
-    event_ind,
-    trunc_time = NULL
+    y,
+    plot_infinite = T
 ) {
-  if (is.null(trunc)) {
-    surv_obj <- Surv(time = dat[[event_time]], event = dat[[event_ind]])
-  } else {
-    surv_obj <- with(dat, Surv(time = dat[[trunc_time]],
-                               time2 = dat[[event_time]],
-                               event = dat[[event_ind]]))
-  }
-  survfit(surv_obj ~ 1, data = dat) %>%
-    broom::glance(.)
-  
-}
+  if (plot_infinite) {
+    ci_max <- max(dat$conf.high, na.rm =T)
+    inf_dat <- dat %>%
+      filter(is.na(conf.high) & !is.na(conf.low)) %>%
+      mutate(conf.high = ci_max * 1.05)
     
+    dat <- dat %>%
+      mutate(est_type = if_else(is.na(conf.high) | is.na(conf.low), 
+                                "infinite", "finite")) 
+    
+    inf_dat <- dat %>%
+      filter(est_type %in% "infinite" & !is.na(conf.low)) %>%
+      mutate(conf.high = ci_max * 1.05) 
+    
+    dat %<>%
+      replace_na(list(conf.high = ci_max * 1.05))
+  }
+  
+  gg <- ggplot(
+    dat,
+    aes(xmin = conf.low, xmax = conf.high, x = median, y = .data[[y]],
+        color = est_type)
+  ) + 
+    geom_pointrange() + 
+    geom_point(data = inf_dat, shape = 1, aes(x = conf.high, y = .data[[y]])) +
+    scale_color_jama() +
+    theme(
+      plot.title.position = 'plot',
+      legend.position = 'bottom'
+    )
+  
+  return(gg)
+    
+    
+    
+}
+
+gg_km_1L <- plot_km_forest(
+  individual_km,
+  y = "ddr_drug_axis",
+  plot_infinite = T
+) +
+  labs(
+    title = "KM median/CI for 1L therapies",
+    subtitle = "Each estimate is specific to one drug/ddr group",
+    y = NULL,
+    x = "Median overall survival (years)"
+  )
+
+model_bundle <- c(model_bundle, list(gg_km_1L))
+
+readr::write_rds(
        
 # First output: Kaplan Meier estimates for
