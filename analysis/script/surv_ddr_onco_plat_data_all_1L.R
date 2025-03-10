@@ -75,9 +75,13 @@ rel_reg <- onco_ddr_before_entry %>%
   replace_na(list(ddr_before_entry = F)) 
 
 
+rel_reg <- rel_reg %>%
+  mutate(
+    regimen_cat = categorize_lines(regimen_drugs)
+  ) %>%
+  relocate(regimen_cat, .after = regimen_drugs)
+    
 
-
-cli_abort('Stopped here - I think we"re close just need a bit more cleaning')
 
 
 
