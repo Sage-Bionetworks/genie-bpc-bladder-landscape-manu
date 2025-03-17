@@ -29,6 +29,7 @@ plot_km_forest <- function(
     aes(xmin = conf.low, xmax = conf.high, x = median, y = .data[[y]],
         color = est_type)
   ) + 
+    theme_bw() + 
     geom_pointrange() + 
     geom_point(data = inf_dat, shape = 1, aes(x = conf.high, y = .data[[y]])) +
     scale_color_jama() +

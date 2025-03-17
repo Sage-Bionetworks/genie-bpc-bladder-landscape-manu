@@ -87,7 +87,7 @@ gg_km_1L <- plot_km_forest(
     x = "Median overall survival (years)"
   )
 
-model_bundle <- c(model_bundle, list(gg_km_1L))
+model_bundle <- c(model_bundle, list(gg_km_1L = gg_km_1L))
 
 
 
@@ -211,8 +211,11 @@ gg_cox_mod_imp <- ggplot(
                   shape = 124) + 
   theme_bw() + 
   scale_color_highcontrast() +
-  labs(y = NULL, 
-       x = "Cumulative log hazard ratio (95% CI)") + 
+  labs(
+    title = "1L model with Plat:DDR interaction",
+    subtitle = "Multiple imputation used",
+    y = NULL, 
+    x = "Cumulative log hazard ratio (95% CI)") + 
   guides(color = guide_legend(title = NULL)) +
   theme(legend.position = "bottom")
 
