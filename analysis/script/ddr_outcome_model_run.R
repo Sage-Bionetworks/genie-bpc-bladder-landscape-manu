@@ -130,3 +130,83 @@ write_rds(
   
   
 
+
+
+
+
+
+# Now do the same for main GENIE:
+
+ddr_outcome_main <- readr::read_rds(
+  here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome', 
+       'ddr_outcome_mod_ready_main.rds'
+  )
+)
+
+ddr_outcome_main %<>% select(-c(patient_id, sample_id))
+
+ddr_out_mod_main_mlr <- glm(
+  data = ddr_outcome_main,
+  family = binomial,
+  formula = ddr ~ .
+)
+
+ddr_out_mod_main_mlr <- ddr_out_mod_main_mlr %>%
+  broom::tidy(., conf.int = T)
+
+ddr_out_mod_main_mlr %<>% mutate(model = "Multiple LR")
+
+ddr_out_mod_main_slr <- purrr::map_dfr(
+  .x = colnames(select(ddr_outcome_main, -c(ddr))),
+  .f = \(x) {
+    univariate_logistic_help(dat = ddr_outcome_main, x = x, y = 'ddr')
+  }
+) %>%
+  mutate(model = "Simple LR")
+
+ddr_out_all_mod <- bind_rows(
+  ddr_out_mod_main_slr,
+  ddr_out_mod_main_mlr
+) %>%
+  mutate(model = fct_inorder(model))
+
+ddr_out_all_mod %<>% filter(!(term %in% "(Intercept)")) 
+
+write_rds(
+  ddr_out_all_mod,
+  here(dir_out, 'ddr_outcome_main_all_model_results_main.rds')
+)
+
+# just for plotting:
+ddr_out_all_mod %<>% filter(!str_detect(term, "institution"))
+
+
+gg_ddr_out_mod_compare <- forest_mod_natural_scale(
+  dat = mutate(ddr_out_all_mod, model = fct_rev(model))
+) + 
+  labs(
+    x = "Logistic regression coefficent<br>log(OR), original variable scale",
+    y = NULL,
+    title = "Associations with DDR alteration (main GENIE)"
+  ) +
+  theme(
+    plot.title.position = 'plot',
+    axis.title = element_markdown()
+  )
+
+# plotly::ggplotly(gg_ddr_out_mod_compare)
+
+write_rds(
+  gg_ddr_out_mod_compare,
+  here(dir_out, 'gg_ddr_out_mod_compare_main.rds')
+)
+
+
+
+
+
+
+
+
+
+

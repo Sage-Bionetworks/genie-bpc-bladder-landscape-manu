@@ -243,3 +243,29 @@ ddr_out_mod_all %>%
     
 ```
 
+
+```{r}
+gg_ddr_mod_compare <- readr::read_rds(
+  here(dir_ddr_outcome, 'gg_ddr_out_mod_compare_main.rds')
+)
+```
+
+
+### R4.7 - DDR as outcome, main GENIE
+
+In main GENIE we have more samples but less information on participants.  Some of the covariates are determined in different ways (for example, upper tract here comes from the sample oncotree code rather than a derived BPC variable).
+
+Here we don't have any highly incomplete variables like ECOG score, so we will skip the multiple imputation and just compare a multiple logistic regression model with simple logistic regressions on each covariate.
+
+Some exclusions were made on data that had impossible birth year and age at sequencing values for main GENIE.  We also imputed a conservative value for people with redacted ages (e.g. assumed they were 90 those >89).
+
+```{r}
+#| include: true
+gg_ddr_mod_compare
+```
+
+Notes:
+
+- The trends here are generally consistent with what we found above.  DDR identification is less likely in upper tract cancers, female patients and in metastatic samples.  It is more likely in those with an older age at sequencing/dx (which tend to be correlated), and possibly more likely in those with a greater calendar birth year (probably several causes there).
+- While hidden, some of the institution terms are significant here.
+- The odds ratio was notably undefined for Black participants above, here 19 of the 165 black participants had a DDR alteration.  As the models indicate this is lower than marginally expected, but not dramatically.
