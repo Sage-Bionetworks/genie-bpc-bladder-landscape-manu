@@ -114,7 +114,7 @@ gg_ddr_out_mod_compare <- forest_mod_natural_scale(
   dat = mutate(ddr_out_all_mod, model = fct_rev(model))
 ) + 
   labs(
-    x = "Logistic regression coefficent<br>(OR, original variable scale)",
+    x = "Logistic regression coefficent<br>log(OR), original variable scale",
     y = NULL,
     title = "Associations with DDR alteration"
   ) +

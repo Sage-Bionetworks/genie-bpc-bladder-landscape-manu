@@ -195,3 +195,51 @@ tmb_stack_mmr %>%
 
 
 
+```{r}
+dir_ddr_outcome <- here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome')
+gg_ddr_out_mod_compare <- readr::read_rds(
+  here(dir_ddr_outcome, 'gg_ddr_out_mod_compare.rds')
+)
+ddr_out_mod_all <- readr::read_rds(
+  here(dir_ddr_outcome, 'ddr_outcome_all_model_results.rds')
+)
+```
+
+
+### R4.6 - DDR as outcome
+
+In this section we look for associations with a sample being detected to be DDR positive.  Each person's first sample is used, and most of the factors here do not depend directly on the status at sample timing.  A few variables do, specifically:
+
+- Muscle invasive status at the time of sampling.
+- Metastatic status at the time of sampling (I coded this so that a person is automatically muscle invasive if they're found to have a met).
+- ECOG score at the time of sampling.
+
+We two models to show.  The first is a logistic regression model with all features included as covariates (except one - see below).  Multiple imputation is used to fill in the ECOG score for the many missing values at the time of sampling.  One person was excluded due to having an unknown pathology sample time.
+
+The second model is simple (one covariate) at a time logistic regression.  This is mostly included for sanity checking, and due to the fact that some of these covariates have obvious structural relationships we're not modeling (a person can't have a metastatic sample if they're not metastatic, for instance).
+
+```{r}
+#| include: true
+gg_ddr_out_mod_compare
+```
+
+
+Notes:
+
+- Each coefficient above has a log odds ratio interpretation.  For example, the log OR associated with being upper tract compared to not is about -0.2, for an odds ratio of about 0.81, meaning upper tract is associated with lower rates of DDR alteration.
+- **Important** There are 15 black people in this dataset, and 100% of them did not have a DDR alteration.  The coefficients were excluded due to colinearity, but it's a notable finding.  The institution terms were excluded to avoid controversy there.
+
+Here is the multiple logistic regression information in a table.  Here I've converted from the log(OR) scale to odds ratios:
+
+```{r}
+#| include: true
+ddr_out_mod_all %>% 
+  filter(model %in% "Multiple LR, imputed") %>%
+  mutate(OR = formatC(exp(estimate), format = 'f', digits = 3),
+         p.value = format_p(p.value, digits = 2)) %>%
+  select(term, OR, p.value) %>%
+  filter(!str_detect(term, 'institution')) %>%
+  flextable(.)
+    
+```
+
