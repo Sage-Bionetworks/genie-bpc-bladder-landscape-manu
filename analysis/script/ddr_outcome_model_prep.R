@@ -1,7 +1,7 @@
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
-dir_out <- here('data', 'genomic', 'ddr_def_compare')
+dir_out <- here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome')
 
 # These DDR flags only cover each person's first sample in BPC:
 ddr_flags <- readr::read_rds(
@@ -49,6 +49,7 @@ if (ddr_outcome %>% mutate(chk = record_id_check == record_id) %>% pull(chk) %>%
 ddr_outcome %<>%
   filter(!is.na(dx_path_proc_cpt_days))
 
+rc_vec <- c('record_id', 'ca_seq')
 ddr_outcome <- left_join(
     ddr_outcome,
     timeless_features,
@@ -71,8 +72,6 @@ ddr_outcome %<>%
     select(latest_med_onc, record_id, md_ecog_imp_num),
     by = "record_id"
   )
-
-rc_vec <- c('record_id', 'ca_seq')
 
 met_invasive_status <- make_dmet_musc_prop_status_block(ca_ind) %>%
   mutate(
@@ -106,7 +105,7 @@ ddr_outcome <- met_invasive_status %>%
 
 readr::write_rds(
   ddr_outcome,
-  here('data', 'genomic', 'ddr_def_compare', 'ddr_outcome_premodel.rds')
+  here(dir_out, 'ddr_outcome_premodel.rds')
 )
 
 ddr_outcome_mod <- ddr_outcome %>%
@@ -142,8 +141,8 @@ ddr_outcome_mod <- ddr_outcome_mod %>%
   )
 
 readr::write_rds(
-  ddr_outcome,
-  here('data', 'genomic', 'ddr_def_compare', 'ddr_outcome_mod_ready.rds')
+  ddr_outcome_mod,
+  here(dir_out, 'ddr_outcome_mod_ready.rds')
 )
     
 

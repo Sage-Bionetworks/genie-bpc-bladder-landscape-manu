@@ -209,21 +209,22 @@ dft_cox_all_mods %<>%
     )
   )
         
+# Adapt this code to use the new
 
-gg_cox_mod_compare <- ggplot(
-  dat = mutate(dft_cox_all_mods, term = fct_rev(term)),
-  aes(x = estimate, xmin = conf.low, xmax = conf.high, y = term,
-      color = model_disp)
-) + 
-  geom_vline(color = 'gray70', linewidth = 2, alpha = 0.5, xintercept = 0) + 
-  geom_pointrange(position = position_dodge2(width = 0.5),
-                  shape = 124) + 
-  theme_bw() + 
-  scale_color_highcontrast() +
-  labs(y = NULL, 
-       x = "Cumulative log hazard ratio (95% CI)") + 
-  guides(color = guide_legend(title = NULL)) +
-  theme(legend.position = "bottom")
+# gg_cox_mod_compare <- ggplot(
+#   dat = mutate(dft_cox_all_mods, term = fct_rev(term)),
+#   aes(x = estimate, xmin = conf.low, xmax = conf.high, y = term,
+#       color = model_disp)
+# ) + 
+#   geom_vline(color = 'gray70', linewidth = 2, alpha = 0.5, xintercept = 0) + 
+#   geom_pointrange(position = position_dodge2(width = 0.5),
+#                   shape = 124) + 
+#   theme_bw() + 
+#   scale_color_highcontrast() +
+#   labs(y = NULL, 
+#        x = "Cumulative log hazard ratio (95% CI)") + 
+#   guides(color = guide_legend(title = NULL)) +
+#   theme(legend.position = "bottom")
 
 readr::write_rds(
   gg_cox_mod_compare,
@@ -233,44 +234,6 @@ readr::write_rds(
 
 
 
-
-
-# Regularization on top of this seems a bit much for now.  Let's go slow.
-
-# 
-# 
-# # Obviously we want to replace this with imputation:
-# dft_met_ddr_surv_sub <- dft_met_ddr_surv_sub[complete.cases(dft_met_ddr_surv_sub),] 
-# 
-# 
-# cli_abort("Need to fix the UHN & race unknown issue")
-# 
-# obj_surv <- with(
-#   dft_met_ddr_surv_sub,
-#   Surv(
-#     time = fmr_fcpt_yrs,
-#     time2 = tt_os_first_met_reg_yrs,
-#     event = os_first_met_reg_status
-#   )
-# )
-# 
-# fit <- cv.glmnet(
-#   x = as.matrix(
-#     select(dft_met_ddr_surv_sub,
-#            -c(fmr_fcpt_yrs, tt_os_first_met_reg_yrs, os_first_met_reg_status)
-#     )
-#   ),
-#   y = obj_surv,
-#   family = "cox",
-#   nfolds = 5,
-#   type.measure = "C",
-#   alpha = 0.5
-# )
-# 
-# coef(fit, s = "lambda.1se")
-# 
-# # I think if we did a regularized fit with multiple imputation we'd be in better shape.
-# 
 
 
 

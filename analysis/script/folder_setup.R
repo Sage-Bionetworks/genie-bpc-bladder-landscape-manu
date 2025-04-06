@@ -11,7 +11,6 @@ dir_create('data', 'drug_mapping')
 dir_create('data', 'dmet', 'lines_of_therapy')
 dir_create('data', 'genomic', 'gene_corr')
 
-
 dir_create('output', 'report')
 dir_create('output', 'fig')
 dir_create('output', 'other')
@@ -27,4 +26,5 @@ fs::dir_create(here('data', 'survival', 'ddr_onco'))
 fs::dir_create(here('data', 'survival', 'ddr_neoadj'))
 fs::dir_create(here('data', 'survival', 'line23'))
 
+fs::dir_create(here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome'))
 
