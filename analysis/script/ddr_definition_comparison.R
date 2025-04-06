@@ -159,6 +159,24 @@ first_sample_main <- sample_main %>%
   arrange(seq_year, age_at_seq_report_days_num) %>%
   slice(1) %>%
   ungroup(.)
+  
+
+# Adding this in so we can do the "predictors of DDR" analysis.
+flags_main <- count_pts_gene_list(
+  first_sample_main, 
+  alt_df = filter(alt_main, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
+  gene_list = asco_2025_genes
+) %>%
+  rename(ddr = any_alt) %>%
+  mutate(ddr = as.logical(ddr))
+
+readr::write_rds(
+  flags_main,
+  here(dir_out, "ddr_flags_first_sample_main_genie.rds")
+)
+  
+
+
 
 
 # Example of using once:    

@@ -144,5 +144,114 @@ readr::write_rds(
   ddr_outcome_mod,
   here(dir_out, 'ddr_outcome_mod_ready.rds')
 )
-    
 
+
+
+
+
+
+
+
+
+# Finally try to do the same for main GENIE - or as close as we can get.
+ddr_flags_main <- readr::read_rds(
+  here('data', 'genomic', 'ddr_def_compare', 'ddr_flags_first_sample_main_genie.rds')
+)
+sample_main <- readr::read_tsv(
+  here('data-raw', 'genomic', 'main_genie', 'data_clinical_sample.txt'),
+  skip = 4
+) %>%
+  rename_all(tolower)
+
+ddr_flags_main <- sample_main %>% select(
+  sample_id,
+  age_at_seq_report_days,
+  oncotree_code,
+  sample_type,
+  cancer_type,
+  seq_year
+) %>%
+  left_join(
+    ddr_flags_main,
+    .,
+    by = 'sample_id'
+  )
+pt_main <- readr::read_tsv(
+  here('data-raw', 'genomic', 'main_genie', 'data_clinical_patient.txt'),
+  skip = 4
+) %>%
+  rename_all(tolower)
+ddr_flags_main <- pt_main %>%
+  select(
+    patient_id,
+    sex, 
+    primary_race,
+    birth_year,
+    center
+  ) %>%
+  left_join(
+    ddr_flags_main,
+    .,
+    by = 'patient_id'
+  )
+
+ddr_flags_main %<>% 
+  mutate(
+    age_seq_yrs = case_when(
+      is.na(age_at_seq_report_days) | age_at_seq_report_days %in% "Unknown" ~ NA_real_,
+      age_at_seq_report_days %in% ">32485" ~ 90, # could be higher - this is fine.
+      age_at_seq_report_days %in% "<6570" ~ 17, # could be lower - this is fine.
+      T ~ as.numeric(age_at_seq_report_days)/365.25
+    ),
+    birth_year = case_when(
+      birth_year %in% "Unknown" ~ NA_real_,
+      birth_year %in% "cannotReleaseHIPAA" ~ 1925, # could be higher, this is OK.
+      birth_year %in% "withheld" ~ 2005, # could be lower, this is OK.
+      T ~ as.numeric(birth_year)
+    )
+  ) %>%
+  select(-age_at_seq_report_days)
+  
+# K there's some obvious problems here:
+# ggplot(ddr_flags_main, aes(x = age_seq_yrs, y = birth_year)) + geom_point()
+
+ddr_flags_main %<>%
+  filter(
+    !(age_seq_yrs > 40 & birth_year > 2000)
+  )
+
+# ggplot(ddr_flags_main, aes(x = age_seq_yrs, y = birth_year)) + geom_point()
+# Good enough - probably still some impossible things but at least the mega high leverage points are gone.
+
+
+ddr_flags_main %<>% 
+  mutate(
+    upper_tract = oncotree_code %in% "UTUC",
+    met_sample = sample_type %in% "Metastasis",
+    female = sex %in% "Female",
+    race = case_when(
+      primary_race %in% c("White", "Black", "Asian") ~ primary_race,
+      T ~ "race_oth_unk"
+    )
+  ) %>%
+  select(-c(oncotree_code, sample_type, seq_year, sex, cancer_type, primary_race)) %>%
+  rename(institution = center) # have seq year coded between birth_year and age at seq.
+
+ddr_flags_main_mod <- ddr_flags_main %<>%
+  fastDummies::dummy_cols(
+    select_columns = c('institution', 'race'),
+    remove_most_frequent_dummy = T,
+    remove_selected_columns = T
+  )
+
+
+readr::write_rds(
+  ddr_flags_main_mod,
+  here(dir_out, 'ddr_outcome_mod_ready_main.rds')
+)
+
+
+
+
+
+    
