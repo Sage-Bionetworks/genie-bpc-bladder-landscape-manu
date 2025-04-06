@@ -62,6 +62,8 @@ source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
 
 # DDR report:
 source(here('analysis', 'script', 'ddr_definition_comparison.R'))
+source(here('analysis', 'script', 'ddr_outcome_model_prep.R'))
+source(here('analysis', 'script', 'ddr_outcome_model_run.R'))
 
 
 
