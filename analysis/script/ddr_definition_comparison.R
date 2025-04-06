@@ -586,7 +586,7 @@ readr::write_rds(
 
 # There's a problem with the comparison of DDR to not for TMB (same for MMR).
 # Having a DDR alteration strictly bounds the number of mutations at 1, which
-#   directly impacts TMB.  So our preditor is a part of the outcome definition, which just won't do.
+#   directly impacts TMB.  So our predictor is a part of the outcome definition, which just won't do.
 # We will build a better control, and stack it into the data to show this.
 tmb_stack_ddr <- bind_rows(
   (tmb_comp %>%

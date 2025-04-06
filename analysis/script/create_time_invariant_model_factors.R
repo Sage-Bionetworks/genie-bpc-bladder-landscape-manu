@@ -22,8 +22,14 @@ dft_time_invar <- dft_met_timing %>%
   left_join(dft_time_invar, ., by = rc_vec)
 
 dft_time_invar <- dft_ca_ind %>% 
-  select(record_id, ca_seq, dob_ca_dx_yrs) %>%
+  select(record_id, ca_seq, dob_ca_dx_yrs, ca_type) %>%
   left_join(dft_time_invar, ., by = rc_vec) 
+
+dft_time_invar %<>%
+  mutate(
+    upper_tract = ca_type %in% "Renal Pelvis Cancer"
+  ) %>%
+  select(-ca_type)
 
 dft_time_invar %<>%
   left_join(
@@ -53,34 +59,3 @@ readr::write_rds(
 )
   
 
-
-# 
-# 
-# 
-# dft_reg_start_dob <- left_join(
-#   select(dft_met_ddr_surv, record_id, ca_seq, dx_reg_start_int_yrs),
-#   select(dft_ca_ind, record_id, ca_seq, dob_ca_dx_yrs),
-#   by = rc_vec
-# ) %>%
-#   mutate(
-#     dob_reg_start_yrs = dx_reg_start_int_yrs + dob_ca_dx_yrs,
-#     dob_reg_start_days = dob_reg_start_yrs * 365.25
-#   ) %>%
-#   select(record_id, dob_reg_start_days) 
-# 
-# dft_time_invar %<>%
-#   left_join(., dft_reg_start_dob, by = 'record_id')
-# 
-# dft_latest_med_onc <- get_med_onc_by_timing(
-#   dat_med_onc = dft_med_onc,
-#   dat_cutoff = dft_reg_start_dob,
-#   var_cutoff = "dob_reg_start_days",
-#   remove_missing = T
-# )
-# 
-# dft_extra_var %<>%
-#   left_join(
-#     .,
-#     select(dft_latest_med_onc, record_id, md_ecog_imp_num),
-#     by = "record_id"
-#   )
