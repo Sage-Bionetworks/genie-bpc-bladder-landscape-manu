@@ -12,7 +12,7 @@ An initial descriptive analysis of AACR's [GENIE BPC](https://www.aacr.org/profe
 To clone this repository, run the following in the command line from a machine with git installed:
 
 ```
-git clone https://github.com/Sage-Bionetworks/genie-bpc-prca-landscape-manu
+git clone https://github.com/Sage-Bionetworks/genie-bpc-bladder-landscape-manu
 ```
 
 ## Reproducibility tools
