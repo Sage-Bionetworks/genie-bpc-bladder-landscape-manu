@@ -74,6 +74,8 @@ vignettes/*.pdf
 Thumbs.db
 .DS_Store
 *.png
+*.tsv
+*.svg
 
 # Packrat
 packrat/lib*/

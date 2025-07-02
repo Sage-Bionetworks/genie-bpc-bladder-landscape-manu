@@ -1,15 +1,14 @@
-# Description: Top level workflow for the project.  Can be converted to a 
+# Description: Top level workflow for the project.  Can be converted to a
 #   cleaner workflow later on.
 # Author: Alex Paynter
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 # Manual downloads:
 # - data-raw/manual/icd_topography.xlsx from https://www.ncri.ie/html/icdo3sites
-
-
-
 
 ############
 # Clinical #
@@ -34,8 +33,6 @@ source(here('analysis', 'script', 'create_time_invariant_model_factors.R'))
 source(here('analysis', 'script', 'staging_clin_path.R'))
 
 
-
-
 ###########
 # Genomic #
 ###########
@@ -45,6 +42,12 @@ source(here('analysis', 'script', 'create_gene_panel_dat.R'))
 source(here('analysis', 'script', 'process_oncokb_output.R'))
 source(here('analysis', 'script', 'add_tmb_to_cpt.R'))
 source(here('analysis', 'script', 'plot_co_occur.R'))
+cli_alert_warning(
+  c(
+    "The oncoprint needs to be manually created (sadly)\n",
+    "follow the steps in \n/data/genomic/oncoprint/directions.md"
+  )
+)
 # need to set up quarto render still.
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-genomic.qmd'),
@@ -54,10 +57,13 @@ rmarkdown::render(
 
 
 # Main genie genomic reprise
-source(here('analysis', 'script', 'prepare_data_for_oncokb_annotate_main_genie.R'))
+source(here(
+  'analysis',
+  'script',
+  'prepare_data_for_oncokb_annotate_main_genie.R'
+))
 # Run annotate_oncokb_main_genie.sh - see instructions there in comments.
 source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
-
 
 
 # DDR report:
@@ -65,8 +71,6 @@ source(here('analysis', 'script', 'ddr_definition_comparison.R'))
 source(here('analysis', 'script', 'ddr_outcome_model_prep.R'))
 source(here('analysis', 'script', 'ddr_outcome_model_run.R'))
 # Render the DDR report.  A script could be written to do it, I'm out of time today sadly.
-
-
 
 ############
 # Survival #
@@ -108,7 +112,6 @@ source(here('analysis', 'script', 'create_2025_asco_gu_abstract_demo.R'))
 source(here('analysis', 'script', 'create_fig_1.R'))
 
 
-
 #############################
 # Met classification report #
 #############################
@@ -120,5 +123,3 @@ fs::file_move(
   path = here('analysis', 'report', 'genie-bpc-bladder-met-class.html'),
   new_path = here('output', 'report', '99-genie-bpc-bladder-met-class.html')
 )
-
-
