@@ -170,6 +170,15 @@ ddr_outcome_mod <- ddr_outcome_mod %>%
     remove_selected_columns = T
   )
 
+ddr_outcome_mod %<>%
+  mutate(
+    panel_genes_100 = n_genes / 100,
+    birth_year_10 = birth_year / 10,
+    age_dx_10 = dob_ca_dx_yrs / 10
+  ) %>%
+  select(-c(n_genes, birth_year, dob_ca_dx_yrs))
+
+
 readr::write_rds(
   ddr_outcome_mod,
   here(dir_out, 'ddr_outcome_mod_ready.rds')
@@ -281,6 +290,14 @@ ddr_flags_main_mod <- ddr_flags_main %<>%
     remove_most_frequent_dummy = T,
     remove_selected_columns = T
   )
+
+ddr_flags_main_mod %<>%
+  mutate(
+    panel_genes_100 = n_genes / 100,
+    birth_year_10 = birth_year / 10,
+    age_seq_10 = age_seq_yrs / 10
+  ) %>%
+  select(-c(n_genes, birth_year, age_seq_yrs))
 
 readr::write_rds(
   ddr_flags_main_mod,
