@@ -5,6 +5,7 @@ date: "`r Sys.Date()`"
 editor_options:
   quarto:
     chunk_output_type: console
+  chunk_output_type: console
 format:
   html:
     embed-resources: true
@@ -145,6 +146,35 @@ gg_ddr_panel
 
 
 ```{r}
+pltly_ddr_panel_size <- readr::read_rds(
+  here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome', 'pltly_ddr_panel_size.rds')
+)
+```
+
+
+### R4.5 - Panel size and DDR+
+
+Added in Jul 2025, this section investigates the link between the size of the panel used and being DDR+.  We use number of genes in the panel as our metric for interpretability, it might be better to use exon megabase coverage of the panel.  Three notes on the "number of genes":
+
+- We only include genes which have some coverage in exonic regions according to `genomic_information.txt`.
+- Only regions with `includeInPanel = TRUE` and do not have `clinicalReported = FALSE` are included.
+- These were both done to fix some obviously inflated gene counts, in particular with DFCI's ONCOPANEL 2.
+
+The following interactive chart shows each panel as a dot, with the number of cases tested by the panel represented by the dot's size.  The institution is colored, and each dot can be hovered over for more info (like the panel name).  The dark line is a weighted (by cases) LOESS smoother, and the dotted line is a linear fit.
+
+```{r}
+#| include: true
+
+pltly_ddr_panel_size
+```
+
+Observations:
+
+- There is a clear trend for higher DDR+ rates with larger panels.  I would not say this problem is resolved by removing smaller panels, it looks like a gradual effect.
+- There are two big outliers in main GENIE, both of which come from non-US institutions.  This could possibly be attributed to a high bar required to test people in those healthcare systems.
+- Lots of the 0% DDR+ large panels in main GENIE have only a handful of cases, so it's not that surprising that they had no DDR+ people.
+
+```{r}
 tmb_stack_ddr <- readr::read_rds(
   here(dir_ddr, 'tmb_stack_ddr.rds')
 )
@@ -158,7 +188,7 @@ tmb_comp <- readr::read_rds(
 ```
 
 
-### R4.5 - TMB related to these panels
+### R4.6 - TMB related to these panels
 
 The goal of this section was to compare the tumor mutation burden of those with a DDR alteration to those who do not.  There's a problem with this - those with a DDR alteration have at least one mutation, while the cohort with no DDR alterations could have zero.  Therefore we're systematically biasing the outcome by having a deterministic link between number of mutations (TMB) and being DDR+.
 
@@ -203,10 +233,13 @@ gg_ddr_out_mod_compare <- readr::read_rds(
 ddr_out_mod_all <- readr::read_rds(
   here(dir_ddr_outcome, 'ddr_outcome_all_model_results.rds')
 )
+ddr_outcome_mod_read_main <- readr::read_rds(
+  here(dir_ddr_outcome, 'ddr_outcome_mod_ready_main.rds')
+)
 ```
 
 
-### R4.6 - DDR as outcome
+### R4.7 - DDR as outcome
 
 In this section we look for associations with a sample being detected to be DDR positive.  Each person's first sample is used, and most of the factors here do not depend directly on the status at sample timing.  A few variables do, specifically:
 
@@ -251,7 +284,7 @@ gg_ddr_mod_compare <- readr::read_rds(
 ```
 
 
-### R4.7 - DDR as outcome, main GENIE
+### R4.8 - DDR as outcome, main GENIE
 
 In main GENIE we have more samples but less information on participants.  Some of the covariates are determined in different ways (for example, upper tract here comes from the sample oncotree code rather than a derived BPC variable).
 

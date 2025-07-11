@@ -1,7 +1,9 @@
 # Description:  Assess the impact of oncoKB filtering, save files with
 #  only the variants which pass an oncoKB pass.
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_input <- here('data', 'genomic', 'main_genie')
@@ -24,21 +26,23 @@ dft_fus_onco <- readr::read_tsv(
 dft_cna_raw <- readr::read_tsv(
   here(dir_input, 'cna_ready_to_annotate.txt'),
   show_col_types = F
-) 
+)
 dft_cna_onco <- bind_cols(
   # The sample ID that came back is garbage.
   select(dft_cna_onco, -SAMPLE_ID),
-  select(dft_cna_raw,  SAMPLE_ID = Tumor_Sample_Barcode)
-) 
+  select(dft_cna_raw, SAMPLE_ID = Tumor_Sample_Barcode)
+)
 
 anno_msg_help <- function(dat) {
   dat_name <- deparse(substitute(dat))
-  
+
   tab <- tabyl(dat, ANNOTATED) %>%
     filter(ANNOTATED) # T/F so this grabs the annotated pct line.
-  
+
   cli::cli_alert_info(
-    text = glue("{dat_name}: Of the {tab$n} rows, {round(tab$percent*100,1)}% were annotated.")
+    text = glue(
+      "{dat_name}: Of the {tab$n} rows, {round(tab$percent*100,1)}% were annotated."
+    )
   )
 }
 
@@ -59,9 +63,13 @@ dft_onco_impact <- bind_rows(
   onco_count_help(dft_fus_onco, "Fusion")
 )
 
-lev_onco <- c("Oncogenic", "Likely Oncogenic",
-              "Likely Neutral",
-              "Inconclusive", "Unknown")
+lev_onco <- c(
+  "Oncogenic",
+  "Likely Oncogenic",
+  "Likely Neutral",
+  "Inconclusive",
+  "Unknown"
+)
 
 dft_onco_impact %<>%
   mutate(
@@ -75,23 +83,19 @@ readr::write_rds(
 )
 
 
-
-
 # Addon: we want to calculate the variant allele frequency also.
 # t_ref_count is the "read depth" (number of times a specific seqeunce was read)
 #   supporting the reference sequence in this sample.
 # t_alt_count is the read depth for the variant sequence in this sample.
-# these both come from the BAM file, so even though we don't have the reads we 
+# these both come from the BAM file, so even though we don't have the reads we
 # can still estimate VAF.
-# A very small number of samples have this missing, which seems odd (but fine 
+# A very small number of samples have this missing, which seems odd (but fine
 #   if it's really just two samples.
 
 dft_mut_onco %<>%
   mutate(
     mut_vaf = t_alt_count / (t_alt_count + t_ref_count)
   )
-
-
 
 
 # Create an alterations dataset - one row per alteration.
@@ -116,7 +120,7 @@ dft_mut_onco_alt <- dft_mut_onco %>%
     mut_vaf
   )
 
-dft_cna_onco_alt <- dft_cna_onco %>% 
+dft_cna_onco_alt <- dft_cna_onco %>%
   rename_all(tolower) %>%
   mutate(alt_type = "CNA") %>%
   select(
@@ -129,7 +133,7 @@ dft_cna_onco_alt <- dft_cna_onco %>%
     mutation_effect
   )
 
-dft_fus_onco_alt <- dft_fus_onco %>% 
+dft_fus_onco_alt <- dft_fus_onco %>%
   rename_all(tolower) %>%
   mutate(alt_type = "Fusion") %>%
   select(
@@ -148,16 +152,16 @@ dft_alt <- bind_rows(
   dft_fus_onco_alt
 )
 
-# We need a unique key.  Currently a sample can have several alterations in the same #  hugo code and alteration type.  
+# We need a unique key.  Currently a sample can have several alterations in the same #  hugo code and alteration type.
 # Initially I wanted to use the descriptions of the
 #  alterations, such as the HGVSc code or the fusion description.  Because these
-#  are sometimes missing I'm going to assign a number instead.  Sometimes even with 
-#  a missing HGVSc&HGVSp code the variant can be annotated by oncokb - I don't 
+#  are sometimes missing I'm going to assign a number instead.  Sometimes even with
+#  a missing HGVSc&HGVSp code the variant can be annotated by oncokb - I don't
 #  want to remove those just to fit what would have been a beautiful data structure.
-dft_alt %<>% 
+dft_alt %<>%
   group_by(sample_id) %>%
   mutate(alt_seq = 1:n()) %>%
-  ungroup(.) 
+  ungroup(.)
 
 lev_alt_type <- c(
   "Mutation",
@@ -194,7 +198,6 @@ dft_alt %<>%
   )
 
 
-
 # Also add in the DDR pathways
 dft_pearl_pathways <- readr::read_rds(
   here('data', 'genomic', 'pearl_pathways.rds')
@@ -204,7 +207,7 @@ lev_path_pearl <- c(
   (dft_pearl_pathways$pathway %>% unique),
   "None"
 )
-dft_alt %<>% 
+dft_alt %<>%
   left_join(
     .,
     select(dft_pearl_pathways, hugo = gene, pathway_ddr = pathway),
@@ -222,7 +225,7 @@ readr::write_rds(
   file = here(dir_output, 'alterations.rds')
 )
 
-# Hoping that I don't need any of the rest of the script - see the NON main 
+# Hoping that I don't need any of the rest of the script - see the NON main
 #   genie version for that if you need to pull from it.
 
 # The one piece we will need is the dataframe listing who was tested for what genes.
@@ -232,49 +235,61 @@ samp_bladder <- read_rds(here(dir_input, 'bladder_samples_mg.rds'))
 clin_samp_bladder <- readr::read_tsv(
   here('data-raw', 'genomic', 'main_genie', 'data_clinical_sample.txt'),
   skip = 4
-) %>% rename_all(tolower) %>%
+) %>%
+  rename_all(tolower) %>%
   filter(sample_id %in% samp_bladder)
 
 panels_used <- clin_samp_bladder %>% pull(seq_assay_id) %>% unique(.)
 
 mg_bed <- readr::read_tsv(
   here('data-raw', 'genomic', 'main_genie', 'genomic_information.txt')
-) 
-
-testing_df <- mg_bed %<>% 
-  rename_all(tolower) %>%
-  filter(includeinpanel %in% T) %>%
-  filter(seq_assay_id %in% panels_used)
+)
 
 testing_df <- mg_bed %>%
+  rename_all(tolower) %>%
+  filter(includeinpanel) %>%
+  filter(!(clinicalreported %in% F)) %>%
+  filter(feature_type %in% "exon") %>%
+  filter(seq_assay_id %in% panels_used)
+
+# This is why we filter down to exons - DFCI has a whole bunch of panesl with intron stuff I've never heard of:
+# testing_df %>%
+#   count(seq_assay_id, hugo_symbol, feature_type) %>%
+#   pivot_wider(names_from = 'feature_type', values_from = n) %>%
+#   replace_na(list(exon = 0, intron = 0, intergenic = 0)) %>%
+#   mutate(across(c(exon, intron, intergenic), .fns = \(x) x > 0)) %>%
+#   filter(!exon & (intron | intergenic))
+
+testing_df %<>%
   filter(!is.na(hugo_symbol)) %>%
   select(seq_assay_id, hugo_symbol) %>%
   distinct(.) %>%
   mutate(tested = T) %>%
   tidyr::complete(seq_assay_id, hugo_symbol, fill = list(tested = F))
 
-testing_df %>% filter(seq_assay_id %in% "WAKE-CLINICAL-DX1", hugo_symbol %in% "TERT")
-
-sample_hugo_index <- clin_samp_bladder %>% 
+sample_hugo_index <- clin_samp_bladder %>%
   select(sample_id, patient_id, seq_assay_id, sample_type)
 
-sample_hugo_index <- 
+sample_hugo_index <-
   left_join(
     sample_hugo_index,
     testing_df,
     by = 'seq_assay_id',
     relationship = 'many-to-many'
-  ) 
+  )
 
 sample_hugo_index %<>% rename(hugo = hugo_symbol)
 
-sample_hugo_index <- dft_alt %>% 
+sample_hugo_index <- dft_alt %>%
   group_by(sample_id, hugo) %>%
   summarize(
     any_alt = T,
     # for QC:
     any_mut = any(alt_type %in% "Mutation", na.rm = T),
-    any_alt_onco = any(oncogenic %in% c('Oncogenic', 'Likely Oncogenic'), na.rm = T),
+    any_alt_onco = any(
+      oncogenic %in% c('Oncogenic', 'Likely Oncogenic'),
+      na.rm = T
+    ),
     .groups = 'drop'
   ) %>%
   left_join(
@@ -310,22 +325,26 @@ sample_hugo_index %<>%
 
 n_row_sh <- nrow(sample_hugo_index)
 n_hacked <- sample_hugo_index %>%
-  filter(!tested & panel_has_pos_test) %>% nrow
+  filter(!tested & panel_has_pos_test) %>%
+  nrow
 sample_hugo_index %<>%
-  mutate(tested = case_when(
-    is.na(panel_has_pos_test) ~ tested,
-    panel_has_pos_test ~ T,
-    T ~ tested
-  ))
+  mutate(
+    tested = case_when(
+      is.na(panel_has_pos_test) ~ tested,
+      panel_has_pos_test ~ T,
+      T ~ tested
+    )
+  )
 cli::cli_alert_warning(
-  "{n_hacked} of the {n_row_sh} rows were changed to indicate testing based on a positive result in the panel for that hugo symbol (despite the bed file not indicating testing).  Not ideal but it prevents paradoxes.")
+  "{n_hacked} of the {n_row_sh} rows were changed to indicate testing based on a positive result in the panel for that hugo symbol (despite the bed file not indicating testing).  Not ideal but it prevents paradoxes."
+)
 
 # This is a fairly large file to save, but it's the core of what we're doing.
 readr::write_rds(
   sample_hugo_index,
   here(dir_output, 'sample_hugo_index.rds')
 )
-  
+
 
 hugo_sum <- sample_hugo_index %>%
   group_by(hugo) %>%
@@ -335,9 +354,9 @@ hugo_sum <- sample_hugo_index %>%
     n_tested_chk = length(unique(sample_id[tested])), # will remove.
     n_alt = length(unique(sample_id[any_alt])),
     n_alt_onco = length(unique(sample_id[any_alt_onco])),
-  ) 
+  )
 
-if (any(hugo_sum$n_tested != hugo_sum$n_tested_chk)) { 
+if (any(hugo_sum$n_tested != hugo_sum$n_tested_chk)) {
   cli_abort("sample_hugo_index does not have unique sample/hugo rows.")
 } else {
   hugo_sum %<>% select(-n_tested_chk)
@@ -349,27 +368,8 @@ hugo_sum %<>%
     prop_alt = n_alt / n_tested,
     prop_alt_onco = n_alt / n_tested
   )
-    
+
 readr::write_rds(
   hugo_sum,
   here(dir_output, 'hugo_summary.rds')
 )
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-

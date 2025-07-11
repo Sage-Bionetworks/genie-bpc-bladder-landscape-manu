@@ -1,4 +1,6 @@
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_out <- here('data', 'genomic', 'ddr_def_compare')
@@ -36,12 +38,12 @@ ddr_def_pearl_addons <- bind_rows(
     select(source, gene) %>%
     distinct(.)),
   (ddr_pearl %>%
-     # selecting only the pathways that seem to have caught the attention of 
-     #   urothelial carcinoma researchers to date.
-     filter(pathway %in% c('NER', 'HR', 'Checkpoint', 'FA', 'BER')) %>%
-     mutate(source = 'pearl 2015 select') %>%
-     select(source, gene) %>%
-     distinct(.))
+    # selecting only the pathways that seem to have caught the attention of
+    #   urothelial carcinoma researchers to date.
+    filter(pathway %in% c('NER', 'HR', 'Checkpoint', 'FA', 'BER')) %>%
+    mutate(source = 'pearl 2015 select') %>%
+    select(source, gene) %>%
+    distinct(.))
 )
 
 ddr_def <- bind_rows(ddr_def, ddr_def_pearl_addons)
@@ -68,11 +70,17 @@ uc_ddr_author_genes <- ddr_def %>%
 gp_ddr_coverage <- gp_all %>%
   group_by(cpt_seq_assay_id) %>%
   summarize(
-    gene_overlap = list(intersect(as.character(hugo), # genes in this panel
-                                  uc_ddr_author_genes)), # genes in the union of all papers about this.
+    gene_overlap = list(intersect(
+      as.character(hugo), # genes in this panel
+      uc_ddr_author_genes
+    )), # genes in the union of all papers about this.
     .groups = 'drop'
-  ) %>% 
-  mutate(overlap_size = purrr::map_dbl(.x = gene_overlap, .f = \(x) length(unique(x))))
+  ) %>%
+  mutate(
+    overlap_size = purrr::map_dbl(.x = gene_overlap, .f = \(x) {
+      length(unique(x))
+    })
+  )
 
 genie_intersect_panel <- gp_ddr_coverage %>%
   # ad hoc sloppy decision to exclude some of the outlier-tiny panels:
@@ -80,9 +88,17 @@ genie_intersect_panel <- gp_ddr_coverage %>%
   pull(gene_overlap) %>%
   purrr::reduce(.x = ., .f = intersect)
 
-asco_2025_genes <- c('ERCC2', 'ERCC5', 
-                     'BRCA1', 'BRCA2', 'RECQL4', 'RAD51C', 'ATM', 
-                     'ATR', 'FANCC')
+asco_2025_genes <- c(
+  'ERCC2',
+  'ERCC5',
+  'BRCA1',
+  'BRCA2',
+  'RECQL4',
+  'RAD51C',
+  'ATM',
+  'ATR',
+  'FANCC'
+)
 
 ddr_def <- bind_rows(
   ddr_def,
@@ -96,7 +112,6 @@ ddr_def <- bind_rows(
     gene = asco_2025_genes,
   )
 )
-
 
 
 ddr_def_plot <- ddr_def %>%
@@ -114,19 +129,21 @@ ddr_def_plot <- ddr_def_plot %>%
 ddr_def_plot %<>%
   group_by(source_f) %>%
   mutate(num_genes = sum(included)) %>%
-  mutate(source_f_gene_count = forcats::fct_inorder(
-    glue('{source_f} (p={num_genes})')
-  )) %>%
+  mutate(
+    source_f_gene_count = forcats::fct_inorder(
+      glue('{source_f} (p={num_genes})')
+    )
+  ) %>%
   select(-num_genes)
 
 gg_def_compare <- ggplot(
   ddr_def_plot,
   aes(x = gene, y = source_f_gene_count, fill = included)
-) + 
-  geom_tile(color = 'gray60') + 
-  scale_fill_manual(values = c("gray90", '#366885')) + 
-  scale_y_discrete(expand = c(0,0)) + 
-  scale_x_discrete(expand = c(0,0)) + 
+) +
+  geom_tile(color = 'gray60') +
+  scale_fill_manual(values = c("gray90", '#366885')) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_x_discrete(expand = c(0, 0)) +
   theme_classic() +
   theme(
     axis.text.x = element_text(size = 6, angle = 90, hjust = 1, vjust = 0.5),
@@ -142,16 +159,15 @@ readr::write_rds(
 )
 
 
-
 ddr_def_nest <- ddr_def %>%
   select(source, gene) %>%
   nest(.by = source) %>%
   mutate(
-    gene_list = purrr::map(.x = data, .f = \(x) pull(x,gene))
+    gene_list = purrr::map(.x = data, .f = \(x) pull(x, gene))
   ) %>%
   select(-data)
 
-first_sample_main <- sample_main %>% 
+first_sample_main <- sample_main %>%
   group_by(patient_id) %>%
   mutate(
     age_at_seq_report_days_num = as.numeric(age_at_seq_report_days)
@@ -159,11 +175,11 @@ first_sample_main <- sample_main %>%
   arrange(seq_year, age_at_seq_report_days_num) %>%
   slice(1) %>%
   ungroup(.)
-  
+
 
 # Adding this in so we can do the "predictors of DDR" analysis.
 flags_main <- count_pts_gene_list(
-  first_sample_main, 
+  first_sample_main,
   alt_df = filter(alt_main, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
   gene_list = asco_2025_genes
 ) %>%
@@ -174,12 +190,9 @@ readr::write_rds(
   flags_main,
   here(dir_out, "ddr_flags_first_sample_main_genie.rds")
 )
-  
 
 
-
-
-# Example of using once:    
+# Example of using once:
 # count_pts_gene_list(
 #   sample_df = first_sample_main,
 #   alt_df = alt_main,
@@ -191,19 +204,26 @@ ddr_def_nest %<>%
   mutate(
     alt_binary = purrr::map(
       .x = gene_list,
-      .f = \(x) count_pts_gene_list(
-        sample_df = first_sample_main,
-        alt_df = alt_main,
-        gene_list = x
-      )
+      .f = \(x) {
+        count_pts_gene_list(
+          sample_df = first_sample_main,
+          alt_df = alt_main,
+          gene_list = x
+        )
+      }
     ),
     alt_binary_onco = purrr::map(
       .x = gene_list,
-      .f = \(x) count_pts_gene_list(
-        sample_df = first_sample_main,
-        alt_df = filter(alt_main, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
-        gene_list = x
-      )
+      .f = \(x) {
+        count_pts_gene_list(
+          sample_df = first_sample_main,
+          alt_df = filter(
+            alt_main,
+            oncogenic %in% c("Likely Oncogenic", "Oncogenic")
+          ),
+          gene_list = x
+        )
+      }
     )
   )
 
@@ -217,13 +237,14 @@ pt_counts_ddr_def <- ddr_def_nest %>%
   mutate(
     str = purrr::map_chr(
       .x = pt_df,
-      .f = \(x) {x %>%
-        summarize(
-          n = sum(any_alt),
-          d = n()
-        ) %>%
-        mutate(str = glue("{round((n/d)*100)}% ({n})")) %>%
-        pull(str)
+      .f = \(x) {
+        x %>%
+          summarize(
+            n = sum(any_alt),
+            d = n()
+          ) %>%
+          mutate(str = glue("{round((n/d)*100)}% ({n})")) %>%
+          pull(str)
       }
     ),
     n_pts = purrr::map_dbl(.x = pt_df, .f = nrow)
@@ -238,11 +259,6 @@ pt_counts_ddr_def %<>%
     )
   ) %>%
   select(data, onco_filter, source, str, n_pts)
-      
-
-
-
-
 
 
 # Load in the cohort file from BPC and repeat this process for BPC.
@@ -273,24 +289,30 @@ first_sample_bpc <- first_sample_main %>%
 #   pull(record_id)
 # filter(first_sample_main, patient_id %in% people_not_in_main_genie)
 
-
 ddr_def_nest_bpc %<>%
   mutate(
     alt_binary = purrr::map(
       .x = gene_list,
-      .f = \(x) count_pts_gene_list(
-        sample_df = first_sample_bpc,
-        alt_df = alt_bpc,
-        gene_list = x
-      )
+      .f = \(x) {
+        count_pts_gene_list(
+          sample_df = first_sample_bpc,
+          alt_df = alt_bpc,
+          gene_list = x
+        )
+      }
     ),
     alt_binary_onco = purrr::map(
       .x = gene_list,
-      .f = \(x) count_pts_gene_list(
-        sample_df = first_sample_bpc,
-        alt_df = filter(alt_bpc, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
-        gene_list = x
-      )
+      .f = \(x) {
+        count_pts_gene_list(
+          sample_df = first_sample_bpc,
+          alt_df = filter(
+            alt_bpc,
+            oncogenic %in% c("Likely Oncogenic", "Oncogenic")
+          ),
+          gene_list = x
+        )
+      }
     )
   )
 
@@ -304,7 +326,8 @@ pt_counts_ddr_def_bpc <- ddr_def_nest_bpc %>%
   mutate(
     str = purrr::map_chr(
       .x = pt_df,
-      .f = \(x) {x %>%
+      .f = \(x) {
+        x %>%
           summarize(
             n = sum(any_alt),
             d = n()
@@ -332,7 +355,7 @@ pt_counts_ddr_def <- bind_rows(
 )
 
 readr::write_rds(
-  pt_counts_ddr_def, 
+  pt_counts_ddr_def,
   here(dir_out, 'pt_count_tidy.rds')
 )
 
@@ -340,18 +363,24 @@ readr::write_rds(
 
 ft_ddr_def <- pt_counts_ddr_def %>%
   mutate(
-    col_title = paste0(data, '|',
-                      '(n = ', n_pts, ')', '|',
-                      if_else(onco_filter, "Oncogenic", 'Any alt.'))
+    col_title = paste0(
+      data,
+      '|',
+      '(n = ',
+      n_pts,
+      ')',
+      '|',
+      if_else(onco_filter, "Oncogenic", 'Any alt.')
+    )
   ) %>%
   select(source, col_title, str) %>%
   pivot_wider(
     names_from = 'col_title',
     values_from = 'str'
-  ) 
+  )
 
 # Just going to redo the names here:
-ft_ddr_def <- ddr_def_nest %>% 
+ft_ddr_def <- ddr_def_nest %>%
   mutate(
     gene_counts = purrr::map_dbl(
       .x = gene_list,
@@ -373,13 +402,17 @@ ft_ddr_def <- ddr_def_nest %>%
   select(-source) %>%
   rename(source = source_f_gene_counts) %>%
   relocate(source)
-  
 
-new_header <- names(ft_ddr_def) %>% 
+
+new_header <- names(ft_ddr_def) %>%
   tibble(col_keys = .) %>%
-  separate_wider_delim(names = c('one', 'two', 'three'),
-                       col_keys, delim = '|', cols_remove = F,
-                       too_few = 'align_start')
+  separate_wider_delim(
+    names = c('one', 'two', 'three'),
+    col_keys,
+    delim = '|',
+    cols_remove = F,
+    too_few = 'align_start'
+  )
 
 ft_ddr_def <- ft_ddr_def %>%
   flextable(.) %>%
@@ -393,10 +426,6 @@ readr::write_rds(
 )
 
 
-
-
-
-
 # Figure: pull in the main genie panel data and look at coverage of the DDR genes.
 panels_main <- count(sample_main, seq_assay_id)
 panels_main <- panels_main %>%
@@ -404,21 +433,21 @@ panels_main <- panels_main %>%
 gi <- data.table::fread(
   here('data-raw', 'genomic', 'main_genie', 'genomic_information.txt')
 )
-gi %<>% 
+gi %<>%
   rename_all(tolower) %>%
   filter(seq_assay_id %in% panels_main$seq_assay_id) %>%
   # the best information I have currently is that includeInPanel = F means the gene is not tested.  Frustratingly we can't seem to get a real answer about that.
-  filter(includeinpanel) 
+  filter(includeinpanel)
 
-genes_in_ddr_cov_plot <- ddr_def %>% 
-  filter(!str_detect(source, "pearl")) %>% 
-  pull(gene) %>% 
+genes_in_ddr_cov_plot <- ddr_def %>%
+  filter(!str_detect(source, "pearl")) %>%
+  pull(gene) %>%
   unique
 
 ddr_panel_cov <- gi %>%
   filter(hugo_symbol %in% genes_in_ddr_cov_plot)
 
-ddr_panel_cov <- ddr_panel_cov %>% 
+ddr_panel_cov <- ddr_panel_cov %>%
   group_by(seq_assay_id, hugo_symbol) %>%
   summarize(tested = T, .groups = 'drop') %>%
   mutate(hugo = factor(hugo_symbol, levels = genes_in_ddr_cov_plot)) %>%
@@ -427,42 +456,48 @@ ddr_panel_cov <- ddr_panel_cov %>%
 
 ddr_panel_cov %<>%
   left_join(., panels_main, by = 'seq_assay_id') %>%
-  mutate(assay_str = case_when(
-    bpc_panel ~ glue("<span style = 'color:#B12F00;'>{seq_assay_id} (m={n})</span>"),
-    T ~ glue("{seq_assay_id} (m={n})")
+  mutate(
+    assay_str = case_when(
+      bpc_panel ~
+        glue("<span style = 'color:#B12F00;'>{seq_assay_id} (m={n})</span>"),
+      T ~ glue("{seq_assay_id} (m={n})")
     )
   ) %>%
-  arrange(desc(bpc_panel), desc(n), seq_assay_id) %>% 
-  mutate(assay_str = fct_inorder(assay_str),
-         assay_str = fct_rev(assay_str)) %>% # rev for plotting.
+  arrange(desc(bpc_panel), desc(n), seq_assay_id) %>%
+  mutate(assay_str = fct_inorder(assay_str), assay_str = fct_rev(assay_str)) %>% # rev for plotting.
   rename(gene = hugo)
 
-gene_panel_gene_order <- ddr_def %>% 
+gene_panel_gene_order <- ddr_def %>%
   group_by(gene) %>%
   summarize(
     in_asco_panel = any(str_detect(source, "ASCO"))
   ) %>%
   arrange(desc(in_asco_panel), gene) %>%
   pull(gene)
-    
+
 ddr_panel_cov %<>%
   mutate(gene = factor(gene, levels = gene_panel_gene_order))
 
 gg_ddr_panel <- ggplot(
   ddr_panel_cov,
   aes(x = gene, y = assay_str, fill = tested)
-) + 
-  geom_tile(color = 'gray60') + 
-  scale_fill_manual(values = c("gray90", '#366885')) + 
-  scale_y_discrete(expand = c(0,0), position = 'right') + 
-  scale_x_discrete(expand = c(0,0), position = 'top') + 
+) +
+  geom_tile(color = 'gray60') +
+  scale_fill_manual(values = c("gray90", '#366885')) +
+  scale_y_discrete(expand = c(0, 0), position = 'right') +
+  scale_x_discrete(expand = c(0, 0), position = 'top') +
   theme_classic() +
   labs(
     title = "GENIE Urothelial Carinoma panel coverage of DDR genes",
     subtitle = "GENIE BPC panels noted in <span style = 'color:#B12F00;'>orange</span>, m = main GENIE samples."
-  ) + 
+  ) +
   theme(
-    axis.text.x.top = element_text(size = 6, angle = 90, hjust = 0, vjust = 0.5),
+    axis.text.x.top = element_text(
+      size = 6,
+      angle = 90,
+      hjust = 0,
+      vjust = 0.5
+    ),
     axis.text.y = element_markdown(size = 6),
     legend.position = 'bottom',
     axis.title.y = element_blank(),
@@ -474,7 +509,6 @@ readr::write_rds(
   here(dir_out, 'gg_ddr_panel.rds')
 )
 
-            
 
 # Some genes are not covered but alterations are reported (fusions)
 # Some genes are tested but never positive (obvious)
@@ -483,7 +517,7 @@ genes_observed_or_tested <- unique(c(
   as.character(gp_all$hugo)
 ))
 
-onco_alt_flags <- alt_bpc %>% 
+onco_alt_flags <- alt_bpc %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
   group_by(sample_id, hugo) %>%
   summarize(onco_alt = T, .groups = 'drop') %>%
@@ -518,7 +552,7 @@ readr::write_rds(
   bpc_asco_2025_panel,
   here('data', 'genomic', 'ddr_def_compare', 'bpc_asco_2025_panel.rds')
 )
-  
+
 
 mmr_genes_from_abstracts <- c('MLH1', 'MSH2', 'MSH6', 'PMS1', 'PMS2')
 
@@ -527,7 +561,8 @@ bpc_onco_mmr_flags <- first_sample_bpc %>%
   left_join(
     .,
     select(
-      onco_alt_flags, sample_id, 
+      onco_alt_flags,
+      sample_id,
       all_of(mmr_genes_from_abstracts)
     ),
     # this didn't show anything:
@@ -550,20 +585,15 @@ readr::write_rds(
 )
 
 
-
-
-
-
-
-
 # One more thing:  Comparison of TMB for DDR/not
 first_sample_bpc <- get_first_cpt(ca_ind, cpt, include_sample_id = T) %>%
   select(
-    patient_id = record_id, sample_id = cpt_genie_sample_id
+    patient_id = record_id,
+    sample_id = cpt_genie_sample_id
   )
 
 tmb_ddr <- count_pts_gene_list(
-  first_sample_bpc, 
+  first_sample_bpc,
   alt_df = filter(alt_bpc, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
   gene_list = asco_2025_genes
 ) %>%
@@ -576,7 +606,7 @@ readr::write_rds(
 )
 
 tmb_mmr <- count_pts_gene_list(
-  first_sample_bpc, 
+  first_sample_bpc,
   alt_df = filter(alt_bpc, oncogenic %in% c("Likely Oncogenic", "Oncogenic")),
   gene_list = mmr_genes_from_abstracts
 ) %>%
@@ -615,13 +645,13 @@ tmb_stack_ddr <- bind_rows(
       )
     )),
   (tmb_comp %>%
-     filter(n_mut >= 1 & !ddr) %>%
-     mutate(
-       grp = "DDR-, >0 mut"
-     ))
+    filter(n_mut >= 1 & !ddr) %>%
+    mutate(
+      grp = "DDR-, >0 mut"
+    ))
 )
 
-tmb_stack_ddr %<>% 
+tmb_stack_ddr %<>%
   select(patient_id, grp, tmb_Mb, tmb_Mb_onco) %>%
   mutate(grp = forcats::fct_inorder(grp))
 
@@ -639,8 +669,10 @@ tmb_stack_ddr %>%
   ) %>%
   group_by(institution, grp) %>%
   summarize(
-    med = median(tmb_Mb),
-    iqr = glue('({paste(round(quantile(tmb_Mb, probs = c(0.25, 0.75)), 1), collapse = ", ")})'),
+    med = median(tmb_Mb, na.rm = T),
+    iqr = glue(
+      '({paste(round(quantile(tmb_Mb, probs = c(0.25, 0.75), na.rm = T), 1), collapse = ", ")})'
+    ),
     .groups = 'drop'
   )
 
@@ -649,20 +681,20 @@ tmb_stack_ddr %>%
 
 tmb_stack_mmr <- bind_rows(
   (tmb_comp %>%
-     mutate(
-       grp = case_when(
-         mmr ~ "MMR+",
-         T ~ "MMR-"
-       )
-     )),
+    mutate(
+      grp = case_when(
+        mmr ~ "MMR+",
+        T ~ "MMR-"
+      )
+    )),
   (tmb_comp %>%
-     filter(n_mut >= 1 & !mmr) %>%
-     mutate(
-       grp = "MMR-, >0 mut"
-     ))
+    filter(n_mut >= 1 & !mmr) %>%
+    mutate(
+      grp = "MMR-, >0 mut"
+    ))
 )
 
-tmb_stack_mmr %<>% 
+tmb_stack_mmr %<>%
   select(patient_id, grp, tmb_Mb, tmb_Mb_onco) %>%
   mutate(grp = forcats::fct_inorder(grp))
 
@@ -670,5 +702,3 @@ readr::write_rds(
   tmb_stack_mmr,
   here('data', 'genomic', 'ddr_def_compare', 'tmb_stack_mmr.rds')
 )
-
-  

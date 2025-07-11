@@ -1,6 +1,8 @@
 # Do all the data manipulation needed to get a nice demo table.
 
-library(purrr); library(fs); library(here);
+library(purrr)
+library(fs)
+library(here)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 read_wrap <- function(p) {
@@ -17,7 +19,6 @@ dft_img <- read_wrap('img')
 dft_reg <- read_wrap('reg')
 
 
-
 dft_pt_baseline_sub <- dft_pt %>%
   mutate(
     `Race (primary)` = format_ptlevel_naaccr_race_code_primary(
@@ -28,12 +29,14 @@ dft_pt_baseline_sub <- dft_pt %>%
     ),
     `Sex at birth` = factor(naaccr_sex_code)
   ) %>%
-  select(record_id, 
-         Institution = institution,
-         `Race (primary)`,
-         `Ethnicity`,
-         `Sex at birth`,
-         birth_year)
+  select(
+    record_id,
+    Institution = institution,
+    `Race (primary)`,
+    `Ethnicity`,
+    `Sex at birth`,
+    birth_year
+  )
 
 dft_ca_ind_baseline_sub <- dft_ca_ind %>%
   mutate(
@@ -57,7 +60,7 @@ dft_ca_ind_baseline_sub <- dft_ca_ind %>%
     `Cancer type` = ca_type,
     `Cancer site (detailed)` = ca_d_site_txt,
     `Stage at dx` = stage_mets_dx
-  ) 
+  )
 
 # just forming a good spine for this:
 dft_first <- dft_ca_ind %>%
@@ -69,12 +72,12 @@ dft_first_ecog <- dft_med_onc %>%
   filter(md_ecog_imputed != "Not documented in note") %>%
   group_by(record_id) %>%
   mutate(abs_days = abs(dx_md_visit_days)) %>%
-  arrange(abs_days) %>% 
+  arrange(abs_days) %>%
   slice(1) %>%
   ungroup(.) %>%
   select(
-    record_id, 
-    `First observed ECOG` =  md_ecog_imputed,
+    record_id,
+    `First observed ECOG` = md_ecog_imputed,
     # I'm leaving this in for now because I think it's interesting:
     `First ECOG source` = md_ecog_imp_source,
   )
@@ -99,17 +102,21 @@ dft_mibc_ever <- make_dmet_musc_prop_status_block(dft_ca_ind) %>%
     .groups = "drop"
   ) %>%
   left_join(
-    ., select(dft_ca_ind_baseline_sub, record_id, `Stage at dx`), by = "record_id"
+    .,
+    select(dft_ca_ind_baseline_sub, record_id, `Stage at dx`),
+    by = "record_id"
   ) %>%
   mutate(
     mibc_ever = case_when(
       med_onc_mibc ~ T,
-      `Stage at dx` %in% c(
-        "Stage II/III",
-        "Stage IV (no met)",
-        "Stage IV (met at dx)",
-        "Stage IV (met unk.)"
-      ) ~ T,
+      `Stage at dx` %in%
+        c(
+          "Stage II/III",
+          "Stage IV (no met)",
+          "Stage IV (met at dx)",
+          "Stage IV (met unk.)"
+        ) ~
+        T,
       T ~ F
     )
   ) %>%
@@ -126,19 +133,15 @@ dft_first %<>%
     ),
     `MIBC anytime` = case_when(
       is.na(`MIBC anytime`) ~ "No",
-      `MIBC anytime` ~ "Yes", 
+      `MIBC anytime` ~ "Yes",
       T ~ "No"
     ),
     `Dmet anytime` = case_when(
       is.na(`Dmet anytime`) ~ "No",
-      `Dmet anytime` ~ "Yes", 
+      `Dmet anytime` ~ "Yes",
       T ~ "No"
     )
-  ) 
-
-
-
-
+  )
 
 
 dft_demo <- full_join(
@@ -153,21 +156,20 @@ dft_demo <- full_join(
   )
 
 
-
 # age_dx is not an integer in this cohort, so this should be more exact.
-dft_demo %<>% 
+dft_demo %<>%
   mutate(
     `Year of birth` = birth_year,
     `Year of diagnosis` = round(birth_year + `Age at dx (years)`)
   ) %>%
   select(-birth_year) %>%
-  relocate(`Year of birth`, `Year of diagnosis`,
-           .before = `Age at dx (years)`) 
+  relocate(`Year of birth`, `Year of diagnosis`, .before = `Age at dx (years)`)
 
 
 dft_demo %<>%
   relocate(
-    `Age at dx (years)`, `Sex at birth`, 
+    `Age at dx (years)`,
+    `Sex at birth`,
     .after = record_id
   )
 
@@ -177,7 +179,6 @@ readr::write_rds(
 )
 
 
-
 # Cancer sites still need to be characterized, printing these for med onc review.
 count(dft_demo, `Cancer site (detailed)`, sort = T) %>%
   mutate(label_as = "") %>% # just adding a blank for fillin.
@@ -185,6 +186,3 @@ count(dft_demo, `Cancer site (detailed)`, sort = T) %>%
     x = .,
     file = here('output', 'other', 'bladder_cancer_sites.xlsx')
   )
-    
-
-

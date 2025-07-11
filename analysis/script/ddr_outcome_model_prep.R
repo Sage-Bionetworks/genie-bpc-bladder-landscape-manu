@@ -1,4 +1,6 @@
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_out <- here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome')
@@ -17,13 +19,16 @@ med_onc <- readr::read_rds(here('data', 'cohort', "med_onc.rds"))
 med_onc %<>% augment_med_onc_imputed_ecog(., add_numeric = T)
 
 
-
-cpt_sub <- cpt %>% select(
-  cpt_genie_sample_id, record_id, ca_seq, 
-  sample_type,
-  dx_path_proc_cpt_days,
-  dob_cpt_report_days, dx_cpt_rep_days
-) %>%
+cpt_sub <- cpt %>%
+  select(
+    cpt_genie_sample_id,
+    record_id,
+    ca_seq,
+    sample_type,
+    dx_path_proc_cpt_days,
+    dob_cpt_report_days,
+    dx_cpt_rep_days
+  ) %>%
   mutate(
     dob_dx_days = dob_cpt_report_days - dx_cpt_rep_days,
     dob_path_proc_cpt_days = dx_path_proc_cpt_days + dob_dx_days
@@ -38,10 +43,17 @@ ddr_outcome <- left_join(
   cpt_sub,
   by = c(sample_id = 'cpt_genie_sample_id')
 )
-if (ddr_outcome %>% mutate(chk = record_id_check == record_id) %>% pull(chk) %>% all) {
+if (
+  ddr_outcome %>%
+    mutate(chk = record_id_check == record_id) %>%
+    pull(chk) %>%
+    all
+) {
   ddr_outcome %<>% select(-record_id_check)
 } else {
-  cli_abort("record_id in the ddr_outcome data does not match cpt pull-in.  check and fix.")
+  cli_abort(
+    "record_id in the ddr_outcome data does not match cpt pull-in.  check and fix."
+  )
 }
 
 # There was one person with no path procedure date at the time this comment was written.
@@ -51,12 +63,10 @@ ddr_outcome %<>%
 
 rc_vec <- c('record_id', 'ca_seq')
 ddr_outcome <- left_join(
-    ddr_outcome,
-    timeless_features,
-    by = rc_vec
+  ddr_outcome,
+  timeless_features,
+  by = rc_vec
 )
-
-
 
 
 # Get time varying model factors - pulling the last knowledge before CPT procedure.
@@ -83,7 +93,7 @@ met_invasive_status <- make_dmet_musc_prop_status_block(ca_ind) %>%
     .,
     select(ddr_outcome, record_id, ca_seq, dx_path_proc_cpt_days),
     by = rc_vec
-  ) 
+  )
 
 # filter down to the status only at the time of sampling.
 met_invasive_status <- met_invasive_status %>%
@@ -93,15 +103,31 @@ met_invasive_status <- met_invasive_status %>%
   )
 
 if (nrow(anti_join(ddr_outcome, met_invasive_status, by = rc_vec)) > 0) {
-  cli_abort("A status was not found for some people - check logic and fix (everyone should at least be non-invasive after dx time")
+  cli_abort(
+    "A status was not found for some people - check logic and fix (everyone should at least be non-invasive after dx time"
+  )
 }
-if (1 < (met_invasive_status %>% count(record_id, ca_seq) %>% pull(n) %>% max)) {
-  cli_abort("Multiple statuses pulled - have a look at the logic/tolerances above")
+if (
+  1 < (met_invasive_status %>% count(record_id, ca_seq) %>% pull(n) %>% max)
+) {
+  cli_abort(
+    "Multiple statuses pulled - have a look at the logic/tolerances above"
+  )
 }
 
 ddr_outcome <- met_invasive_status %>%
   select(record_id, ca_seq, met_inv_status = status) %>%
   left_join(ddr_outcome, ., by = c('record_id', 'ca_seq'))
+
+panel_size_by_sample <- readr::read_rds(
+  here('data', 'genomic', 'main_genie', 'panel_size_by_sample.rds')
+)
+
+ddr_outcome <- left_join(
+  ddr_outcome,
+  select(panel_size_by_sample, sample_id, seq_assay_id, n_genes),
+  by = 'sample_id'
+)
 
 readr::write_rds(
   ddr_outcome,
@@ -109,19 +135,25 @@ readr::write_rds(
 )
 
 ddr_outcome_mod <- ddr_outcome %>%
-  select(sample_id, ddr, sample_type,
-         dx_path_proc_cpt_days,
-         de_novo_met,
-         dob_ca_dx_yrs,
-         upper_tract,
-         institution,
-         birth_year,
-         race_eth,
-         female,
-         md_ecog_imp_num,
-         met_inv_status)
+  select(
+    sample_id,
+    ddr,
+    sample_type,
+    dx_path_proc_cpt_days,
+    de_novo_met,
+    dob_ca_dx_yrs,
+    upper_tract,
+    institution,
+    birth_year,
+    race_eth,
+    female,
+    md_ecog_imp_num,
+    met_inv_status,
+    seq_assay_id,
+    n_genes
+  )
 
-ddr_outcome_mod <- ddr_outcome_mod %>% 
+ddr_outcome_mod <- ddr_outcome_mod %>%
   rename(race = race_eth) %>% # I'm not sure why this says race_eth, just looks like race to me.
   mutate(
     met_sample = sample_type %in% "Metastasis site unspecified",
@@ -130,9 +162,7 @@ ddr_outcome_mod <- ddr_outcome_mod %>%
     mibc_at_cpt = met_inv_status %in% c("Invasive", "Metastatic"),
     met_at_cpt = met_inv_status %in% c("Metastatic")
   ) %>%
-  select(-c(sample_type,
-            dx_path_proc_cpt_days,
-            met_inv_status)) %>%
+  select(-c(sample_type, dx_path_proc_cpt_days, met_inv_status)) %>%
   replace_na(list(de_novo_met = F)) %>%
   fastDummies::dummy_cols(
     select_columns = c('institution', 'race'),
@@ -146,31 +176,31 @@ readr::write_rds(
 )
 
 
-
-
-
-
-
-
-
 # Finally try to do the same for main GENIE - or as close as we can get.
 ddr_flags_main <- readr::read_rds(
-  here('data', 'genomic', 'ddr_def_compare', 'ddr_flags_first_sample_main_genie.rds')
+  here(
+    'data',
+    'genomic',
+    'ddr_def_compare',
+    'ddr_flags_first_sample_main_genie.rds'
+  )
 )
+
 sample_main <- readr::read_tsv(
   here('data-raw', 'genomic', 'main_genie', 'data_clinical_sample.txt'),
   skip = 4
 ) %>%
   rename_all(tolower)
 
-ddr_flags_main <- sample_main %>% select(
-  sample_id,
-  age_at_seq_report_days,
-  oncotree_code,
-  sample_type,
-  cancer_type,
-  seq_year
-) %>%
+ddr_flags_main <- sample_main %>%
+  select(
+    sample_id,
+    age_at_seq_report_days,
+    oncotree_code,
+    sample_type,
+    cancer_type,
+    seq_year
+  ) %>%
   left_join(
     ddr_flags_main,
     .,
@@ -184,7 +214,7 @@ pt_main <- readr::read_tsv(
 ddr_flags_main <- pt_main %>%
   select(
     patient_id,
-    sex, 
+    sex,
     primary_race,
     birth_year,
     center
@@ -195,13 +225,20 @@ ddr_flags_main <- pt_main %>%
     by = 'patient_id'
   )
 
-ddr_flags_main %<>% 
+ddr_flags_main <- left_join(
+  ddr_flags_main,
+  select(panel_size_by_sample, sample_id, seq_assay_id, n_genes),
+  by = 'sample_id'
+)
+
+ddr_flags_main %<>%
   mutate(
     age_seq_yrs = case_when(
-      is.na(age_at_seq_report_days) | age_at_seq_report_days %in% "Unknown" ~ NA_real_,
+      is.na(age_at_seq_report_days) | age_at_seq_report_days %in% "Unknown" ~
+        NA_real_,
       age_at_seq_report_days %in% ">32485" ~ 90, # could be higher - this is fine.
       age_at_seq_report_days %in% "<6570" ~ 17, # could be lower - this is fine.
-      T ~ as.numeric(age_at_seq_report_days)/365.25
+      T ~ as.numeric(age_at_seq_report_days) / 365.25
     ),
     birth_year = case_when(
       birth_year %in% "Unknown" ~ NA_real_,
@@ -211,7 +248,7 @@ ddr_flags_main %<>%
     )
   ) %>%
   select(-age_at_seq_report_days)
-  
+
 # K there's some obvious problems here:
 # ggplot(ddr_flags_main, aes(x = age_seq_yrs, y = birth_year)) + geom_point()
 
@@ -223,8 +260,7 @@ ddr_flags_main %<>%
 # ggplot(ddr_flags_main, aes(x = age_seq_yrs, y = birth_year)) + geom_point()
 # Good enough - probably still some impossible things but at least the mega high leverage points are gone.
 
-
-ddr_flags_main %<>% 
+ddr_flags_main %<>%
   mutate(
     upper_tract = oncotree_code %in% "UTUC",
     met_sample = sample_type %in% "Metastasis",
@@ -234,7 +270,9 @@ ddr_flags_main %<>%
       T ~ "race_oth_unk"
     )
   ) %>%
-  select(-c(oncotree_code, sample_type, seq_year, sex, cancer_type, primary_race)) %>%
+  select(
+    -c(oncotree_code, sample_type, seq_year, sex, cancer_type, primary_race)
+  ) %>%
   rename(institution = center) # have seq year coded between birth_year and age at seq.
 
 ddr_flags_main_mod <- ddr_flags_main %<>%
@@ -244,14 +282,7 @@ ddr_flags_main_mod <- ddr_flags_main %<>%
     remove_selected_columns = T
   )
 
-
 readr::write_rds(
   ddr_flags_main_mod,
   here(dir_out, 'ddr_outcome_mod_ready_main.rds')
 )
-
-
-
-
-
-    

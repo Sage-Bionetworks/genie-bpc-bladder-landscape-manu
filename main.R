@@ -17,6 +17,7 @@ source(here('analysis', 'script', 'folder_setup.R'))
 source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'create_cohort_data.R'))
 source(here('analysis', 'script', 'create_characteristics_table.R'))
+source(here('analysis', 'script', 'create_characteristics_table_main_genie.R'))
 source(here('analysis', 'script', 'create_drug_dat.R'))
 source(here('analysis', 'script', 'create_dmet_data.R'))
 source(here('analysis', 'script', 'estimate_reg_year.R'))
@@ -64,13 +65,16 @@ source(here(
 ))
 # Run annotate_oncokb_main_genie.sh - see instructions there in comments.
 source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
-
+source(here('analysis', 'script', 'main_genie_panel_size.R'))
+source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 
 # DDR report:
+source(here('analysis', 'script', 'oncoprint_ddr.R'))
 source(here('analysis', 'script', 'ddr_definition_comparison.R'))
 source(here('analysis', 'script', 'ddr_outcome_model_prep.R'))
 source(here('analysis', 'script', 'ddr_outcome_model_run.R'))
-# Render the DDR report.  A script could be written to do it, I'm out of time today sadly.
+source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
+
 
 ############
 # Survival #

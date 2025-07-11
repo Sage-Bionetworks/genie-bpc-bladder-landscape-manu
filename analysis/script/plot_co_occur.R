@@ -91,12 +91,12 @@ vec_co_occur_genes <- dft_inst_freq_all %>%
 # Write a file with one gene per line:
 writeLines(
   text = vec_co_occur_genes,
-  con = here('data', 'genomic', 'oncoprint', 'oncoprint_genes.txt')
+  con = here('data', 'genomic', 'oncoprint', 'top_genes', 'oncoprint_genes.txt')
 )
 # Technically we are going to make this using all available patients, but in order to list it out explicitly I'll write that out too:
 writeLines(
   text = dft_pt$record_id,
-  con = here('data', 'genomic', 'oncoprint', 'oncoprint_pt.txt')
+  con = here('data', 'genomic', 'oncoprint', 'top_genes', 'oncoprint_pt.txt')
 )
 
 dft_top_gene_bin <- dft_alt %>%

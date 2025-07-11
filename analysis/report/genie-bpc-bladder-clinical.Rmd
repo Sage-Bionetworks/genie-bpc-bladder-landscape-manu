@@ -193,6 +193,42 @@ gt_char
 **Observation:** The only site with KPS scores available to convert to ECOG was MSK.  While this table only shows information near diagnosis, this is generally the case that MSK is the only site with subtantial KPS reporting.
 
 
+```{r}
+char_with_mg <- readr::read_rds(
+  here('data', 'cohort', 'formatted_characteristics_with_main_genie.rds')
+)
+```
+
+### R1.1.1c: Characteristics in main GENIE
+
+Showing the columns that can also be assessed in main GENIE.  Every person in BPC is represented in main genie, so these columns are not distinct.  We have added the age at sequencing feature because age at dx does not get recorded in main GENIE.
+
+```{r}
+gt_char_with_mg <- char_with_mg %>%
+  select(study, `Age at seq.`:Institution) %>%
+  gtsummary::tbl_summary(
+    data = ., 
+    by = study
+  )
+```
+
+
+```{r, include = T}
+gt_char_with_mg
+```
+
+```{r}
+gt_char_with_mg %>%
+  as_flex_table(.) %>%
+  fontsize(., size = 10) %>%
+  padding(padding.top = 0, padding.bottom = 0) %>%
+  save_as_pptx(., path = here('output', 'other', '2025_ss_char_with_mg.pptx'))
+```
+
+
+
+
+
 ### R1.1.2 (placeholder)
 
 Placeholder.

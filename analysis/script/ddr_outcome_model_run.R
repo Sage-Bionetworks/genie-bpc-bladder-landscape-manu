@@ -1,13 +1,21 @@
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_out <- here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome')
 
 ddr_outcome <- readr::read_rds(
-  here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome', 'ddr_outcome_mod_ready.rds')
+  here(
+    'data',
+    'genomic',
+    'ddr_def_compare',
+    'ddr_as_outcome',
+    'ddr_outcome_mod_ready.rds'
+  )
 )
 
-ddr_outcome %<>% select(-sample_id)
+ddr_outcome %<>% select(-c(sample_id, seq_assay_id))
 # Multiple imputation model first.
 
 blocks <- construct.blocks(
@@ -19,7 +27,8 @@ pm <- make.predictorMatrix(
     -c(
       # taking away the outcome & id for predicting md_ecog_imp_num
       ddr
-    )),
+    )
+  ),
   blocks = blocks
 )
 
@@ -29,17 +38,18 @@ pm <- make.predictorMatrix(
 #   the model (3 terms).
 
 mids_surv <- mice(
-  data = ddr_outcome, 
-  maxit = 5, m = 15, seed = 2341, 
-  predictorMatrix = pm, 
+  data = ddr_outcome,
+  maxit = 5,
+  m = 15,
+  seed = 2341,
+  predictorMatrix = pm,
   blocks = blocks,
   print = FALSE,
   # tended to be pretty similar to predictive mean matching:
   method = 'midastouch' # makes sense to me, gives similar results.
 )
 
-gg_imp <- plot_gg_strip(mids_surv, var = "md_ecog_imp_num",
-                        pt_size = 1) + 
+gg_imp <- plot_gg_strip(mids_surv, var = "md_ecog_imp_num", pt_size = 1) +
   labs(y = "Last observed ECOG")
 
 readr::write_rds(
@@ -55,30 +65,31 @@ readr::write_rds(
 mira_surv <- with(
   mids_surv,
   glm(
-    formula = ddr ~ 
-      de_novo_met + 
-      dob_ca_dx_yrs + 
-      dx_path_proc_cpt_yrs + 
-      upper_tract + 
-      birth_year + 
-      female + 
-      md_ecog_imp_num + 
-      met_sample +
-      mibc_at_cpt + 
-      met_at_cpt +
-      institution_DFCI + 
-      institution_UHN + 
-      institution_VICC + 
-      race_Asian + 
-      # removed the term for black - see note a few lines down.
-      # race_Black + 
-      race_race_other_unk,
+    formula = ddr ~
+      n_genes +
+        de_novo_met +
+        dob_ca_dx_yrs +
+        dx_path_proc_cpt_yrs +
+        upper_tract +
+        birth_year +
+        female +
+        md_ecog_imp_num +
+        met_sample +
+        mibc_at_cpt +
+        met_at_cpt +
+        institution_DFCI +
+        institution_UHN +
+        institution_VICC +
+        race_Asian +
+        # removed the term for black - see note a few lines down.
+        # race_Black +
+        race_race_other_unk,
     family = 'binomial'
   )
 )
 
-ddr_out_mod_mi <- pool(mira_surv) %>% 
-  summary(conf.int = T) %>% 
+ddr_out_mod_mi <- pool(mira_surv) %>%
+  summary(conf.int = T) %>%
   select(term, estimate, conf.low = `2.5 %`, conf.high = `97.5 %`, p.value)
 ddr_out_mod_mi %<>% mutate(model = "Multiple LR, imputed")
 
@@ -99,7 +110,7 @@ ddr_out_all_mod <- bind_rows(
 ) %>%
   mutate(model = fct_inorder(model))
 
-ddr_out_all_mod %<>% filter(!(term %in% "(Intercept)")) 
+ddr_out_all_mod %<>% filter(!(term %in% "(Intercept)"))
 
 write_rds(
   ddr_out_all_mod,
@@ -112,7 +123,7 @@ ddr_out_all_mod %<>% filter(!str_detect(term, "institution"))
 
 gg_ddr_out_mod_compare <- forest_mod_natural_scale(
   dat = mutate(ddr_out_all_mod, model = fct_rev(model))
-) + 
+) +
   labs(
     x = "Logistic regression coefficent<br>log(OR), original variable scale",
     y = NULL,
@@ -127,23 +138,21 @@ write_rds(
   gg_ddr_out_mod_compare,
   here(dir_out, 'gg_ddr_out_mod_compare.rds')
 )
-  
-  
-
-
-
-
 
 
 # Now do the same for main GENIE:
 
 ddr_outcome_main <- readr::read_rds(
-  here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome', 
-       'ddr_outcome_mod_ready_main.rds'
+  here(
+    'data',
+    'genomic',
+    'ddr_def_compare',
+    'ddr_as_outcome',
+    'ddr_outcome_mod_ready_main.rds'
   )
 )
 
-ddr_outcome_main %<>% select(-c(patient_id, sample_id))
+ddr_outcome_main %<>% select(-c(patient_id, sample_id, seq_assay_id))
 
 ddr_out_mod_main_mlr <- glm(
   data = ddr_outcome_main,
@@ -170,7 +179,7 @@ ddr_out_all_mod <- bind_rows(
 ) %>%
   mutate(model = fct_inorder(model))
 
-ddr_out_all_mod %<>% filter(!(term %in% "(Intercept)")) 
+ddr_out_all_mod %<>% filter(!(term %in% "(Intercept)"))
 
 write_rds(
   ddr_out_all_mod,
@@ -183,7 +192,7 @@ ddr_out_all_mod %<>% filter(!str_detect(term, "institution"))
 
 gg_ddr_out_mod_compare <- forest_mod_natural_scale(
   dat = mutate(ddr_out_all_mod, model = fct_rev(model))
-) + 
+) +
   labs(
     x = "Logistic regression coefficent<br>log(OR), original variable scale",
     y = NULL,
@@ -200,13 +209,3 @@ write_rds(
   gg_ddr_out_mod_compare,
   here(dir_out, 'gg_ddr_out_mod_compare_main.rds')
 )
-
-
-
-
-
-
-
-
-
-
