@@ -173,8 +173,8 @@ ddr_outcome_mod <- ddr_outcome_mod %>%
 ddr_outcome_mod %<>%
   mutate(
     panel_genes_100 = n_genes / 100,
-    birth_year_10 = birth_year / 10,
-    age_dx_10 = dob_ca_dx_yrs / 10
+    birth_year_5 = birth_year / 5,
+    age_dx_5 = dob_ca_dx_yrs / 5
   ) %>%
   select(-c(n_genes, birth_year, dob_ca_dx_yrs))
 
@@ -276,7 +276,7 @@ ddr_flags_main %<>%
     female = sex %in% "Female",
     race = case_when(
       primary_race %in% c("White", "Black", "Asian") ~ primary_race,
-      T ~ "race_oth_unk"
+      T ~ "race_other_unk"
     )
   ) %>%
   select(
@@ -294,8 +294,8 @@ ddr_flags_main_mod <- ddr_flags_main %<>%
 ddr_flags_main_mod %<>%
   mutate(
     panel_genes_100 = n_genes / 100,
-    birth_year_10 = birth_year / 10,
-    age_seq_10 = age_seq_yrs / 10
+    birth_year_5 = birth_year / 5,
+    age_seq_5 = age_seq_yrs / 5
   ) %>%
   select(-c(n_genes, birth_year, age_seq_yrs))
 

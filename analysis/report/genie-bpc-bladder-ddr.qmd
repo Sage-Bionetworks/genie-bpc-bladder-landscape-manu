@@ -302,3 +302,34 @@ Notes:
 - The trends here are generally consistent with what we found above.  DDR identification is less likely in upper tract cancers, female patients and in metastatic samples.  It is more likely in those with an older age at sequencing/dx (which tend to be correlated), and possibly more likely in those with a greater calendar birth year (probably several causes there).
 - While hidden, some of the institution terms are significant here.
 - The odds ratio was notably undefined for Black participants above, here 19 of the 165 black participants had a DDR alteration.  As the models indicate this is lower than marginally expected, but not dramatically.
+
+```{r}
+bundle_bpc_main_ddr <- readr::read_rds(
+  here(dir_ddr_outcome, 'bundle_bpc_main_combined.rds')
+)
+```
+
+
+### R4.9 - DDR as outcome (both)
+
+A few figures that combine the previous two sections into one figure (in order of how much I like them)
+
+```{r}
+#| include: true
+bundle_bpc_main_ddr$gg_ddr_out_both_panels[[1]]
+```
+
+
+
+```{r}
+#| include: true
+bundle_bpc_main_ddr$gg_ddr_out_both_multiple_lr[[1]]
+```
+
+
+```{r}
+#| include: true
+bundle_bpc_main_ddr$gg_ddr_out_both_jumble[[1]]
+```
+
+

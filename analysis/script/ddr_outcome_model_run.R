@@ -66,12 +66,12 @@ mira_surv <- with(
   mids_surv,
   glm(
     formula = ddr ~
-      n_genes +
+      panel_genes_100 +
         de_novo_met +
-        dob_ca_dx_yrs +
+        age_dx_5 +
         dx_path_proc_cpt_yrs +
         upper_tract +
-        birth_year +
+        birth_year_5 +
         female +
         md_ecog_imp_num +
         met_sample +
@@ -173,25 +173,25 @@ ddr_out_mod_main_slr <- purrr::map_dfr(
 ) %>%
   mutate(model = "Simple LR")
 
-ddr_out_all_mod <- bind_rows(
+ddr_out_all_mod_main <- bind_rows(
   ddr_out_mod_main_slr,
   ddr_out_mod_main_mlr
 ) %>%
   mutate(model = fct_inorder(model))
 
-ddr_out_all_mod %<>% filter(!(term %in% "(Intercept)"))
+ddr_out_all_mod_main %<>% filter(!(term %in% "(Intercept)"))
 
 write_rds(
-  ddr_out_all_mod,
+  ddr_out_all_mod_main,
   here(dir_out, 'ddr_outcome_main_all_model_results_main.rds')
 )
 
 # just for plotting:
-ddr_out_all_mod %<>% filter(!str_detect(term, "institution"))
+ddr_out_all_mod_main %<>% filter(!str_detect(term, "institution"))
 
 
-gg_ddr_out_mod_compare <- forest_mod_natural_scale(
-  dat = mutate(ddr_out_all_mod, model = fct_rev(model))
+gg_ddr_out_mod_compare_main <- forest_mod_natural_scale(
+  dat = mutate(ddr_out_all_mod_main, model = fct_rev(model))
 ) +
   labs(
     x = "Logistic regression coefficent<br>log(OR), original variable scale",
@@ -206,6 +206,182 @@ gg_ddr_out_mod_compare <- forest_mod_natural_scale(
 # plotly::ggplotly(gg_ddr_out_mod_compare)
 
 write_rds(
-  gg_ddr_out_mod_compare,
+  gg_ddr_out_mod_compare_main,
   here(dir_out, 'gg_ddr_out_mod_compare_main.rds')
+)
+
+
+ddr_out_both <- bind_rows(
+  mutate(ddr_out_all_mod_main, data = "Main GENIE"),
+  mutate(ddr_out_all_mod, data = "BPC")
+)
+
+ddr_out_both %<>%
+  # for simplicity we'll remove the imputed label (and put it in a legend)
+  mutate(
+    model = fct_collapse(
+      model,
+      `Multiple LR` = c("Multiple LR", "Multiple LR, imputed")
+    )
+  ) %>%
+  arrange(
+    model,
+    data
+  ) %>%
+  mutate(
+    multi_strat = fct_inorder(paste0(data, " - ", model))
+  )
+
+# So many weird things it's hard to automate this - we'll go manual
+var_pretty_map <- tribble(
+  ~raw,
+  ~short,
+  # uses the markdown format for plotting.
+  "panel_genes_100",
+  "**Panel size (/100 genes)**",
+
+  "met_sampleTRUE",
+  "Metastatic sample",
+
+  'femaleTRUE',
+  "Female",
+
+  'upper_tractTRUE',
+  "Upper tract UC",
+
+  'race_race_other_unk',
+  "Race = other/unknown",
+
+  'race_Black',
+  "Race = Black", # keeping even though BPC has no term.
+
+  'race_Asian',
+  "Race = Asian",
+
+  "met_at_cptTRUE",
+  "Metastatic @NGS",
+
+  "de_novo_metTRUE",
+  "de novo metastatic",
+
+  "mibc_at_cptTRUE",
+  "MIBC @NGS",
+
+  "md_ecog_imp_num",
+  "ECOG @NGS (imputed)",
+
+  "dx_path_proc_cpt_yrs",
+  "**Yrs from dx to path**",
+
+  "birth_year_5",
+  "**Birth year (/5 yrs)**",
+
+  "age_seq_5",
+  "**Age at seq (/5 yrs)**",
+
+  "age_dx_5",
+  "**Age at dx (/5 yrs)**",
+)
+
+ddr_out_both <- left_join(
+  ddr_out_both,
+  select(var_pretty_map, term = raw, term_lab = short),
+  by = 'term'
+) %>%
+  mutate(
+    term_lab = fct_rev(factor(term_lab, levels = var_pretty_map$short))
+  )
+
+ddr_out_both %<>%
+  # for simplicity we'll remove the imputed label (and put it in a legend)
+  mutate(
+    model = fct_collapse(
+      model,
+      `Multiple LR` = c("Multiple LR", "Multiple LR, imputed")
+    )
+  ) %>%
+  arrange(
+    model,
+    data
+  ) %>%
+  mutate(
+    multi_strat = fct_inorder(paste0(data, " - ", model))
+  )
+
+
+gg_ddr_out_both_jumble <- forest_mod_natural_scale(
+  ddr_out_both,
+  model_var = "multi_strat",
+  term_var = 'term_lab',
+  pal = paste0('#', c('8fa6cc', 'd998c1', '2458ac', 'b20070'))
+) +
+  labs(
+    x = "Coefficient (log(OR))",
+    y = NULL,
+    title = "Associations with DDR alteration",
+    subtitle = "Bolded terms are continuous variables"
+  ) +
+  theme(
+    plot.title.position = 'plot',
+    axis.title = element_markdown()
+  )
+
+gg_ddr_out_both_panels <- forest_mod_natural_scale(
+  ddr_out_both,
+  model_var = "model",
+  term_var = 'term_lab',
+  pal = paste0('#', c('8fa6cc', 'b20070'))
+) +
+  labs(
+    x = "Coefficient (log(OR))",
+    y = NULL,
+    title = "Associations with DDR alteration",
+    subtitle = "Bolded terms are continuous variables"
+  ) +
+  theme(
+    plot.title.position = 'plot',
+    axis.title = element_markdown()
+  ) +
+  facet_wrap(vars(data))
+
+
+gg_ddr_out_both_multiple_lr <- forest_mod_natural_scale(
+  filter(ddr_out_both, model %in% "Multiple LR"),
+  model_var = "data",
+  term_var = 'term_lab',
+  pal = paste0('#', c('2458ac', 'b20070'))
+) +
+  labs(
+    x = "Coefficient [log(OR)]",
+    y = NULL,
+    title = "Associations with DDR alteration - multiple regression only",
+    subtitle = "Bolded = continuous variables"
+  ) +
+  theme(
+    plot.title.position = 'plot',
+    axis.title = element_markdown()
+  )
+
+bundle_both <- list(
+  ddr_out_both_data = list(ddr_out_both),
+  gg_ddr_out_both_jumble = list(gg_ddr_out_both_jumble),
+  gg_ddr_out_both_panels = list(gg_ddr_out_both_panels),
+  gg_ddr_out_both_multiple_lr = list(gg_ddr_out_both_multiple_lr)
+)
+
+ggsave(
+  plot = gg_ddr_out_both_panels,
+  height = 4,
+  width = 8,
+  filename = here(
+    'output',
+    'fig',
+    'aacr_summer_2025',
+    'ddr_outcome_main_bpc.png'
+  )
+)
+
+write_rds(
+  bundle_both,
+  here(dir_out, 'bundle_bpc_main_combined.rds')
 )
