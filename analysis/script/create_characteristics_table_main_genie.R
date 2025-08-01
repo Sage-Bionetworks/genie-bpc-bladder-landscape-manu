@@ -85,6 +85,11 @@ mg_samp %<>%
   slice(1) %>%
   ungroup(.)
 
+readr::write_rds(
+  mg_samp,
+  here('data', 'genomic', 'main_genie', 'bladder_samples_mg_first.rds')
+)
+
 char_mg <- left_join(
   mg_pt,
   mg_samp,
