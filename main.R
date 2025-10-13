@@ -94,9 +94,7 @@ source(here('analysis', 'script', 'table_print_ddr_asco_2025.R'))
 # But for the moment it works.
 source(here('analysis', 'script', 'surv_ddr_data_all_2L.R'))
 
-source(here('analysis', 'script', 'surv_second_line.R'))
-source(here('analysis', 'script', 'surv_ddr_asco_2025_io.R'))
-# Render the qmd for survival.
+# Currently this one can't be updated because it's actually line 2 and 3:
 
 # DDR neoadjuvant analyses:
 source(here('analysis', 'script', 'surv_ddr_neoadj.R'))
