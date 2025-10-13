@@ -86,17 +86,8 @@ source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 source(here('analysis', 'script', 'surv_ddr_data_all_1L.R'))
 source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R'))
 source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
-
-source(here('analysis', 'script', 'surv_first_line_immunotherapy.R'))
-
-
-# 1L DDR-related analyses
-source(here('analysis', 'script', 'surv_ddr_data_all_1L.R')) # all 1L data created for big model.
-source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R')) # base idea
-source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
-
-cli_alert("Need to update/split models in ...plat_model still")
-# source(here('analysis', 'script', 'surv_ddr_onco_plat_model.R'))
+# This has some console prints still, but it's successfully updated to use the
+#   outputs form the surv_ddr_data_all_1L.R script above.
 source(here('analysis', 'script', 'table_print_ddr_asco_2025.R'))
 
 
