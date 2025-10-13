@@ -39,20 +39,14 @@ if (!chk_neoadj_col) {
 }
 
 
-# Make sure all regimens are in the data - i.e. no typos or corrupt regimens.
-chk_reg_drug_col <- dft_neoadj %>%
-  pull(regimen_drugs) %>%
-  `%in%`(
-    .,
-    unique(pull(dft_reg, regimen_drugs))
-  ) %>%
-  all(.)
-
-if (!chk_reg_drug_col) {
-  cli::cli_abort(
-    "Invalid entries in the the input neoadjuvant CSV (regimen_drugs column)"
+# This neoadj drug table was created by hand.  Some of these regimens have since
+#   been removed or corrected in the data.  The main example is regimens with
+#.  both carbo and cis, but it turns out that one of those was a zero day use.
+# We now correct the list to only include drugs in the data:
+dft_neoadj %<>%
+  filter(
+    regimen_drugs %in% unique(pull(dft_reg, regimen_drugs))
   )
-}
 
 dft_neoadj %<>%
   arrange(regimen_drugs) %>%
