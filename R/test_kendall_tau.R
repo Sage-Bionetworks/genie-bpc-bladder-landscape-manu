@@ -1,20 +1,18 @@
-
 test_kendall_tau <- function(
-    dat,
-    var_trunc,
-    var_event_time,
-    var_event_ind, # could be modified to work without this if desired.
-    method = "MB"
+  dat,
+  var_trunc,
+  var_event_time,
+  var_event_ind, # could be modified to work without this if desired.
+  method = "MB"
 ) {
-  
   res <- tranSurv::cKendall(
     trun = dat[[var_trunc]],
     obs = dat[[var_event_time]],
     delta = dat[[var_event_ind]],
     method = method
-  ) 
-  
-  res %<>% 
+  )
+
+  res %<>%
     `[`(., c("PE", "SE", "STAT", "p.value", "trans", "a")) %>%
     as_tibble(.) %>%
     mutate(
@@ -29,9 +27,7 @@ test_kendall_tau <- function(
       std.error = "SE",
       statistic = "STAT",
       p.value
-    ) 
-  
-  
+    )
+
   return(res)
-  
 }

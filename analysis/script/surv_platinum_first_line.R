@@ -1,4 +1,6 @@
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
 
 dir_output <- here('data', 'survival', 'first_line_platinum')
@@ -32,8 +34,10 @@ dft_cases <- dft_lot %>%
 # There was one case that contained both carboplatin and cisplatin.
 # It's a zero-day regimen, so we're just going to exclude it.
 dft_cases %<>%
-  filter(!(str_detect(regimen_drugs, "Carbo") & 
-             str_detect(regimen_drugs, "Cisplat"))) 
+  filter(
+    !(str_detect(regimen_drugs, "Carbo") &
+      str_detect(regimen_drugs, "Cisplat"))
+  )
 
 dft_cases %<>%
   mutate(
@@ -47,8 +51,15 @@ dft_cases %<>%
 
 dft_cases <- left_join(
   dft_cases,
-  select(dft_reg, record_id, ca_seq, regimen_number,
-         dx_reg_start_int_yrs, tt_os_g_yrs, os_g_status),
+  select(
+    dft_reg,
+    record_id,
+    ca_seq,
+    regimen_number,
+    dx_reg_start_int_yrs,
+    tt_os_g_yrs,
+    os_g_status
+  ),
   by = c("record_id", "ca_seq", "regimen_number"),
   relationship = "one-to-one"
 )
@@ -71,7 +82,6 @@ dft_cases %<>%
   select(-c(dx_cpt_rep_yrs)) # avoid confusion
 
 
-
 # Add some additional variables which might be make for interesting confounders in a model.
 dft_timf <- readr::read_rds(
   here('data', 'cohort', 'time_invariant_model_factors.rds')
@@ -79,7 +89,8 @@ dft_timf <- readr::read_rds(
 
 dft_cases %<>%
   left_join(., dft_timf, by = c('record_id', 'ca_seq'))
-dft_cases %<>% mutate(
+dft_cases %<>%
+  mutate(
     dob_reg_start_yrs = dob_ca_dx_yrs + dx_reg_start_int_yrs,
     dob_reg_start_days = dob_reg_start_yrs * 365.25, # just need for the next call
   )
@@ -97,7 +108,7 @@ dft_cases %<>%
     select(dft_latest_med_onc, record_id, md_ecog_imp_num),
     by = "record_id"
   )
-  
+
 
 # Get a list of regimens that were in subjects in the case list, and also
 #   before the regimen that defines their case.
@@ -114,7 +125,7 @@ dft_reg_before_case <- dft_cases %>%
   ) %>%
   filter(regimen_number < case_reg_num)
 
-dft_reg_before_case %<>% 
+dft_reg_before_case %<>%
   group_by(record_id, ca_seq) %>%
   summarize(
     num_prev_ther = n(),
@@ -160,25 +171,15 @@ readr::write_rds(
   x = dft_cases,
   file = here(dir_output, 'data_first_line_plat.rds')
 )
-  
-
-      
-    
-    
-  
-    
-
-
-
-
 
 
 # Create the basic KM plots around this:
 
-dft_cases %<>% remove_trunc_gte_event(
-  trunc_var = 'reg_start_cpt_yrs',
-  event_var = 'tt_os_g_yrs'
-)
+dft_cases %<>%
+  remove_trunc_gte_event(
+    trunc_var = 'reg_start_cpt_yrs',
+    event_var = 'tt_os_g_yrs'
+  )
 
 surv_obj_cases <- with(
   dft_cases,
@@ -190,19 +191,17 @@ surv_obj_cases <- with(
 )
 
 
-
-
 gg_first_line_platinum_manu <- plot_one_survfit(
   dat = dft_cases,
   surv_form = surv_obj_cases ~ reg_group,
   plot_title = "OS, from start of first line platinum-based chemotherapy",
   x_exp = 0.1,
   x_breaks = seq(0, 100, by = 0.5)
-) + 
-  add_quantile(y_value = 0.5, linetype = 81, alpha = 0.75) + 
-  coord_cartesian(xlim = c(0,5), ylim = c(0, 1.01))
+) +
+  add_quantile(y_value = 0.5, linetype = 81, alpha = 0.75) +
+  coord_cartesian(xlim = c(0, 5), ylim = c(0, 1.01))
 
-gg_first_line_platinum_manu <- gg_first_line_platinum_manu + 
+gg_first_line_platinum_manu <- gg_first_line_platinum_manu +
   theme(
     plot.title.position = 'panel'
   )
@@ -214,16 +213,12 @@ readr::write_rds(
 
 ggsave(
   gg_first_line_platinum_manu,
-  height = 5, width = 8,
+  height = 5,
+  width = 8,
   filename = here(
-    'output', 'aacr_ss24', 'img',
+    'output',
+    'aacr_ss24',
+    'img',
     '03_first_line_platinum.pdf'
   )
 )
-
-
-
-
-
-
-

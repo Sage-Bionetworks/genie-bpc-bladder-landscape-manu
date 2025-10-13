@@ -1,12 +1,13 @@
-
-library(purrr); library(fs); library(here)
+library(purrr)
+library(fs)
+library(here)
 purrr::walk(.x = fs::dir_ls('R'), .f = source)
 
 map_custom <- readxl::read_xls(
   here('data-raw', 'manual', 'New_Mappings_njs.xls')
 )
 
-map_custom %<>% 
+map_custom %<>%
   select(Kode, Map) %>%
   distinct(.)
 
@@ -31,19 +32,29 @@ ca_ind <- readr::read_rds(
 img_ca <- img %>%
   # not using dx_scan_days because its from the first bpc project cancer.
   #   can't imagine a scenario where that's useful.
-  select(record_id, scan_number, image_scan_int, image_ca, 
-         matches('image_casite[0-9]{1,2}'))
+  select(
+    record_id,
+    scan_number,
+    image_scan_int,
+    image_ca,
+    matches('image_casite[0-9]{1,2}')
+  )
 
 # Just a check to make sure I understand the structure of this data:
-img_ca %>% 
-  filter(image_ca %in% "Yes, the Impression states or implies there is evidence of cancer")
+img_ca %>%
+  filter(
+    image_ca %in%
+      "Yes, the Impression states or implies there is evidence of cancer"
+  )
 
 # These are not expected to me - there is cancer but no sites are mentioned as having cancer.  I guess cancer noted with no known ICD code?
-img_ca %>% 
+img_ca %>%
   filter(
-    image_ca %in% "Yes, the Impression states or implies there is evidence of cancer" &
+    image_ca %in%
+      "Yes, the Impression states or implies there is evidence of cancer" &
       is.na(image_casite1)
-  ) %>% glimpse
+  ) %>%
+  glimpse
 
 # All the same, I guess we can proceed for the purposes of identifying met sites.
 
@@ -53,10 +64,10 @@ img_ca %<>%
     names_to = 'loc_num',
     values_to = 'icd_str'
   ) %>%
-  filter(!is.na(icd_str)) 
+  filter(!is.na(icd_str))
 
 # varying amount of whitespace in here, so we'll split and trim in steps.
-img_ca %<>% 
+img_ca %<>%
   separate_wider_delim(
     cols = icd_str,
     delim = " ",
@@ -69,14 +80,14 @@ img_ca %<>%
     icd_desc = str_trim(icd_desc)
   )
 
-img_ca %<>% 
+img_ca %<>%
   left_join(
     .,
     map_custom,
     by = c(icd_code = "Kode")
   )
 
-parsimonious_mapping_file <- img_ca %>% 
+parsimonious_mapping_file <- img_ca %>%
   count(icd_code, icd_desc, name = 'n_times_reported') %>%
   left_join(
     map_custom,
@@ -91,7 +102,7 @@ readr::write_csv(
 
 img_ca %>% count(Map, sort = T)
 
-img_ca %>% 
+img_ca %>%
   mutate(
     Map = case_when(
       str_detect(Map, 'Lymph node') ~ "lymph node",
@@ -104,7 +115,7 @@ img_ca %>%
   print(n = 500)
 
 
-img_ca %>% 
+img_ca %>%
   mutate(
     Map = case_when(
       str_detect(Map, 'Lymph node') ~ "lymph node",

@@ -1,7 +1,9 @@
-# Description:  Creates the dataframe describing when participants had 
+# Description:  Creates the dataframe describing when participants had
 #   neoadjuvant treatment (if ever).
 
-library(fs); library(purrr); library(here);
+library(fs)
+library(purrr)
+library(here)
 purrr::walk(.x = fs::dir_ls('R'), .f = source)
 
 
@@ -12,7 +14,7 @@ dft_reg <- readr::read_rds(
   here('data', 'cohort', 'reg.rds')
 )
 
-# This file was created by going through the list of regimens at a meeting 
+# This file was created by going through the list of regimens at a meeting
 #   one day.  The list was expanded on Feb 21 using the method of statistician
 #   guesswork.
 dft_neoadj <- readr::read_csv(
@@ -31,9 +33,10 @@ chk_neoadj_col <- dft_neoadj %>%
   all(.)
 
 if (!chk_neoadj_col) {
-  cli::cli_abort("Invalid entries in the input neoadjuvant CSV (valid_neoadjuvant_drug column)")
+  cli::cli_abort(
+    "Invalid entries in the input neoadjuvant CSV (valid_neoadjuvant_drug column)"
+  )
 }
-
 
 
 # Make sure all regimens are in the data - i.e. no typos or corrupt regimens.
@@ -46,7 +49,9 @@ chk_reg_drug_col <- dft_neoadj %>%
   all(.)
 
 if (!chk_reg_drug_col) {
-  cli::cli_abort("Invalid entries in the the input neoadjuvant CSV (regimen_drugs column)")
+  cli::cli_abort(
+    "Invalid entries in the the input neoadjuvant CSV (regimen_drugs column)"
+  )
 }
 
 dft_neoadj %<>%
@@ -66,18 +71,9 @@ readr::write_rds(
 )
 
 
-
-
-
-
-
-
-
-
-
-dft_reg_neo <- dft_reg %>% 
+dft_reg_neo <- dft_reg %>%
   left_join(
-    ., 
+    .,
     dft_neoadj,
     by = "regimen_drugs"
   )
@@ -93,7 +89,7 @@ dft_reg_neo %<>%
     dx_reg_end_all_int_yrs
   )
 
-dft_dmet_timing <- get_dmet_time(dft_ca_ind) %>% 
+dft_dmet_timing <- get_dmet_time(dft_ca_ind) %>%
   select(record_id, ca_seq, dmet_time_yrs = dx_dmet_yrs)
 
 dft_reg_neo <- left_join(
@@ -108,9 +104,6 @@ dft_reg_neo %<>%
   )
 
 
-
-
-
 dft_reg_neo %<>%
   filter(!str_detect(regimen_drugs, "Investigational Drug")) %>%
   mutate(
@@ -118,12 +111,12 @@ dft_reg_neo %<>%
     tt_met_reg_end_yrs = dmet_time_yrs - dx_reg_end_all_int_yrs
   )
 
-# We've updated our defintion.  Neoadjuvant is now defined by a drug use 
+# We've updated our defintion.  Neoadjuvant is now defined by a drug use
 #   which is on our list of regimens (platinum-based chemo) AND either:
 #   1. drug use started more than 3 months before met diagnosis.
 #   2. the participant never developed metastasis.
 # There are some obvious problems with this, notably that the classification
-#   of a drug as met or not could change if the person is diagnosed soon 
+#   of a drug as met or not could change if the person is diagnosed soon
 #.  (in that three month no man's land).
 
 dft_reg_neo %<>%
@@ -131,7 +124,10 @@ dft_reg_neo %<>%
     is_neoadjuvant = case_when(
       !met_ever & valid_neoadjuvant_drug ~ T, # new case
       # small tolerance here, half a day, for rounding errors.
-      valid_neoadjuvant_drug %in% T & tt_met_reg_start_yrs >= 0.25 - (0.5/365.25) ~ T,
+      valid_neoadjuvant_drug %in%
+        T &
+        tt_met_reg_start_yrs >= 0.25 - (0.5 / 365.25) ~
+        T,
       T ~ F
     )
   )
@@ -147,10 +143,6 @@ dft_multi_neo <- dft_reg_neo %>%
 #   print(dft_multi_neo)
 # }
 
-
-
-
-
 lev_neoadj <- c(
   "Neoadjuvant, started >=3 months prior to met",
   "Neoadjuvant, never-met patient",
@@ -162,21 +154,22 @@ dft_reg_neo %<>%
     neoadj_f = case_when(
       is.na(is_neoadjuvant) ~ lev_neoadj[3],
       !is_neoadjuvant ~ lev_neoadj[3],
-      
+
       is_neoadjuvant & met_ever ~ lev_neoadj[1],
       is_neoadjuvant & !met_ever ~ lev_neoadj[2],
       T ~ NA_character_ # hopefully none.
     ),
     neoadj_f = factor(neoadj_f, levels = lev_neoadj)
   )
-chk_met_neoadj_f <- dft_reg_neo %>% 
+chk_met_neoadj_f <- dft_reg_neo %>%
   filter(is.na(neoadj_f)) %>%
   nrow(.)
 
 if (chk_met_neoadj_f > 0) {
-  cli::cli_abort("There are regimens that were not categorized for 'met_neoadj_f' column.")
+  cli::cli_abort(
+    "There are regimens that were not categorized for 'met_neoadj_f' column."
+  )
 }
-
 
 
 readr::write_rds(
@@ -203,7 +196,7 @@ dft_reg_neo_cases <- dft_reg_neo %>%
   )
 
 # Fix the +Inf returns from min above:
-dft_reg_neo_cases %<>% 
+dft_reg_neo_cases %<>%
   mutate(
     tt_met_first_neoadj_start = if_else(
       is.infinite(tt_met_first_neoadj_start),
@@ -211,12 +204,11 @@ dft_reg_neo_cases %<>%
       tt_met_first_neoadj_start
     )
   )
-      
-  
 
-# One more thing needs to be done here to make this more sensible:  We need to 
-#   add back in the people who had zero regimens.  Then they will be 
-#   correctly coded as having no neoadjuvant therapy. 
+
+# One more thing needs to be done here to make this more sensible:  We need to
+#   add back in the people who had zero regimens.  Then they will be
+#   correctly coded as having no neoadjuvant therapy.
 
 dft_no_reg_addins <- dft_ca_ind %>%
   filter(!(record_id %in% dft_reg_neo_cases$record_id)) %>%
@@ -238,10 +230,8 @@ dft_reg_neo_cases %<>%
       T ~ "No Neoadj. exposure"
     )
   )
-      
+
 readr::write_rds(
   dft_reg_neo_cases,
   file = here('data', 'dmet', 'neoadjuvant_status_case.rds')
 )
-      
-

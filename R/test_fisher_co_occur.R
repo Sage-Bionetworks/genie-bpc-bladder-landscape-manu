@@ -1,43 +1,47 @@
 test_fisher_co_occur <- function(
-    dat,
-    ignore_cols = character(0),
-    top = 5,
-    alpha = 0.05,
-    axis_order = NULL
+  dat,
+  ignore_cols = character(0),
+  top = 5,
+  alpha = 0.05,
+  axis_order = NULL
 ) {
   dat_top <- get_binary_feature_pos(
     dat,
     ignore_cols = ignore_cols
   )
-  
-  dat_top %<>% 
+
+  dat_top %<>%
     mutate(rank = 1:n()) %>%
     filter(rank <= top)
-  
+
   if (!is.null(axis_order)) {
-    if (any( !(dat_top$feature %in% axis_order))) {
+    if (any(!(dat_top$feature %in% axis_order))) {
       cli_abort("axis_order does not contain all the top genes - needs fixing!")
     }
-    
+
     dat_top %<>%
       mutate(.temp = factor(feature, levels = axis_order)) %>%
       arrange(.temp) %>%
-      select(-.temp) 
+      select(-.temp)
   }
-  
+
   dat_top %<>%
     mutate(
       # switching to percentage altered:
       feat_lab = paste0(
-        feature, " [", 
-        num_pos, ", ",
+        feature,
+        " [",
+        num_pos,
+        ", ",
         formatC(
           num_pos / nrow(dat) * 100,
-          format = 'f', digits = 0
-        ), "%]"
+          format = 'f',
+          digits = 0
+        ),
+        "%]"
       )
     )
-  
+
   trimmed_dat <- dat %>%
     select(
       -all_of(ignore_cols)
@@ -45,7 +49,7 @@ test_fisher_co_occur <- function(
     select(
       all_of(dat_top$feature)
     )
-  
+
   test_skel <- expand_grid(
     var1 = colnames(dat),
     var2 = colnames(dat)
@@ -62,15 +66,13 @@ test_fisher_co_occur <- function(
       var1 = as.character(var1),
       var2 = as.character(var2)
     )
-  
-  
-  
+
   test_skel %<>%
     mutate(
       cont_tab = purrr::map2(
         .x = var1,
         .y = var2,
-        .f = (function(v1,v2) {
+        .f = (function(v1, v2) {
           cont_tab_variable_pair(
             dat = trimmed_dat,
             var1 = v1,
@@ -80,7 +82,7 @@ test_fisher_co_occur <- function(
       )
     ) %>%
     unnest(cont_tab)
-  
+
   test_skel %<>%
     mutate(
       fish_result = purrr::pmap(
@@ -94,16 +96,17 @@ test_fisher_co_occur <- function(
       )
     ) %>%
     unnest(fish_result)
-  
+
   # just preferences:
   test_skel %<>%
     rename(
       odds_ratio = estimate
     ) %>%
     relocate(
-      p.value, .after = conf.high
-    ) 
-  
+      p.value,
+      .after = conf.high
+    )
+
   test_skel %<>%
     left_join(
       .,
@@ -123,9 +126,6 @@ test_fisher_co_occur <- function(
     ) %>%
     relocate(var1_lab, .after = var2) %>%
     relocate(var2_lab, .after = var1_lab)
-  
-  
-  
+
   return(test_skel)
-  
 }

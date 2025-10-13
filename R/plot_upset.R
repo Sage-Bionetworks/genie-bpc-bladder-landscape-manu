@@ -1,10 +1,9 @@
-
 plot_upset <- function(
-    dat, 
-    order_by = "freq",
-    y_lab = "n with combo",
-    n_set = 15,
-    n_intersect = 50
+  dat,
+  order_by = "freq",
+  y_lab = "n with combo",
+  n_set = 15,
+  n_intersect = 50
 ) {
   dat %>%
     as.data.frame %>%

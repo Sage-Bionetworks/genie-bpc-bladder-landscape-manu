@@ -1,5 +1,6 @@
-
-library(fs); library(purrr); library(here);
+library(fs)
+library(purrr)
+library(here)
 purrr::walk(.x = fs::dir_ls('R'), .f = source)
 
 read_wrap <- function(p) {
@@ -29,10 +30,10 @@ dft_reg_yr <- dft_reg %>%
 
 dft_reg_yr %<>%
   mutate(
-    reg_start_date_jan1_bd = ymd(paste0(birth_year,"-01-01")) +
+    reg_start_date_jan1_bd = ymd(paste0(birth_year, "-01-01")) +
       dyears(dob_ca_dx_yrs) +
       dyears(dx_reg_start_int_yrs),
-    reg_start_date_dec31_bd = ymd(paste0(birth_year,"-12-31")) +
+    reg_start_date_dec31_bd = ymd(paste0(birth_year, "-12-31")) +
       dyears(dob_ca_dx_yrs) +
       dyears(dx_reg_start_int_yrs),
   ) %>%
@@ -59,10 +60,8 @@ one_iter_yr <- function(s, dat) {
 
 many_iter_yr <- function(input_dat, n_rep) {
   rtn <- tibble(id = 1:n_rep) %>%
-    mutate(s = sample.int(n_rep*10^3, size = n(), replace = T)) %>%
-    mutate(dat = purrr::map(.x = s,
-                            .f = one_iter_yr,
-                            dat = input_dat)) %>%
+    mutate(s = sample.int(n_rep * 10^3, size = n(), replace = T)) %>%
+    mutate(dat = purrr::map(.x = s, .f = one_iter_yr, dat = input_dat)) %>%
     unnest(dat) %>%
     mutate(event_yr = factor(event_yr)) %>%
     tidyr::complete(id, event_yr, fill = list(n = 0))
@@ -89,12 +88,10 @@ readr::write_rds(
 )
 
 
-
-
 # Update:  got a request to do this again for met regimens only.
 dft_reg_met <- readr::read_rds(here('data', 'dmet', 'reg_start_gte_dmet.rds'))
 
-dft_reg_yr_met <- dft_reg_met %>% 
+dft_reg_yr_met <- dft_reg_met %>%
   select(record_id, ca_seq, regimen_number) %>%
   distinct(.) %>%
   left_join(
@@ -102,10 +99,10 @@ dft_reg_yr_met <- dft_reg_met %>%
     dft_reg_yr,
     by = c("record_id", "ca_seq", "regimen_number"),
     relationship = "one-to-many"
-  ) 
+  )
 
 dft_reg_yr_non_met <- anti_join(
-  dft_reg_yr, 
+  dft_reg_yr,
   dft_reg_yr_met,
   by = c("record_id", "ca_seq", "regimen_number")
 )
@@ -122,11 +119,8 @@ dft_rep_comb <- bind_rows(
   mutate(rep_sum_non_met, type = "Non-metastatic")
 ) %>%
   mutate(type = fct_inorder(type))
-  
+
 readr::write_rds(
   x = dft_rep_comb,
   file = here('data', 'cohort', 'reg_yr_estimates_three_ways.rds')
 )
-
-  
-  

@@ -2,8 +2,9 @@
 #   of DDR mutations by looking at the difference between clinical and path
 #   staging in those individuals.
 
-
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_output <- here('data', 'survival', 'ddr_neoadj')
@@ -11,12 +12,12 @@ dir_output <- here('data', 'survival', 'ddr_neoadj')
 dft_ca_ind <- readr::read_rds(here('data', 'cohort', "ca_ind.rds"))
 dft_reg <- readr::read_rds(here('data', 'cohort', "reg.rds"))
 # dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
-dft_alt <- readr::read_rds(here('data', 'genomic','alterations.rds'))
+dft_alt <- readr::read_rds(here('data', 'genomic', 'alterations.rds'))
 dft_cpt <- readr::read_rds(here('data', 'cohort', "cpt_aug.rds"))
 dft_tnm <- readr::read_rds(here('data', 'cohort', 'tnm_path_clin_details.rds'))
 
 
-dft_neoadj <- dft_ca_ind %>% 
+dft_neoadj <- dft_ca_ind %>%
   select(record_id, ca_seq, ca_tx_pre_path_stage, stage_dx_iv) %>%
   left_join(
     .,
@@ -36,11 +37,16 @@ dft_neoadj %<>%
 #   have clinical and pathological staging.  This allows us to more easily look
 #   at who is missing (due to missing one of those).
 
-
 custom_ddr_list <- c(
-  'ERCC2', 'ERCC5', 
-  'BRCA1', 'BRCA2', 'RECQL4', 'RAD51C', 'ATM', 
-  'ATR', 'FANCC'
+  'ERCC2',
+  'ERCC5',
+  'BRCA1',
+  'BRCA2',
+  'RECQL4',
+  'RAD51C',
+  'ATM',
+  'ATR',
+  'FANCC'
 )
 
 # Change: taking only the first CPT test for DDR alterations.  It makes no sense
@@ -53,7 +59,9 @@ dft_onco_ddr <- dft_cpt %>%
   ungroup(.) %>%
   select(sample_id = cpt_genie_sample_id) %>%
   left_join(
-    ., dft_alt, by = 'sample_id'
+    .,
+    dft_alt,
+    by = 'sample_id'
   ) %>%
   filter(hugo %in% custom_ddr_list) %>%
   filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic"))
@@ -61,8 +69,9 @@ dft_onco_ddr <- dft_cpt %>%
 # Add in the relevant stuff from CPT data:
 dft_onco_ddr <- dft_cpt %>%
   select(
-    record_id, ca_seq,
-    dx_path_proc_cpt_yrs, # interval from dx to pathology procedure of this CPT. 
+    record_id,
+    ca_seq,
+    dx_path_proc_cpt_yrs, # interval from dx to pathology procedure of this CPT.
     dx_cpt_rep_yrs, # interval from dx to report date of this CPT.
     cpt_genie_sample_id
   ) %>%
@@ -74,7 +83,7 @@ dft_onco_ddr <- dft_cpt %>%
 
 dft_onco_ddr_sum <- dft_onco_ddr %>%
   group_by(record_id, ca_seq) %>%
-  summarize(onco_ddr = T) 
+  summarize(onco_ddr = T)
 
 dft_neoadj %<>%
   left_join(
@@ -101,7 +110,7 @@ lev_gs_change <- c(
   "No change in stage",
   "Stage higher at path"
 )
-  
+
 
 dft_neoadj %<>%
   mutate(
@@ -132,14 +141,16 @@ readr::write_rds(
 
 gg_neoadj_ddr_mosaic <- ggplot(
   data = dft_neoadj
-) + 
+) +
   geom_mosaic(
     aes(x = product(onco_ddr_disp), fill = group_stage_change_f)
-  ) + 
-  theme_mosaic() + 
+  ) +
+  theme_mosaic() +
   scale_fill_viridis_d(
     name = NULL,
-    option = "magma", begin = 0, end = 0.5
+    option = "magma",
+    begin = 0,
+    end = 0.5
   ) +
   theme(
     axis.title = element_blank()
@@ -151,22 +162,23 @@ readr::write_rds(
 )
 
 gg_clin_path_group_stage <- dft_neoadj %>%
-  select(record_id, onco_ddr_disp,
-         clin_group_clust, path_group_clust) %>%
+  select(record_id, onco_ddr_disp, clin_group_clust, path_group_clust) %>%
   pivot_longer(
     cols = contains("group_clust")
   ) %>%
   mutate(name = str_sub(name, 1, 4)) %>%
   ggplot(
     data = .,
-  ) + 
+  ) +
   geom_mosaic(
     aes(x = product(name), fill = value)
-  ) + 
-  theme_mosaic() + 
+  ) +
+  theme_mosaic() +
   scale_fill_viridis_d(
     name = NULL,
-    option = "turbo", begin = 0, end = 1,
+    option = "turbo",
+    begin = 0,
+    end = 1,
     guide = guide_legend(reverse = T)
   ) +
   theme(
@@ -174,15 +186,10 @@ gg_clin_path_group_stage <- dft_neoadj %>%
     legend.position = "left",
     axis.ticks.y = element_blank(),
     axis.text.y = element_blank()
-  ) + 
-  facet_wrap(vars(onco_ddr_disp), nrow = 1) 
+  ) +
+  facet_wrap(vars(onco_ddr_disp), nrow = 1)
 
 readr::write_rds(
   gg_clin_path_group_stage,
   here(dir_output, 'gg_clin_path_group_stage.rds')
 )
-
-
-      
-      
-

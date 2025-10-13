@@ -2,7 +2,9 @@
 #   into the mutation, CNA and fusion files.  Also reshapes and filters the
 #   CNA code so it runs in a reasonable amount of time.
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_input <- here('data-raw', 'genomic', 'main_genie')
@@ -45,14 +47,14 @@ dft_fus %<>% filter(Tumor_Sample_Barcode %in% samp_bladder)
 
 
 # The CNA file needs to be reshaped to be fed into the annotator the way I know how:
-dft_cna_long_selected <- dft_cna %>% 
+dft_cna_long_selected <- dft_cna %>%
   pivot_longer(
     cols = -Hugo_Symbol,
     names_to = "Tumor_Sample_Barcode", # just to match.
     values_to = "value"
   ) %>%
   # Trusting in the work of my collaborators 100% here:
-  filter(!is.na(value) & value >= 2) 
+  filter(!is.na(value) & value >= 2)
 
 # For each of our three file types we will add in the oncotree code:
 dft_otc <- clin_samp %>%
@@ -63,17 +65,20 @@ dft_otc <- clin_samp %>%
   )
 
 dft_mut <- left_join(
-  dft_mut, dft_otc, 
+  dft_mut,
+  dft_otc,
   by = c(Tumor_Sample_Barcode = "sample_id"),
   relationship = "many-to-one"
 )
 dft_cna_long_selected <- left_join(
-  dft_cna_long_selected, dft_otc,
+  dft_cna_long_selected,
+  dft_otc,
   by = c(Tumor_Sample_Barcode = "sample_id"),
   relationship = "many-to-one"
 )
 dft_fus <- left_join(
-  dft_fus, dft_otc,
+  dft_fus,
+  dft_otc,
   by = c(Tumor_Sample_Barcode = "sample_id"),
   relationship = "many-to-one"
 )
@@ -84,14 +89,14 @@ genomic_row_removed_helper <- function(dat) {
   dat_name <- deparse(substitute(dat))
   dat_nrow_pre <- nrow(dat)
   dat %<>% filter(!is.na(ONCOTREE_CODE))
-  
+
   dat_nrow_post <- nrow(dat)
-  nrow_diff <- dat_nrow_pre-dat_nrow_post
-  nrow_diff_pct <- nrow_diff/dat_nrow_pre
+  nrow_diff <- dat_nrow_pre - dat_nrow_post
+  nrow_diff_pct <- nrow_diff / dat_nrow_pre
   cli::cli_alert_success(
     "Removed {nrow_diff} rows ({round(nrow_diff_pct,0)}%) from {dat_name} filtering down to only 'cohort' samples with a valid oncotree code."
   )
-  
+
   return(dat)
 }
 

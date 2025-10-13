@@ -1,4 +1,6 @@
-library(purrr); library(fs); library(here);
+library(purrr)
+library(fs)
+library(here)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 read_wrap <- function(p) {
@@ -9,7 +11,7 @@ read_wrap <- function(p) {
 
 dft_pt <- read_wrap("pt")
 dft_med_onc <- read_wrap("med_onc")
-dft_ca_ind <-read_wrap('ca_ind')
+dft_ca_ind <- read_wrap('ca_ind')
 
 dft_med_onc %>% pull(md_ecog) %>% unique %>% sort
 dft_med_onc %>% pull(md_karnof) %>% unique %>% sort
@@ -32,14 +34,14 @@ dft_comp_counts <- dft_med_onc %>%
     n_complete_ecog = sum(ecog_complete),
     n_complete_karnof = sum(karnof_complete),
     .groups = 'drop'
-  ) 
+  )
 
 dft_comp_counts <- left_join(
   select(dft_pt, record_id),
   dft_comp_counts,
   by = 'record_id',
   relationship = 'one-to-one'
-) 
+)
 
 dft_comp_counts %<>%
   mutate(
@@ -61,4 +63,3 @@ dft_comp_counts %>%
     n_ecog_complete = sum(n_complete_ecog > 0),
     either_gt_zero = sum(n_complete_karnof > 0 | n_complete_ecog > 0)
   )
-  

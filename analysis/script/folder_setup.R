@@ -1,6 +1,8 @@
 # Description: Creates folder structure for project.
 
-library(purrr); library(fs); library(here)
+library(purrr)
+library(fs)
+library(here)
 purrr::walk(.x = fs::dir_ls('R'), .f = source)
 
 # create directories for data and data-raw
@@ -27,4 +29,3 @@ fs::dir_create(here('data', 'survival', 'ddr_neoadj'))
 fs::dir_create(here('data', 'survival', 'line23'))
 
 fs::dir_create(here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome'))
-

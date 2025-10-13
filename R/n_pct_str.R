@@ -5,14 +5,14 @@ n_pct_str <- function(n, d, show_d = F, digits = 0, na = "") {
   if (length(na) > 1) {
     stop("na must be a length 1 vector (or NULL)")
   }
-  
-  pct <- n/d
+
+  pct <- n / d
   if (show_d) {
     rtn <- glue::glue("{n}/{d} ({form_f(pct*100, digits = digits)}%)")
   } else {
     rtn <- glue::glue("{n} ({form_f(pct*100, digits = digits)}%)")
   }
-  
+
   if (!is.null(na)) {
     rtn[is.na(n)] <- glue::glue("{na}")
   }

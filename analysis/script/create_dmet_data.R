@@ -1,6 +1,8 @@
 # Description: Create versions of the datasets filtered down to events after metastasis.
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 read_wrap <- function(p) {
@@ -39,13 +41,9 @@ dft_reg_dmet_s <- left_join(
 
 # Todo:  Move the drug code over here.
 
-
-
-
-
 write_wrap <- function(obj, file_name) {
   readr::write_rds(
-    x = obj, 
+    x = obj,
     file = here('data', 'dmet', paste0(file_name, '.rds'))
   )
 }
@@ -53,5 +51,3 @@ write_wrap <- function(obj, file_name) {
 write_wrap(dft_pt_dmet, file_name = "pt_dmet")
 write_wrap(dft_ca_ind_dmet, file_name = "ca_ind_dmet")
 write_wrap(dft_reg_dmet_s, file_name = "reg_start_gte_dmet")
-
-

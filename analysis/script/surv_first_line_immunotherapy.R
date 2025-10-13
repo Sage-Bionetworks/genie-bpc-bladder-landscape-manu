@@ -1,16 +1,16 @@
-
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also load
 dft_ca_ind <- readr::read_rds(here('data', 'cohort', "ca_ind.rds"))
 dft_reg <- readr::read_rds(here('data', 'cohort', "reg.rds"))
 dft_cpt <- readr::read_rds(here('data', 'cohort', "cpt_aug.rds"))
 dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
-dft_alt <- readr::read_rds(here('data', 'genomic','alterations.rds'))
+dft_alt <- readr::read_rds(here('data', 'genomic', 'alterations.rds'))
 
 
 dir_out <- here('data', 'survival', 'first_line_immuno')
 fs::dir_create(dir_out)
-
 
 
 lot_regex <- paste(
@@ -26,10 +26,10 @@ lot_regex <- paste(
   collapse = "|"
 )
 
-fl_immuno_regimens <- dft_lot %>% 
-  filter(line_therapy %in% 1) %>% 
+fl_immuno_regimens <- dft_lot %>%
+  filter(line_therapy %in% 1) %>%
   count(regimen_drugs) %>%
-  filter(str_detect(tolower(regimen_drugs), lot_regex)) 
+  filter(str_detect(tolower(regimen_drugs), lot_regex))
 
 readr::write_rds(
   fl_immuno_regimens,
@@ -50,10 +50,13 @@ dft_fl_io <- dft_lot %>%
 
 dft_fl_io <- dft_reg %>%
   select(
-    record_id, ca_seq, regimen_number, 
+    record_id,
+    ca_seq,
+    regimen_number,
     dx_reg_start_int_yrs,
     dx_reg_end_all_int_yrs,
-    os_g_status, tt_os_g_yrs
+    os_g_status,
+    tt_os_g_yrs
   ) %>%
   left_join(
     dft_fl_io,
@@ -78,14 +81,13 @@ dft_fl_io <- left_join(
   )
 
 
-
-dft_fl_io %<>% 
+dft_fl_io %<>%
   remove_trunc_gte_event(
     trunc_var = 'reg_fcpt_yrs',
     event_var = 'tt_os_g_yrs'
   )
 
-dft_fl_io %<>% 
+dft_fl_io %<>%
   mutate(reg_fcpt_yrs = ifelse(reg_fcpt_yrs < 0, 0, reg_fcpt_yrs))
 
 surv_obj_os_fl_io <- with(

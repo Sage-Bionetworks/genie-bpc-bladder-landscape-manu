@@ -1,7 +1,9 @@
 # Create some basic plots, KM curves, truncation tests, etc.
 # Don't want these to clutter up the report too much.
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also loads lots of packages.
 
 fs::dir_create(
@@ -18,8 +20,6 @@ dft_pt <- read_wrap_clin("pt.rds")
 dft_ca_ind <- read_wrap_clin("ca_ind.rds")
 # we're taking the augmented version, which has TMB columns added.  The existing info is the same.
 dft_cpt <- read_wrap_clin("cpt_aug.rds")
-
-
 
 
 # Create plot for survival from diagnosis stratified by stage at dx.
@@ -40,11 +40,15 @@ dft_surv_dx <- dft_ca_ind %>%
     stage_custom = factor(stage_custom) # Happens to be alphabetical.
   ) %>%
   select(
-    record_id, ca_seq, stage_custom, dx_cpt_rep_yrs,
-    os_dx_status, tt_os_dx_yrs
-  ) 
+    record_id,
+    ca_seq,
+    stage_custom,
+    dx_cpt_rep_yrs,
+    os_dx_status,
+    tt_os_dx_yrs
+  )
 
-dft_surv_dx %<>% 
+dft_surv_dx %<>%
   remove_trunc_gte_event(
     trunc_var = 'dx_cpt_rep_yrs',
     event_var = 'tt_os_dx_yrs'
@@ -81,7 +85,7 @@ gg_os_dx_stage_manu <- plot_one_survfit(
   x_breaks = seq(0, 5, by = 0.5),
   risktable_prop = 0.3,
   risktable_font_size = 3
-) + 
+) +
   coord_cartesian(xlim = c(0, 5), ylim = c(0, 1.01))
 
 gg_os_dx_stage_manu <- gg_os_dx_stage_manu +
@@ -95,21 +99,18 @@ readr::write_rds(
 
 ggsave(
   gg_os_dx_stage_manu, # changed the name to "manu" as the project evolved.
-  height = 5, width = 8,
+  height = 5,
+  width = 8,
   filename = here(
-    'output', 'aacr_ss24', 'img',
+    'output',
+    'aacr_ss24',
+    'img',
     '03_surv_dx_stage.pdf'
   )
 )
 
 
-
-
-
-
-
-
-# Create survival variables from met. 
+# Create survival variables from met.
 # In prostate cancer this is different from advanced disease.
 
 dft_surv_dmet <- left_join(
@@ -134,8 +135,8 @@ ggplot(
     x = (tt_os_adv_days + tt_os_dmet_days) / 2,
     color = .met_type
   )
-) + 
-  geom_jitter(alpha = 0.5, width = 0, height = 100) + 
+) +
+  geom_jitter(alpha = 0.5, width = 0, height = 100) +
   theme_bw() +
   labs(
     title = "Diff/mean for 'advanced' vs 'metatstatic'",
@@ -163,23 +164,13 @@ readr::write_rds(
 )
 
 
-
-
-
-
-
-
-
-
-
-
 # Create a survival plot showing the effect of adjusting for truncation.
 # We will go from metastasis.
 
 pal_surv_dmet <- c('#780C3B', '#c5812a')
 # pal_surv_dmet <- c('#8ac7ad', '#b74233')
 
-dft_surv_dmet %<>% 
+dft_surv_dmet %<>%
   remove_trunc_gte_event(
     trunc_var = 'dmet_cpt_rep_yrs',
     event_var = 'tt_os_dmet_yrs'
@@ -197,8 +188,8 @@ surv_obj_os_dmet_lt_adj <- with(
 # Get the median surv in months.  The rest is nonsense:
 survfit(surv_obj_os_dmet_lt_adj ~ 1) %>%
   summary %>%
-  `$`(.,'table') %>%
-  multiply_by(.,12)
+  `$`(., 'table') %>%
+  multiply_by(., 12)
 
 surv_obj_os_dmet_no_lt_adj <- with(
   dft_surv_dmet,
@@ -209,7 +200,8 @@ surv_obj_os_dmet_no_lt_adj <- with(
 )
 
 dft_km_no_lt_adj <- survfit(
-  surv_obj_os_dmet_no_lt_adj ~ 1, data = dft_surv_dmet
+  surv_obj_os_dmet_no_lt_adj ~ 1,
+  data = dft_surv_dmet
 ) %>%
   broom::tidy(.) %>%
   add_row(time = 0, estimate = 1)
@@ -221,14 +213,17 @@ gg_os_dmet <- plot_one_survfit(
   plot_title = "OS from metastasis",
   plot_subtitle = glue(
     "<span style = 'color:{pal_surv_dmet[1]};'>Adjusted</span> and
-    <span style = 'color:{pal_surv_dmet[2]};'>Unadjusted</span> for left truncation (delayed entry)"),
+    <span style = 'color:{pal_surv_dmet[2]};'>Unadjusted</span> for left truncation (delayed entry)"
+  ),
   x_exp = 0.1,
   force_color = pal_surv_dmet[1]
-) + 
-  geom_step(data = dft_km_no_lt_adj,
-            inherit.aes = F,
-            aes(x = time, y = estimate),
-            color = pal_surv_dmet[2])
+) +
+  geom_step(
+    data = dft_km_no_lt_adj,
+    inherit.aes = F,
+    aes(x = time, y = estimate),
+    color = pal_surv_dmet[2]
+  )
 
 
 readr::write_rds(
@@ -237,35 +232,43 @@ readr::write_rds(
 )
 
 
-
-
-
-
 # Test the independence of truncation and event times.
-# There's not much we can do with this information, but it's a curiousity that 
+# There's not much we can do with this information, but it's a curiousity that
 #   someone may be interested in.
 
 # We'll just do all the tests and save them in case anyone asks.
 # Rediculous practice statistically but we also don't plan to do anything with this.
 dft_trunc_ind_test <- tribble(
-  ~lab, ~dat, ~v_trunc, ~v_event, ~v_event_ind,
-  "From diagnosis", 
-    dft_surv_dx, "dx_cpt_rep_yrs", "tt_os_dx_yrs", "os_dx_status",
-  "From metastasis (all)", 
-    dft_surv_dmet, "dmet_cpt_rep_yrs", "tt_os_dmet_yrs", "os_dx_status",
-  "From metastasis (metastatic at dx)", 
-    filter(dft_surv_dmet, stage_dx_iv %in% "Stage IV" & ca_dmets_yn %in% "Yes"),
-    "dmet_cpt_rep_yrs", "tt_os_dmet_yrs", "os_dx_status",
+  ~lab,
+  ~dat,
+  ~v_trunc,
+  ~v_event,
+  ~v_event_ind,
+  "From diagnosis",
+  dft_surv_dx,
+  "dx_cpt_rep_yrs",
+  "tt_os_dx_yrs",
+  "os_dx_status",
+  "From metastasis (all)",
+  dft_surv_dmet,
+  "dmet_cpt_rep_yrs",
+  "tt_os_dmet_yrs",
+  "os_dx_status",
+  "From metastasis (metastatic at dx)",
+  filter(dft_surv_dmet, stage_dx_iv %in% "Stage IV" & ca_dmets_yn %in% "Yes"),
+  "dmet_cpt_rep_yrs",
+  "tt_os_dmet_yrs",
+  "os_dx_status",
 ) %>%
   slice(rep(1:n(), times = 3)) %>%
-  mutate(method = rep(c("MB", "IPW1", "IPW2"), each = n()/3))
+  mutate(method = rep(c("MB", "IPW1", "IPW2"), each = n() / 3))
 
 dft_trunc_ind_test %<>%
   mutate(
     res = purrr::pmap(
       .l = list(
-        dat = dat, 
-        var_trunc = v_trunc, 
+        dat = dat,
+        var_trunc = v_trunc,
         var_event_time = v_event,
         var_event_ind = v_event_ind,
         method = method
@@ -283,13 +286,9 @@ readr::write_rds(
   file = here('data', 'survival', 'trunc_test.rds')
 )
 
-
 # Just a curiousity:  Unconditional.
 # cor(
 #   dft_surv_dmet$tt_os_dmet_yrs,
 #   dft_surv_dmet$dmet_cpt_rep_yrs,
 #   method = "kendall"
 # )
-
-
-

@@ -1,4 +1,3 @@
-
 format_mutation_effect <- function(vec) {
   lev_mutation_effect <- c(
     "Loss-of-function",
@@ -11,15 +10,14 @@ format_mutation_effect <- function(vec) {
     "Likely Gain-of-function",
     "Gain-of-function"
   )
-  
+
   chk <- unique(vec[!(vec %in% lev_mutation_effect)])
-  
+
   if (length(chk) > 0) {
     cli::cli_alert_danger(glue("Uncoded levels exist: {chk}"))
   }
-  
+
   fac <- factor(vec, levels = lev_mutation_effect)
-  
+
   return(fac)
-  
 }

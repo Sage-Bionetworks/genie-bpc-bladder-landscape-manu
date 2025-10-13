@@ -25,24 +25,21 @@ if ((dft_pt$record_id %>% duplicated %>% any)) {
 }
 # At the time we started working there was only one index cancer per
 #  record id.  Double checking this as we go:
-if ((dft_ca_ind %>% 
-     count(record_id, ca_seq, sort = T) %>%
-     pull(n) %>% is_greater_than(1) %>% any)) {
+if (
+  (dft_ca_ind %>%
+    count(record_id, ca_seq, sort = T) %>%
+    pull(n) %>%
+    is_greater_than(1) %>%
+    any)
+) {
   stop("Some patients have >1 index cancer - adjust as needed.")
 }
 
-# Additional filtering can be done here.  
-
-
-
-
-
-
-
+# Additional filtering can be done here.
 
 dft_cohort_keys <- dft_ca_ind %>% select(record_id, ca_seq)
 chk_keys_unique <- count(dft_cohort_keys, record_id, ca_seq) %>%
-  pull(n) %>% 
+  pull(n) %>%
   max %>%
   is_in(1)
 if (!chk_keys_unique) {
@@ -66,8 +63,12 @@ dft_cpt %<>% key_filt_help(.)
 dft_reg %<>% key_filt_help(.)
 dft_rad %<>% key_filt_help(.)
 
-cli_alert_info(glue("{n_row_cpt_old-nrow(dft_cpt)} rows removed from dft_cpt for being related to non index cancers"))
-cli_alert_info(glue("{n_row_reg_old-nrow(dft_reg)} rows removed from dft_reg for being related to non index cancers"))
+cli_alert_info(glue(
+  "{n_row_cpt_old-nrow(dft_cpt)} rows removed from dft_cpt for being related to non index cancers"
+))
+cli_alert_info(glue(
+  "{n_row_reg_old-nrow(dft_reg)} rows removed from dft_reg for being related to non index cancers"
+))
 
 
 # Create additional derived variables.
@@ -79,7 +80,8 @@ dft_cpt %<>%
       sample_type %in% "Local recurrence" ~ lev_st_simple[1],
       sample_type %in% "Lymph node metastasis" ~ lev_st_simple[2],
       sample_type %in% "Metastasis site unspecified" ~ lev_st_simple[2],
-      sample_type %in% "Not applicable or hematologic malignancy" ~ lev_st_simple[3],
+      sample_type %in% "Not applicable or hematologic malignancy" ~
+        lev_st_simple[3],
       sample_type %in% "Primary tumor" ~ lev_st_simple[1],
       T ~ NA_character_,
     ),
@@ -106,7 +108,7 @@ dft_icd %<>%
   arrange(icdo3_code) %>%
   rename(ca_d_site_txt = description)
 
-dft_ca_ind %<>% 
+dft_ca_ind %<>%
   left_join(
     .,
     dft_icd,
@@ -118,9 +120,6 @@ dft_ca_ind %<>%
   )
 
 
-
-
-
 # This is needed so the panels match what we have panel data on:
 cli::cli_alert_info(
   "Correcting any entries of 'UHN-OCA-v3' to 'UHN-OCA-V3'."
@@ -128,13 +127,11 @@ cli::cli_alert_info(
 dft_cpt %<>%
   mutate(
     cpt_seq_assay_id = if_else(
-      cpt_seq_assay_id %in% 'UHN-OCA-v3', 'UHN-OCA-V3',
+      cpt_seq_assay_id %in% 'UHN-OCA-v3',
+      'UHN-OCA-V3',
       cpt_seq_assay_id
     )
   )
-
-
-
 
 
 # There's a row in the regimen dataset that has a fairly clear data error.
@@ -143,16 +140,18 @@ dft_cpt %<>%
 # I feel comforatble fixing.
 # Note that I'm not fixing the drug-level data, just the regimen name.
 # This is a hard code, but I'm adding a whole bunch of conditions to make it
-#   only fire precisely while this data remains unchanged.  
+#   only fire precisely while this data remains unchanged.
 # Impressive coding, I know.
 dft_reg %<>%
   mutate(
     regimen_drugs = case_when(
-      record_id %in% "GENIE-DFCI-006944" &
+      record_id %in%
+        "GENIE-DFCI-006944" &
         ca_seq %in% 3 &
         str_detect(drugs_drug_1, "Cisplatin") &
-        dx_drug_start_int_1 %in% 281 & 
-        dx_drug_end_int_1 %in% 281 ~ "Carboplatin, Paclitaxel",
+        dx_drug_start_int_1 %in% 281 &
+        dx_drug_end_int_1 %in% 281 ~
+        "Carboplatin, Paclitaxel",
       T ~ regimen_drugs
     )
   )
@@ -160,27 +159,22 @@ dft_reg %<>%
 dft_reg %<>%
   mutate(
     regimen_drugs = case_when(
-      record_id %in% "GENIE-MSK-P-0018142" &
+      record_id %in%
+        "GENIE-MSK-P-0018142" &
         ca_seq %in% 2 &
         str_detect(drugs_drug_1, "Cisplatin") &
-        dx_drug_start_int_1 %in% 3867 & 
-        dx_drug_end_int_1 %in% 3867 ~ "Carboplatin, Paclitaxel",
+        dx_drug_start_int_1 %in% 3867 &
+        dx_drug_end_int_1 %in% 3867 ~
+        "Carboplatin, Paclitaxel",
       T ~ regimen_drugs
     )
   )
-
-        
-
-
-
-
-
 
 
 # Write datasets to derived location:
 write_wrap <- function(obj, file_name) {
   readr::write_rds(
-    x = obj, 
+    x = obj,
     file = here('data', 'cohort', paste0(file_name, ".rds"))
   )
 }
@@ -193,9 +187,3 @@ write_wrap(dft_path, file_name = "path")
 write_wrap(dft_reg, file_name = "reg")
 write_wrap(dft_cpt, file_name = "cpt")
 write_wrap(dft_rad, file_name = "rad")
-
-
-
-    
-    
-    

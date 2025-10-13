@@ -1,8 +1,7 @@
-
 cont_tab_variable_pair <- function(
-    dat,
-    var1,
-    var2
+  dat,
+  var1,
+  var2
 ) {
   dat %>%
     summarize(

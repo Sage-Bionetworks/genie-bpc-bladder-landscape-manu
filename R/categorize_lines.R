@@ -1,8 +1,7 @@
-
 # Lines of therapy categories, originally for the 2025 ASCO poster.
 categorize_lines <- function(reg_vec, factorize = T) {
   reg_vec <- tolower(reg_vec) # not permanent.
-  
+
   lot_cat_lev <- c(
     'Investigational (masked)',
     'Immunotherapy',
@@ -12,7 +11,7 @@ categorize_lines <- function(reg_vec, factorize = T) {
     'Pemetrexed monotherapy',
     'Other'
   )
-  
+
   rtn <- case_when(
     # after a long discussion we decided to include nivolumab here even though
     #   it's not in the 2L io figure.
@@ -24,10 +23,10 @@ categorize_lines <- function(reg_vec, factorize = T) {
     str_detect(reg_vec, 'pemetrex') ~ lot_cat_lev[6],
     T ~ lot_cat_lev[7]
   )
-  
-  if (factorize) { 
+
+  if (factorize) {
     rtn <- factor(rtn, levels = lot_cat_lev)
   }
-  
+
   return(rtn)
 }

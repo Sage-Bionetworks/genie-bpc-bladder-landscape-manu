@@ -1,33 +1,36 @@
 # Creates an output version of Figure 1 for the paper.
 
-library(purrr); library(fs); library(here);
+library(purrr)
+library(fs)
+library(here)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_out <- here('output', 'fig', 'manu')
 
 os_by_stage <- readr::read_rds(
-    file = here('data', 'survival', 'os_dx_by_stage_manu.rds')
+  file = here('data', 'survival', 'os_dx_by_stage_manu.rds')
 )
 
 first_line_platinum <- readr::read_rds(
-  file = here('data', 'survival', 'first_line_platinum', 'gg_first_line_platinum.rds')
+  file = here(
+    'data',
+    'survival',
+    'first_line_platinum',
+    'gg_first_line_platinum.rds'
+  )
 )
 
 first_line_by_ddr <- readr::read_rds(
-  file = here('data', 'survival', 'ddr_onco', 
-              'gg_met_ddr_manu.rds')
+  file = here('data', 'survival', 'ddr_onco', 'gg_met_ddr_manu.rds')
 )
 
 first_line_by_ddr_plat <- readr::read_rds(
-  file = here('data', 'survival', 'ddr_onco', 
-              'gg_met_ddr_plat_split.rds')
+  file = here('data', 'survival', 'ddr_onco', 'gg_met_ddr_plat_split.rds')
 )
 
 second_line_by_ddr_io <- readr::read_rds(
-  file = here('data', 'survival', 'ddr_onco', 
-              'gg_os_2l_io_ddr.rds')
+  file = here('data', 'survival', 'ddr_onco', 'gg_os_2l_io_ddr.rds')
 )
-
 
 
 fig1_comb <- plot_grid(
@@ -43,15 +46,18 @@ fig1_comb <- plot_grid(
 )
 
 
-
 ggsave(
   plot = fig1_comb,
   filename = here(dir_out, 'fig1.pdf'),
-  height = 7.5, width = 7, scale = 1.8
+  height = 7.5,
+  width = 7,
+  scale = 1.8
 )
 
 ggsave(
   plot = fig1_comb,
   filename = here(dir_out, 'fig1.png'),
-  height = 7.5, width = 7, scale = 1.8
+  height = 7.5,
+  width = 7,
+  scale = 1.8
 )

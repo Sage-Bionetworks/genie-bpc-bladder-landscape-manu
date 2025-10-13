@@ -2,7 +2,9 @@
 #   chemotherapies.  They were interested in taxanes and similar.
 # Taxanes are paclitaxel, docetaxel, cabizitaxel
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_output <- here('data', 'survival', 'line23')
@@ -12,8 +14,8 @@ dft_reg <- readr::read_rds(here('data', 'cohort', "reg.rds"))
 dft_lot <- readr::read_rds(here('data', 'dmet', 'lines_of_therapy', 'lot.rds'))
 dft_cpt <- readr::read_rds(here('data', 'cohort', "cpt_aug.rds"))
 
-dft_agent_23_line <- dft_lot %>% 
-  filter(line_therapy %in% c(2,3)) %>%
+dft_agent_23_line <- dft_lot %>%
+  filter(line_therapy %in% c(2, 3)) %>%
   filter(!(regimen_drugs %in% "Investigational Regimen")) %>%
   count(regimen_drugs, line_therapy, sort = T) %>%
   mutate(line_therapy = paste0("line_", line_therapy)) %>%
@@ -26,7 +28,6 @@ readr::write_rds(
 )
 
 
-
 # For now I really don't know what the question is.  But we definitely
 #   have the numbers to do KM curves for single agent taxanes.
 
@@ -37,16 +38,16 @@ dft_line23_tax <- dft_reg %>%
     select(dft_lot, record_id, ca_seq, regimen_number, line_therapy),
     by = c('record_id', 'ca_seq', 'regimen_number')
   ) %>%
-  filter(line_therapy %in% c(2,3))
+  filter(line_therapy %in% c(2, 3))
 
 dft_line23_tax %<>%
   arrange(line_therapy, regimen_drugs) %>%
   mutate(
     reg_line = paste0(regimen_drugs, "[", line_therapy, "L]"),
     reg_line = fct_inorder(reg_line)
-  ) 
+  )
 
-dft_first_cpt <- get_first_cpt(dft_ca_ind, dft_cpt) %>% 
+dft_first_cpt <- get_first_cpt(dft_ca_ind, dft_cpt) %>%
   rename(dx_first_cpt_rep_yrs = dx_cpt_rep_yrs)
 
 dft_line23_tax %<>%
@@ -68,18 +69,18 @@ readr::write_rds(
 )
 
 
-
-
-dft_line23_tax %<>% 
+dft_line23_tax %<>%
   remove_trunc_gte_event(
     trunc_var = 'reg_start_first_cpt_rep_yrs',
     event_var = 'tt_os_g_yrs'
   )
 
-dft_line23_tax %<>% 
+dft_line23_tax %<>%
   mutate(
     reg_start_first_cpt_rep_yrs = ifelse(
-      reg_start_first_cpt_rep_yrs < 0, 0, reg_start_first_cpt_rep_yrs
+      reg_start_first_cpt_rep_yrs < 0,
+      0,
+      reg_start_first_cpt_rep_yrs
     )
   )
 
@@ -109,11 +110,16 @@ readr::write_rds(
 
 # A little extra but I like the idea:
 gg_line23_legend <- tribble(
-  ~drug, ~line,
-  "Paclitaxel", "2L",
-  "Paclitaxel", "3L",
-  "Docetaxel", "2L",
-  "Docetaxel", "3L"
+  ~drug,
+  ~line,
+  "Paclitaxel",
+  "2L",
+  "Paclitaxel",
+  "3L",
+  "Docetaxel",
+  "2L",
+  "Docetaxel",
+  "3L"
 ) %>%
   mutate(
     drug = fct_inorder(drug),
@@ -122,20 +128,17 @@ gg_line23_legend <- tribble(
   ) %>%
   mutate(dl = paste0(drug, line)) %>%
   ggplot(., aes(x = line, y = drug, fill = dl)) +
-    geom_tile() + 
-    scale_fill_manual(
-      values = c("#ee99aa", "#994455", "#6699cc", "#004488")[c(1,3,2,4)]
-    ) + 
-  theme_void() + 
+  geom_tile() +
+  scale_fill_manual(
+    values = c("#ee99aa", "#994455", "#6699cc", "#004488")[c(1, 3, 2, 4)]
+  ) +
+  theme_void() +
   theme(
     legend.position = "none",
     axis.text = element_text(size = 11)
   )
-  
+
 readr::write_rds(
   x = gg_line23_legend,
   file = here(dir_output, 'gg_line23_legend.rds')
 )
-
-
-  

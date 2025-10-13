@@ -1,11 +1,12 @@
 # Description:  Calculate the panel size and TMB for each sample.
 #   This code is adapated from Alex Baras's code used in early genie releases.
 
-
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
-# There was an error with 2.4 for dbplyr when calling getBM() below. 
+# There was an error with 2.4 for dbplyr when calling getBM() below.
 # This fixed it:
 # devtools::install_version("dbplyr", version = "2.3.4")
 
@@ -24,7 +25,7 @@ dft_maf <- readr::read_tsv(
 dft_gp_all <- readr::read_rds(
   here('data', 'genomic', 'gene_panel_all.rds')
 )
-vec_relevant_panel <- dft_gp_all %>% 
+vec_relevant_panel <- dft_gp_all %>%
   pull(cpt_seq_assay_id) %>%
   unique(.)
 
@@ -33,13 +34,11 @@ vec_relevant_panel <- dft_gp_all %>%
 dft_bed <- readr::read_tsv(
   here('data-raw', 'genomic', 'genie_combined.bed')
 )
-dft_bed %<>% 
+dft_bed %<>%
   filter(SEQ_ASSAY_ID %in% vec_relevant_panel)
 
 dft_bed %<>% filter(includeInPanel)
 # For some reason ^ does not change the result, which is odd.
-
-
 
 # Part 1:  Get the data for each panel.
 # I left this as lists for simplicity but it may be cleaner to do list columns
@@ -51,9 +50,9 @@ list_bed <- lapply(
   list_bed,
   function(x) {
     GR <- GRanges(
-      seqnames = Rle(paste0("chr", x$Chromosome)), 
+      seqnames = Rle(paste0("chr", x$Chromosome)),
       ranges = IRanges(
-        start = x$Start_Position, 
+        start = x$Start_Position,
         end = x$End_Position
       )
     )
@@ -65,43 +64,44 @@ list_bed <- lapply(
 # get GRanges for each bed limited to coding in grch37 as per ensemb biomart
 # connect to ensembl for human'
 ens <- useMart(
-  "ensembl", 
-  dataset = "hsapiens_gene_ensembl", 
+  "ensembl",
+  dataset = "hsapiens_gene_ensembl",
   host = "https://grch37.ensembl.org"
 )
 # get all protein coding exons
 geneAnnot <- getBM(
   attributes = c(
-    "ensembl_gene_id", 
-    "ensembl_transcript_id", 
-    "genomic_coding_start", 
-    "genomic_coding_end", 
-    "ensembl_exon_id", 
-    "external_gene_name", 
-    "strand", 
-    "start_position", 
-    "end_position", 
-    "exon_chrom_start", 
-    "exon_chrom_end", 
+    "ensembl_gene_id",
+    "ensembl_transcript_id",
+    "genomic_coding_start",
+    "genomic_coding_end",
+    "ensembl_exon_id",
+    "external_gene_name",
+    "strand",
+    "start_position",
+    "end_position",
+    "exon_chrom_start",
+    "exon_chrom_end",
     "chromosome_name"
   ),
   filters = c(
-    "biotype", 
+    "biotype",
     "chromosome_name"
   ),
   values = list(
-    A = "protein_coding", 
+    A = "protein_coding",
     B = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y"
   ),
   mart = ens
 )
 
 # restrict to records with none NA genomic coding coordinates
-idx <- !(is.na(geneAnnot$genomic_coding_start) | is.na(geneAnnot$genomic_coding_start))
+idx <- !(is.na(geneAnnot$genomic_coding_start) |
+  is.na(geneAnnot$genomic_coding_start))
 codingGR <- GRanges(
-  seqnames = Rle(paste0("chr", geneAnnot$chromosome_name[idx])), 
+  seqnames = Rle(paste0("chr", geneAnnot$chromosome_name[idx])),
   ranges = IRanges(
-    start = geneAnnot$genomic_coding_start[idx], 
+    start = geneAnnot$genomic_coding_start[idx],
     end = geneAnnot$genomic_coding_end[idx]
   )
 )
@@ -109,12 +109,12 @@ seqlevels(codingGR) <- sort(seqlevels(codingGR))
 
 # contrust GRanges for coding sequence only
 list_bed_exon <- lapply(
-  list_bed, 
+  list_bed,
   function(x) {
     GR <- reduce(
       pintersect(
         findOverlapPairs(
-          reduce(x), 
+          reduce(x),
           reduce(codingGR)
         )
       )
@@ -155,7 +155,7 @@ dft_panel_stats %<>%
     )
   )
 
-dft_panel_stats %<>% 
+dft_panel_stats %<>%
   dplyr::select(-c(list_bed, list_bed_exon))
 
 
@@ -171,11 +171,11 @@ dft_cpt_addon <- left_join(
   tumor_aggr,
   by = c(SAMPLE_ID = "Tumor_Sample_Barcode")
 ) %>%
-  mutate(numberMutations = if_else(is.na(numberMutations), 0, numberMutations)) 
+  mutate(numberMutations = if_else(is.na(numberMutations), 0, numberMutations))
 
 # Update: I'm also interested in what happens we limit to oncogenic mutations.
 # This is the same steps as above, with one extra filter and a new name.
-tumor_aggr_onco <- dft_maf %>% 
+tumor_aggr_onco <- dft_maf %>%
   filter(ONCOGENIC %in% c("Likely Oncogenic", "Oncogenic")) %>%
   # Doing the filter for silent mutations should be entirely redundant here.
   dplyr::count(Tumor_Sample_Barcode, name = "numberMutations_onco")
@@ -187,11 +187,11 @@ dft_cpt_addon <- left_join(
 ) %>%
   mutate(
     numberMutations_onco = if_else(
-      is.na(numberMutations_onco), 
-      0, 
+      is.na(numberMutations_onco),
+      0,
       numberMutations_onco
     )
-  ) 
+  )
 
 dft_cpt_addon %<>%
   left_join(
@@ -208,9 +208,6 @@ dft_cpt_addon %<>%
 
 # set.seed(3)
 # dft_cpt_addon %>% filter(str_detect(SEQ_ASSAY_ID, "UHN-555")) %>% dplyr::select(SAMPLE_ID, tidyselect::contains("tmb_Mb")) %>% sample_n(10)
-
-
-
 
 # Part 3:  Add these new calculations back into the cpt file.
 dft_cpt_addon %<>%
@@ -234,6 +231,3 @@ readr::write_rds(
   x = dft_cpt_aug,
   file = here('data', 'cohort', 'cpt_aug.rds')
 )
-
-
-

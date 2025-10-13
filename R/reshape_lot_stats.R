@@ -1,8 +1,7 @@
-
 reshape_lot_stats <- function(
-    dat_lot,
-    n_denom = NULL,
-    digits_t = 2
+  dat_lot,
+  n_denom = NULL,
+  digits_t = 2
 ) {
   rtn <- dat_lot %>%
     pivot_longer(
@@ -19,20 +18,24 @@ reshape_lot_stats <- function(
     pivot_wider(
       names_from = quantile,
       values_from = value
-    ) 
-  
-  rtn %<>% mutate(
-    str = case_when(
-      is.na(q25) ~ as.character(qNA),
-      T ~ as.character(
-        glue("{form_f(q50, digits_t)} ({form_f(q25, digits_t)}, {form_f(q75, digits_t)})")
+    )
+
+  rtn %<>%
+    mutate(
+      str = case_when(
+        is.na(q25) ~ as.character(qNA),
+        T ~
+          as.character(
+            glue(
+              "{form_f(q50, digits_t)} ({form_f(q25, digits_t)}, {form_f(q75, digits_t)})"
+            )
+          )
       )
     )
-  )
-  
+
   rtn %<>%
     select(line_therapy_txt, name, str)
-  
+
   if (!is.null(n_denom)) {
     # Show the percentage relative to the denominator if true.
     rtn %<>%
@@ -44,17 +47,16 @@ reshape_lot_stats <- function(
         )
       )
   }
-  
-  
+
   rtn %<>%
     pivot_wider(
       names_from = line_therapy_txt,
       values_from = str
     ) %>%
-    rename(quantity = name) %>% 
+    rename(quantity = name) %>%
     rename_all(
       stringr::str_to_title
     )
-  
+
   return(rtn)
 }
