@@ -1,7 +1,9 @@
 # Description: Grabs the raw data from Synapse and stores it in the data-raw folder.
 # Author: Alex Paynter
 
-library(purrr); library(fs); library(here)
+library(purrr)
+library(fs)
+library(here)
 purrr::walk(.x = fs::dir_ls('R'), .f = source)
 
 # The Synapse folder containing the clinical data files.
@@ -18,7 +20,7 @@ geno_files_included <- c(
   "data_mutations_extended.txt",
   "data_CNA.txt",
   "data_fusions.txt",
-  'data_sv.txt',
+  'data_sv.txt'
   # "data_cna_hg19.seg"
   # don't see a genomic information file
 )
@@ -38,50 +40,41 @@ if (any(stringr::str_detect(df_clin_children$name, ".csv^"))) {
 }
 
 syn_store_in_dataraw <- function(sid, loc = here('data-raw'), v = NULL) {
-  
   # not sure how to do this with synGet, so we'll do a conditional for the version.
   if (is.null(v)) {
     synGet(
-      entity = sid, 
+      entity = sid,
       downloadLocation = loc,
       ifcollision = 'overwrite.local'
-    ) 
+    )
   } else {
     synGet(
-      entity = sid, 
+      entity = sid,
       downloadLocation = loc,
       ifcollision = 'overwrite.local',
       version = v
-    ) 
+    )
   }
 }
 
-purrr::walk(.x = df_clin_children$id, 
-            .f = syn_store_in_dataraw)
-
-
-
-
-
+purrr::walk(.x = df_clin_children$id, .f = syn_store_in_dataraw)
 
 
 # Get the genomic data from the "cBioPortal_files" directory.
 df_geno_children <- synGetChildren(synid_cbio_data) %>%
   as.list %>%
-  purrr::map_dfr(.x = .,
-                 .f = as_tibble)
+  purrr::map_dfr(.x = ., .f = as_tibble)
 
 df_geno_children %<>%
   mutate(
     is_panel = str_detect(name, "^data_gene_panel_.*\\.txt$"),
     is_included = name %in% geno_files_included
   ) %>%
-  filter(is_panel | is_included) 
+  filter(is_panel | is_included)
 
-purrr::walk(.x = df_geno_children$id, 
-            .f = \(z) {
-              syn_store_in_dataraw(z, loc = here("data-raw", "genomic"))
-            })
+purrr::walk(.x = df_geno_children$id, .f = \(z) {
+  syn_store_in_dataraw(z, loc = here("data-raw", "genomic"))
+})
 
 
 syn_store_in_dataraw(
@@ -96,33 +89,28 @@ syn_store_in_dataraw(
 )
 
 
-
-
-
 # Main GENIE downloads.
 # latest, 17.5 at writing.  Using the link to the 17.5 release doesn't work.
-main_genie_folder <- 'syn5521835' 
+main_genie_folder <- 'syn5521835'
 df_main_children <- synGetChildren(main_genie_folder) %>%
   as.list %>%
-  purrr::map_dfr(.x = .,
-                 .f = as_tibble)
+  purrr::map_dfr(.x = ., .f = as_tibble)
 
 # Don't think we need the panel files here.
 df_main_children %<>%
-  filter(name %in% c(geno_files_included, 
-                     'genomic_information.txt',
-                     'data_clinical_patient.txt',
-                     'data_clinical_sample.txt'))
+  filter(
+    name %in%
+      c(
+        geno_files_included,
+        'genomic_information.txt',
+        'data_clinical_patient.txt',
+        'data_clinical_sample.txt'
+      )
+  )
 
-purrr::walk(.x = df_main_children$id, 
-            .f = \(z) {
-              syn_store_in_dataraw(
-                z, 
-                loc = here("data-raw", "genomic" , 'main_genie')
-              )})
-
-
-
-
-
-
+purrr::walk(.x = df_main_children$id, .f = \(z) {
+  syn_store_in_dataraw(
+    z,
+    loc = here("data-raw", "genomic", 'main_genie')
+  )
+})

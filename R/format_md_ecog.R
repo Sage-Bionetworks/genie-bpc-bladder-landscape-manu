@@ -1,9 +1,9 @@
 # Turns the variable into a factor for easier processing.
 format_md_ecog <- function(
-    col, 
-    cluster_high_levels = T, 
-    drop_unused = F,
-    na_lab = NULL
+  col,
+  cluster_high_levels = T,
+  drop_unused = F,
+  na_lab = NULL
 ) {
   f <- factor(
     str_sub(col, end = 20L), # just to trim this mess down.
@@ -24,26 +24,25 @@ format_md_ecog <- function(
       "4: Completely disabled"
     )
   )
-  
+
   if (cluster_high_levels) {
-    f %<>% forcats::fct_collapse(
-      `2/3/4: Ambulatory to disabled` = c(
-        "2: Ambulatory/selfcare",
-        "3: Limited selfcare",
-        "4: Completely disabled"
+    f %<>%
+      forcats::fct_collapse(
+        `2/3/4: Ambulatory to disabled` = c(
+          "2: Ambulatory/selfcare",
+          "3: Limited selfcare",
+          "4: Completely disabled"
+        )
       )
-    )
   }
-  
+
   if (!is.null(na_lab)) {
-    print(na_lab)
     f <- forcats::fct_na_value_to_level(f, level = na_lab)
   }
-      
-  
+
   if (drop_unused) {
     f <- forcats::fct_drop(f)
   }
-  
+
   return(f)
 }

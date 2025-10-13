@@ -14,6 +14,7 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 # Clinical #
 ############
 source(here('analysis', 'script', 'folder_setup.R'))
+# get_raw_data.R takes several minutes, due to the need to get main GENIE data.
 source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'create_cohort_data.R'))
 source(here('analysis', 'script', 'create_characteristics_table.R'))
