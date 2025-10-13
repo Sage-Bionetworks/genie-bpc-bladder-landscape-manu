@@ -90,15 +90,7 @@ source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
 #   outputs form the surv_ddr_data_all_1L.R script above.
 source(here('analysis', 'script', 'table_print_ddr_asco_2025.R'))
 
-# This script has near total redundancy with the ...1L.R script above.
-# But for the moment it works.
-source(here('analysis', 'script', 'surv_ddr_data_all_2L.R'))
-
-# Currently this one can't be updated because it's actually line 2 and 3:
-
-# DDR neoadjuvant analyses:
-source(here('analysis', 'script', 'surv_ddr_neoadj.R'))
-
+# Deleted the 2L script for now.  It can be created again by just changing the 1L script.
 
 source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures.R'))
 source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures_lot.R'))

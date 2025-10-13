@@ -4,27 +4,27 @@ library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also load
 
 
-dir_out <- here('data', 'survival', 'ddr_onco')
+dir_out <- here('data', 'survival', 'ddr_onco_1L')
 
-dft_met_ddr_surv <- read_rds(here(dir_out, 'met_ddr_surv.rds'))
+dft_met_ddr_surv <- read_rds(here(dir_out, 'met_ddr_surv_plat_1L.rds'))
 
 # Create the basic survival plots
 
 dft_met_ddr_surv %<>%
   remove_trunc_gte_event(
-    trunc_var = 'fmr_fcpt_yrs',
-    event_var = 'tt_os_first_met_reg_yrs'
+    trunc_var = 'reg_fcpt_yrs',
+    event_var = 'tt_os_g_yrs'
   )
 
 dft_met_ddr_surv %<>%
-  mutate(fmr_fcpt_yrs = ifelse(fmr_fcpt_yrs < 0, 0, fmr_fcpt_yrs))
+  mutate(reg_fcpt_yrs = ifelse(reg_fcpt_yrs < 0, 0, reg_fcpt_yrs))
 
 surv_obj_os_fmr <- with(
   dft_met_ddr_surv,
   Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
+    time = reg_fcpt_yrs,
+    time2 = tt_os_g_yrs,
+    event = os_g_status
   )
 )
 
@@ -100,9 +100,9 @@ dft_met_ddr_surv %<>%
 surv_obj_os_fmr <- with(
   dft_met_ddr_surv,
   Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
+    time = reg_fcpt_yrs,
+    time2 = tt_os_g_yrs,
+    event = os_g_status
   )
 )
 

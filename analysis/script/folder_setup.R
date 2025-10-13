@@ -21,5 +21,4 @@ dir_create('output', 'aacr_ss24', 'img')
 
 fs::dir_create(here('data', 'survival', 'ddr_onco_1L'))
 
-
 fs::dir_create(here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome'))

@@ -3,55 +3,59 @@ library(here)
 library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source) # also load
 
-dft_met_ddr_surv <- readr::read_rds(
-  here('data', 'survival', 'ddr_onco', 'met_ddr_surv.rds')
+met_plat_1l_surv <- readr::read_rds(
+  here('data', 'survival', 'ddr_onco_1L', 'met_ddr_surv_plat_1L.rds')
 )
 
-dir_out <- here('data', 'survival', 'ddr_onco')
+dir_out <- here('data', 'survival', 'ddr_onco_1L')
 
 
 # Just for clarity:
-dft_met_ddr_surv %<>% rename(ddr_onco_alt = ddr_before_entry)
+met_plat_1l_surv %<>% rename(ddr_onco_alt = ddr_before_entry)
+
+met_plat_1l_surv %<>%
+  mutate(reg_fcpt_yrs = ifelse(reg_fcpt_yrs < 0, 0, reg_fcpt_yrs))
+
+met_plat_1l_surv %<>%
+  remove_trunc_gte_event(
+    trunc_var = 'reg_fcpt_yrs',
+    event_var = 'tt_os_g_yrs'
+  )
 
 
 surv_obj_os_fmr <- with(
-  dft_met_ddr_surv,
+  met_plat_1l_surv,
   Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
+    time = reg_fcpt_yrs,
+    time2 = tt_os_g_yrs,
+    event = os_g_status
   )
 )
 
 # Some survival code I should probaly move later on:
 dft_cox_univariate <- coxph(
   Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
+    time = reg_fcpt_yrs,
+    time2 = tt_os_g_yrs,
+    event = os_g_status
   ) ~
     ddr_onco_alt,
-  data = dft_met_ddr_surv
+  data = met_plat_1l_surv
 ) %>%
   broom::tidy(., conf.int = T)
 # This gets save below in a big object with the other models.
 
-dft_met_ddr_surv %<>%
+met_plat_1l_surv %<>%
   mutate(
-    de_novo_met = if_else(
-      dx_dmet_yrs > 0,
-      1,
-      0
-    )
+    de_novo_met = as.numeric(de_novo_met)
   )
 
-
-dft_met_ddr_surv_mod_ready <- dft_met_ddr_surv %>%
+met_plat_1l_surv_mod_ready <- met_plat_1l_surv %>%
   mutate(dob_reg_start_yrs = dob_reg_start_days / 365.25) %>%
   select(
-    fmr_fcpt_yrs,
-    tt_os_first_met_reg_yrs,
-    os_first_met_reg_status,
+    reg_fcpt_yrs,
+    tt_os_g_yrs,
+    os_g_status,
     ddr_onco_alt,
     de_novo_met,
     dob_reg_start_yrs,
@@ -68,7 +72,7 @@ dft_met_ddr_surv_mod_ready <- dft_met_ddr_surv %>%
   ) # easier for me.
 
 readr::write_rds(
-  dft_met_ddr_surv_mod_ready,
+  met_plat_1l_surv_mod_ready,
   here(dir_out, "met_ddr_surv_mod_ready.rds")
 )
 
@@ -76,12 +80,12 @@ readr::write_rds(
 # Some problems with this as we have ECOG data that's about half missing.
 dft_cox_complete_cases <- coxph(
   Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
+    time = reg_fcpt_yrs,
+    time2 = tt_os_g_yrs,
+    event = os_g_status
   ) ~
     .,
-  data = dft_met_ddr_surv_mod_ready
+  data = met_plat_1l_surv_mod_ready
 ) %>%
   broom::tidy(., conf.int = T)
 # This gets saved below along with the other models.
@@ -94,12 +98,12 @@ blocks <- construct.blocks(
 )
 pm <- make.predictorMatrix(
   data = dplyr::select(
-    dft_met_ddr_surv_mod_ready,
+    met_plat_1l_surv_mod_ready,
     -c(
       # just taking away the survival variables for predicting md_ecog_imp_sum
-      fmr_fcpt_yrs,
-      tt_os_first_met_reg_yrs,
-      os_first_met_reg_status
+      reg_fcpt_yrs,
+      tt_os_g_yrs,
+      os_g_status
     )
   ),
   blocks = blocks
@@ -111,7 +115,7 @@ pm <- make.predictorMatrix(
 #   the model (3 terms).
 
 mids_surv <- mice(
-  data = dft_met_ddr_surv_mod_ready,
+  data = met_plat_1l_surv_mod_ready,
   maxit = 5,
   m = 15,
   seed = 2341,
@@ -144,9 +148,9 @@ mira_surv <- with(
   mids_surv,
   coxph(
     Surv(
-      time = fmr_fcpt_yrs,
-      time2 = tt_os_first_met_reg_yrs,
-      event = os_first_met_reg_status
+      time = reg_fcpt_yrs,
+      time2 = tt_os_g_yrs,
+      event = os_g_status
     ) ~
       ddr_onco_alt +
         de_novo_met +
@@ -188,13 +192,13 @@ readr::write_rds(
   here(dir_out, "cox_tidy_all_models.rds")
 )
 
-n_uni <- dft_met_ddr_surv_mod_ready %>%
+n_uni <- met_plat_1l_surv_mod_ready %>%
   filter(!is.na(ddr_onco_alt)) %>%
   nrow(.)
-n_cc <- dft_met_ddr_surv_mod_ready %>%
+n_cc <- met_plat_1l_surv_mod_ready %>%
   filter(complete.cases(.)) %>%
   nrow(.)
-n_mi <- dft_met_ddr_surv_mod_ready %>%
+n_mi <- met_plat_1l_surv_mod_ready %>%
   nrow(.)
 
 dft_cox_all_mods %<>%
@@ -210,48 +214,25 @@ dft_cox_all_mods %<>%
 
 # Adapt this code to use the new
 
-# gg_cox_mod_compare <- ggplot(
-#   dat = mutate(dft_cox_all_mods, term = fct_rev(term)),
-#   aes(x = estimate, xmin = conf.low, xmax = conf.high, y = term,
-#       color = model_disp)
-# ) +
-#   geom_vline(color = 'gray70', linewidth = 2, alpha = 0.5, xintercept = 0) +
-#   geom_pointrange(position = position_dodge2(width = 0.5),
-#                   shape = 124) +
-#   theme_bw() +
-#   scale_color_highcontrast() +
-#   labs(y = NULL,
-#        x = "Cumulative log hazard ratio (95% CI)") +
-#   guides(color = guide_legend(title = NULL)) +
-#   theme(legend.position = "bottom")
+gg_cox_mod_compare <- ggplot(
+  dat = mutate(dft_cox_all_mods, term = fct_rev(term)),
+  aes(
+    x = estimate,
+    xmin = conf.low,
+    xmax = conf.high,
+    y = term,
+    color = model_disp
+  )
+) +
+  geom_vline(color = 'gray70', linewidth = 2, alpha = 0.5, xintercept = 0) +
+  geom_pointrange(position = position_dodge2(width = 0.5), shape = 124) +
+  theme_bw() +
+  scale_color_highcontrast() +
+  labs(y = NULL, x = "Cumulative log hazard ratio (95% CI)") +
+  guides(color = guide_legend(title = NULL)) +
+  theme(legend.position = "bottom")
 
 readr::write_rds(
   gg_cox_mod_compare,
   here(dir_out, "gg_cox_mod_compare.rds")
 )
-
-
-dft_alt_onco_ddr <- readr::read_rds(
-  here('data', 'survival', 'ddr_onco', 'alt_onco_ddr.rds')
-)
-
-ercc2_altered <- dft_alt_onco_ddr %>%
-  filter(hugo %in% 'ERCC2') %>%
-  pull(record_id)
-
-dft_met_ddr_surv %<>%
-  mutate(
-    ercc2 = record_id %in% ercc2_altered
-  )
-
-surv_ddr <- with(
-  dft_met_ddr_surv,
-  Surv(
-    time = fmr_fcpt_yrs,
-    time2 = tt_os_first_met_reg_yrs,
-    event = os_first_met_reg_status
-  )
-)
-
-survfit(surv_ddr ~ ercc2, data = dft_met_ddr_surv)
-coxph(surv_ddr ~ ercc2, data = dft_met_ddr_surv)
