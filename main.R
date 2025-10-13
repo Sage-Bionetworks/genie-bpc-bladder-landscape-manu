@@ -83,8 +83,10 @@ source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 
 source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 
+source(here('analysis', 'script', 'surv_ddr_data_all_1L.R'))
+source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R'))
+source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
 
-source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 source(here('analysis', 'script', 'surv_platinum_first_line.R'))
 source(here('analysis', 'script', 'surv_platinum_first_line_model.R'))
 source(here('analysis', 'script', 'surv_first_line_immunotherapy.R'))
