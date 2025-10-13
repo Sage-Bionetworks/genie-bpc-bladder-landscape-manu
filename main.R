@@ -90,8 +90,8 @@ source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
 #   outputs form the surv_ddr_data_all_1L.R script above.
 source(here('analysis', 'script', 'table_print_ddr_asco_2025.R'))
 
-
-# 2L DDR-related analyses
+# This script has near total redundancy with the ...1L.R script above.
+# But for the moment it works.
 source(here('analysis', 'script', 'surv_ddr_data_all_2L.R'))
 
 source(here('analysis', 'script', 'surv_second_line.R'))

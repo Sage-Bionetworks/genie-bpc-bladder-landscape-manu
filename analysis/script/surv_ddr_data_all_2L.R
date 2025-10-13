@@ -44,7 +44,7 @@ rel_reg <- lot %>%
 
 # Add in the regimen start time from dob.
 # Have to reconstruct as it's not available in this cohort.
-rec_ca <- c('record_id', 'ca_seq')
+rc_vec <- c('record_id', 'ca_seq')
 rel_reg <- left_join(
   rel_reg,
   select(dft_ca_ind, record_id, ca_seq, dob_ca_dx_days),
