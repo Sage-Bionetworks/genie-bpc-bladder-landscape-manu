@@ -38,11 +38,13 @@ char_bpc %<>%
 # Pull in the appropriate main GENIE data:
 mg_pt <- readr::read_tsv(
   here('data-raw', 'genomic', 'main_genie', 'data_clinical_patient.txt'),
-  comment = "#"
+  comment = "#",
+  show_col_types = F
 )
 mg_samp <- readr::read_tsv(
   here('data-raw', 'genomic', 'main_genie', 'data_clinical_sample.txt'),
-  comment = "#"
+  comment = "#",
+  show_col_types = F
 )
 blad_samp_mg <- readr::read_rds(
   here('data', 'genomic', 'main_genie', 'bladder_samples_mg.rds')
