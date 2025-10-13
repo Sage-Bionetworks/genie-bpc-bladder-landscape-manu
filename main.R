@@ -80,8 +80,9 @@ source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 ############
 # Survival #
 ############
-source(here('analysis', 'script', 'surv_ercc3_platinum.R'))
-source(here('analysis', 'script', 'surv_ercc2_platinum.R'))
+
+source(here('analysis', 'script', 'basic_survival_descriptive.R'))
+
 
 source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 source(here('analysis', 'script', 'surv_platinum_first_line.R'))
