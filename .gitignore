@@ -71,6 +71,7 @@ vignettes/*.pdf
 ~$*.pptx
 ~$*.rtf
 ~$*.tmp
+~$*.zip
 Thumbs.db
 .DS_Store
 *.png
