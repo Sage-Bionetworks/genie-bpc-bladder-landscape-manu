@@ -35,7 +35,26 @@ if (
   stop("Some patients have >1 index cancer - adjust as needed.")
 }
 
+
 # Additional filtering can be done here.
+urothelial_carincoma_cases <- dft_cpt %>%
+  group_by(record_id, ca_seq) %>%
+  summarize(
+    any_uro_carc = any(
+      cpt_oncotree_code %in% included_oncotree_codes(),
+      na.rm = T
+    ),
+    .groups = 'drop'
+  ) %>%
+  filter(any_uro_carc) %>%
+  select(record_id, ca_seq)
+
+dft_ca_ind <-
+  left_join(
+    urothelial_carincoma_cases,
+    dft_ca_ind,
+    by = c('record_id', 'ca_seq')
+  )
 
 dft_cohort_keys <- dft_ca_ind %>% select(record_id, ca_seq)
 chk_keys_unique <- count(dft_cohort_keys, record_id, ca_seq) %>%
@@ -46,11 +65,11 @@ if (!chk_keys_unique) {
   cli::cli_abort("Duplicate keys found in create_cohort_data.R")
 }
 
-key_filt_help <- function(dat) {
+key_filt_help <- function(dat, keys = c('record_id', 'ca_seq')) {
   inner_join(
     dft_cohort_keys,
     dat,
-    by = c("record_id", "ca_seq"),
+    by = keys,
     multiple = "all" # default behavior in SQL and dplyr - just silences.
   )
 }
@@ -64,12 +83,17 @@ dft_reg %<>% key_filt_help(.)
 dft_rad %<>% key_filt_help(.)
 
 cli_alert_info(glue(
-  "{n_row_cpt_old-nrow(dft_cpt)} rows removed from dft_cpt for being related to non index cancers"
+  "{n_row_cpt_old-nrow(dft_cpt)} rows removed from dft_cpt for being related to non-index or non-urothelial cancers"
 ))
 cli_alert_info(glue(
-  "{n_row_reg_old-nrow(dft_reg)} rows removed from dft_reg for being related to non index cancers"
+  "{n_row_reg_old-nrow(dft_reg)} rows removed from dft_reg for being related to non-index or non-urothelial cancers"
 ))
 
+# Now also need to trim out some people with non-urothelial cases:
+dft_pt %<>% key_filt_help(., keys = 'record_id')
+dft_img %<>% key_filt_help(., keys = 'record_id')
+dft_med_onc %<>% key_filt_help(., keys = 'record_id')
+dft_path %<>% key_filt_help(., keys = 'record_id')
 
 # Create additional derived variables.
 lev_st_simple <- c("Primary tumor", "Metastatic", "Other")
