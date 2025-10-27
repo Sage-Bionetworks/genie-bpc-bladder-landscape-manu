@@ -30,7 +30,7 @@ dft_fus %<>% as_tibble(.)
 clin_samp %<>% as_tibble(.) %>% rename_all(tolower)
 
 # Pulled from the data guide for bladder:
-onco_bladder <- c('BLAD', 'BLCA', 'BLSC', 'UTUC', 'SCBC')
+onco_bladder <- included_oncotree_codes()
 
 samp_bladder <- clin_samp %>%
   filter(oncotree_code %in% onco_bladder) %>%

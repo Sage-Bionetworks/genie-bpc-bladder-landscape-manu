@@ -719,13 +719,14 @@ dft_met_loc <- dft_ca_ind %>%
   # variables that describe distant metastasis at/after dx.
   select(
     record_id,
+    ca_seq,
     matches(glue("^dmets_({vec_met_regex})")),
     matches("^dx_to_dmets_.+_yrs$")
   ) 
 
 dft_met_loc %<>%
   pivot_longer(
-    cols = -record_id,
+    cols = -c(record_id, ca_seq),
     names_to = "var",
     values_to = "value"
   ) %>%
@@ -734,8 +735,9 @@ dft_met_loc %<>%
     var = if_else(str_detect(var, "yrs"),
                    "dx_to_dmet_yrs",
                    "had_met")
-  ) %>%
-  pivot_wider(
+  ) 
+
+dft_met_loc %<>% pivot_wider(
     names_from = "var",
     values_from = "value"
   )
@@ -888,7 +890,7 @@ ggsave(
 
 ### R1.1.6b Metastatsis location (graph)
 
-```{r}
+```{r, include = T}
 gg_met_loc_bar
 ```
 
@@ -898,7 +900,7 @@ gg_met_loc_bar
 
 ```{r}
 upset_met_loc <- dft_met_loc %>%
-  select(record_id, met_loc, had_met) %>%
+  select(record_id, ca_seq, met_loc, had_met) %>%
   pivot_wider(
     names_from = met_loc,
     values_from = had_met
@@ -907,7 +909,7 @@ upset_met_loc <- dft_met_loc %>%
   plot_upset(.)
 
 upset_met_loc_abdomen <- dft_met_loc %>%
-  select(record_id, met_loc, had_met) %>%
+  select(record_id, ca_seq, met_loc, had_met) %>%
   pivot_wider(
     names_from = met_loc,
     values_from = had_met
@@ -919,7 +921,7 @@ upset_met_loc_abdomen <- dft_met_loc %>%
 cp_upset_abdomen <- convert_upset_to_cowplot(upset_met_loc_abdomen)
   
 upset_met_loc_extremity <- dft_met_loc %>%
-  select(record_id, met_loc, had_met) %>%
+  select(record_id, ca_seq, met_loc, had_met) %>%
   pivot_wider(
     names_from = met_loc,
     values_from = had_met

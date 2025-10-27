@@ -37,7 +37,7 @@ if (
 
 
 # Additional filtering can be done here.
-urothelial_carincoma_cases <- dft_cpt %>%
+urothelial_carcinoma_cases <- dft_cpt %>%
   group_by(record_id, ca_seq) %>%
   summarize(
     any_uro_carc = any(
@@ -50,7 +50,7 @@ urothelial_carincoma_cases <- dft_cpt %>%
   select(record_id, ca_seq)
 
 dft_ca_ind <-
-  left_join(
+  inner_join(
     urothelial_carincoma_cases,
     dft_ca_ind,
     by = c('record_id', 'ca_seq')
@@ -90,10 +90,10 @@ cli_alert_info(glue(
 ))
 
 # Now also need to trim out some people with non-urothelial cases:
-dft_pt %<>% key_filt_help(., keys = 'record_id')
-dft_img %<>% key_filt_help(., keys = 'record_id')
-dft_med_onc %<>% key_filt_help(., keys = 'record_id')
-dft_path %<>% key_filt_help(., keys = 'record_id')
+dft_pt %<>% filter(record_id %in% dft_ca_ind$record_id)
+dft_img %<>% filter(record_id %in% dft_ca_ind$record_id)
+dft_med_onc %<>% filter(record_id %in% dft_ca_ind$record_id)
+dft_path %<>% filter(record_id %in% dft_ca_ind$record_id)
 
 # Create additional derived variables.
 lev_st_simple <- c("Primary tumor", "Metastatic", "Other")

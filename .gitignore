@@ -52,6 +52,8 @@ vignettes/*.pdf
 *.sas7bdat
 *.sav
 *.txt
+*.rds
+~$*.rds
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth

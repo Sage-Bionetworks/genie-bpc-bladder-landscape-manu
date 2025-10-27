@@ -46,9 +46,9 @@ mg_samp <- readr::read_tsv(
   comment = "#",
   show_col_types = F
 )
-blad_samp_mg <- readr::read_rds(
-  here('data', 'genomic', 'main_genie', 'bladder_samples_mg.rds')
-)
+blad_samp_mg <- mg_samp %>%
+  filter(ONCOTREE_CODE %in% included_oncotree_codes()) %>%
+  pull(SAMPLE_ID)
 
 mg_samp %<>%
   filter(SAMPLE_ID %in% blad_samp_mg) %>%
