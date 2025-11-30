@@ -69,6 +69,7 @@ source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
 source(here('analysis', 'script', 'main_genie_panel_size.R'))
 source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 
+
 # DDR report:
 source(here('analysis', 'script', 'oncoprint_ddr.R'))
 source(here('analysis', 'script', 'ddr_definition_comparison.R'))
@@ -76,19 +77,28 @@ source(here('analysis', 'script', 'ddr_outcome_model_prep.R'))
 source(here('analysis', 'script', 'ddr_outcome_model_run.R'))
 source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 
+# need to set up quarto render still.
+rmarkdown::render(
+  input = here('analysis', 'report', 'genie-bpc-bladder-ddr.qmd'),
+  output_file = '02-genie-bpc-bladder-ddr.html',
+  output_dir = here('output', 'report')
+)
+
 
 ############
 # Survival #
 ############
 
 source(here('analysis', 'script', 'basic_survival_descriptive.R'))
-
 source(here('analysis', 'script', 'surv_ddr_data_all_1L.R'))
 source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R'))
+# Currently Figure 3 does not rely on anything but the univariate model.  Probably a concerning thing.
+source(here('analysis', 'script', 'manu-fig3.R'))
+source(here('analysis', 'script', 'manu-fig3-table-overlays.R'))
+
 source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
 # This has some console prints still, but it's successfully updated to use the
 #   outputs form the surv_ddr_data_all_1L.R script above.
-source(here('analysis', 'script', 'table_print_ddr_asco_2025.R'))
 
 # Deleted the 2L script for now.  It can be created again by just changing the 1L script.
 
