@@ -89,28 +89,26 @@ syn_store_in_dataraw(
 )
 
 
-# Main GENIE downloads.
-# latest, 17.5 at writing.  Using the link to the 17.5 release doesn't work.
-main_genie_folder <- 'syn5521835'
-df_main_children <- synGetChildren(main_genie_folder) %>%
-  as.list %>%
-  purrr::map_dfr(.x = ., .f = as_tibble)
+# This now stays firmly on 18.6-consortium using hard codes.
+# Tired of version shifting and errors.
+mg_clin_pt <- 'syn9734568.246' # notation means: synid.version
+mg_clin_samp <- 'syn9734573.256'
+mg_geno_info <- 'syn7444851.202'
+mg_mut <- 'syn5571527.344'
+mg_cna <- 'syn7213997.245'
+mg_sv <- 'syn44810233.43'
 
-# Don't think we need the panel files here.
-df_main_children %<>%
-  filter(
-    name %in%
-      c(
-        geno_files_included,
-        'genomic_information.txt',
-        'data_clinical_patient.txt',
-        'data_clinical_sample.txt'
-      )
-  )
+syn_store_in_dataraw(
+  sid = mg_clin_pt,
+  here("data-raw", "genomic", 'main_genie')
+)
 
-purrr::walk(.x = df_main_children$id, .f = \(z) {
-  syn_store_in_dataraw(
-    z,
-    loc = here("data-raw", "genomic", 'main_genie')
-  )
-})
+purrr::walk(
+  .x = c(mg_clin_pt, mg_clin_samp, mg_geno_info, mg_mut, mg_cna, mg_sv),
+  .f = \(z) {
+    syn_store_in_dataraw(
+      z,
+      loc = here("data-raw", "genomic", 'main_genie')
+    )
+  }
+)
