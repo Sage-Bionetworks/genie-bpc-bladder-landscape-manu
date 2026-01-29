@@ -19,8 +19,8 @@ OFUS="/data/genomic/main_genie/fus_onco.txt"
 # ONCO_ANNO_LOC - the location of the oncoKB annotator scripts.
 # ONCOKB_KEY - the API key for oncoKB.
 
+# Check that it exists with echo ${ONCOKB_KEY}
 # For all of these you can set with commands like "export ONCOKB_KEY=''"
-# check that it exists with echo ${ONCOKB_KEY}
 
 # It worked best for me to use the full path e.g. "/Users/.../oncokb-annotator"
 

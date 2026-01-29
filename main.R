@@ -67,8 +67,6 @@ source(here(
 # Run annotate_oncokb_main_genie.sh - see instructions there in comments.
 source(here('analysis', 'script', 'process_oncokb_output_main_genie.R'))
 source(here('analysis', 'script', 'main_genie_panel_size.R'))
-source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
-
 
 # DDR report:
 source(here('analysis', 'script', 'oncoprint_ddr.R'))

@@ -89,14 +89,15 @@ syn_store_in_dataraw(
 )
 
 
-# This now stays firmly on 18.6-consortium using hard codes.
+# This now stays firmly on 18.2 consortium using hard codes.
+# Using 18.2 because that's what we used for the pan-GENIE DDR analysis.
 # Tired of version shifting and errors.
-mg_clin_pt <- 'syn9734568.246' # notation means: synid.version
-mg_clin_samp <- 'syn9734573.256'
-mg_geno_info <- 'syn7444851.202'
-mg_mut <- 'syn5571527.344'
-mg_cna <- 'syn7213997.245'
-mg_sv <- 'syn44810233.43'
+mg_clin_pt <- 'syn9734568.234' # notation means: synid.version
+mg_clin_samp <- 'syn9734573.244'
+mg_geno_info <- 'syn7444851.192'
+mg_mut <- 'syn5571527.332'
+mg_cna <- 'syn7213997.234'
+mg_sv <- 'syn44810233.33'
 
 syn_store_in_dataraw(
   sid = mg_clin_pt,

@@ -36,22 +36,22 @@ ddr_outcome %<>% inst_helper(.)
 
 ddr_all <- bind_rows(
   (ddr_outcome_main %>%
-    select(sample_id, ddr, seq_assay_id, n_genes, inst_f) %>%
+    select(sample_id, ddr, seq_assay_id, panel_genes_100, inst_f) %>%
     mutate(study = "Main GENIE")),
   (ddr_outcome %>%
-    select(sample_id, ddr, seq_assay_id, n_genes, inst_f) %>%
+    select(sample_id, ddr, seq_assay_id, panel_genes_100, inst_f) %>%
     mutate(study = "BPC"))
 ) %>%
   mutate(study = fct_inorder(study))
 
 ddr_all_aggr <- ddr_all %>%
-  group_by(study, seq_assay_id, n_genes, inst_f) %>%
+  group_by(study, seq_assay_id, panel_genes_100, inst_f) %>%
   summarize(cases = n(), prop_ddr = mean(ddr), .groups = 'drop')
 
 
 gg <- ggplot(
   ddr_all_aggr,
-  aes(x = n_genes, y = prop_ddr)
+  aes(x = panel_genes_100, y = prop_ddr)
 ) +
   geom_point(aes(size = cases, color = inst_f, text = seq_assay_id)) +
   geom_smooth(
@@ -70,24 +70,27 @@ gg <- ggplot(
     se = F
   ) +
   theme_bw() +
-  facet_wrap(vars(study)) +
+  facet_wrap(vars(study), nrow = 1) +
   labs(
     x = "Genes tested in panel",
     y = "Percent DDR+"
   ) +
   scale_x_continuous(
-    expand = expansion(add = c(0, 5), mult = 0),
-    limits = c(0, NA)
+    expand = expansion(add = c(0, 1), mult = 0),
+    limits = c(0, NA),
+    breaks = seq(0, 10, by = 2),
+    labels = seq(0, 10 * 100, by = 2 * 100)
   ) +
   scale_y_continuous(
     expand = expansion(add = c(0.01, 0.05), mult = 0),
-    limits = c(0, NA)
+    limits = c(0, NA),
+    labels = scales::percent_format(accuracy = 1)
   ) +
   scale_color_bmj()
 
-pltly_ddr_panel_size <- ggplotly(gg)
+# Plotly script is broken, which is OK since it's not permanent
 
 readr::write_rds(
-  pltly_ddr_panel_size,
+  gg,
   here(dir_out, 'pltly_ddr_panel_size.rds')
 )
