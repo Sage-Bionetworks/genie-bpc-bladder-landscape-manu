@@ -76,6 +76,30 @@ source(here('analysis', 'script', 'ddr_outcome_model_run.R'))
 source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 
 # need to set up quarto render still.
+quarto_render_copy <- function(
+    qmd_path,
+    qmd_file_stub,
+    out_path,
+    out_file = NULL
+) {
+  out_file <- out_file %||% paste0(qmd_file_stub, '.html')
+  quarto::quarto_render(
+    input = here(qmd_path, paste0(qmd_file_stub, '.qmd'))
+  )
+  fs::file_copy(
+    path = here(qmd_path, paste0(qmd_file, '.html'))
+    new_path = here(out_path, out_file),
+    overwrite = TRUE
+  )
+}
+
+quarto_render_copy(
+  qmd_path = here('analysis', 'report'),
+  qmd_file = here('genie-bpc_bladder_ddr'),
+  out_path = here('output', 'report')
+)
+  
+  
 quarto::quarto_render(
   input = here('analysis', 'report', 'genie-bpc-bladder-ddr.qmd')
 )
