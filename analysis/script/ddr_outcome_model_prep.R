@@ -134,6 +134,7 @@ readr::write_rds(
   here(dir_out, 'ddr_outcome_premodel.rds')
 )
 
+
 ddr_outcome_mod <- ddr_outcome %>%
   select(
     sample_id,
@@ -141,7 +142,7 @@ ddr_outcome_mod <- ddr_outcome %>%
     sample_type,
     dx_path_proc_cpt_days,
     de_novo_met,
-    dob_ca_dx_yrs,
+    dob_cpt_rep_yrs,
     upper_tract,
     institution,
     birth_year,
@@ -174,9 +175,9 @@ ddr_outcome_mod %<>%
   mutate(
     panel_genes_100 = n_genes / 100,
     birth_year_5 = birth_year / 5,
-    age_dx_5 = dob_ca_dx_yrs / 5
+    age_seq_5 = dob_cpt_rep_yrs / 5
   ) %>%
-  select(-c(n_genes, birth_year, dob_ca_dx_yrs))
+  select(-c(n_genes, birth_year, dob_cpt_rep_yrs))
 
 
 readr::write_rds(
