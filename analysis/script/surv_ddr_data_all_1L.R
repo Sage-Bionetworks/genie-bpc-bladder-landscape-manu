@@ -46,7 +46,7 @@ rec_ca <- c('record_id', 'ca_seq')
 rel_reg <- left_join(
   rel_reg,
   select(dft_ca_ind, record_id, ca_seq, dob_ca_dx_days),
-  by = rc_vec
+  by = rec_ca
 ) %>%
   mutate(
     dob_reg_start_days = dx_reg_start_int + dob_ca_dx_days

@@ -93,10 +93,7 @@ source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R'))
 # Currently Figure 3 does not rely on anything but the univariate model.  Probably a concerning thing.
 source(here('analysis', 'script', 'manu-fig3.R'))
 source(here('analysis', 'script', 'manu-fig3-table-overlays.R'))
-
-source(here('analysis', 'script', 'surv_ddr_onco_plat_1L_interact.R'))
-# This has some console prints still, but it's successfully updated to use the
-#   outputs form the surv_ddr_data_all_1L.R script above.
+# The "interact" surv script is moved to deprecated and the model one needs to be updated to use the 1L data.
 
 # Deleted the 2L script for now.  It can be created again by just changing the 1L script.
 

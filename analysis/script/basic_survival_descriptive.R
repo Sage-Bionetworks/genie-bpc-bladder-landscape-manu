@@ -71,6 +71,8 @@ gg_os_dx_stage <- plot_one_survfit(
   x_exp = 0.1
 )
 
+gg_os_dx_stage
+
 readr::write_rds(
   x = gg_os_dx_stage,
   file = here(surv_desc_fp, 'os_dx_by_stage.rds')

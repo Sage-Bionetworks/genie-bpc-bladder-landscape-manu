@@ -38,7 +38,3 @@ manu_plot_save_helper(
 #   ggsurvfit_build(gg_fig_3b),
 #   ...
 # )
-
-cli_abort(
-  "still need the table outputs for these figures which are pasted up top in the 'plan'"
-)
