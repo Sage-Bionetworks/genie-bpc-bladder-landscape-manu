@@ -76,6 +76,14 @@ source(here('analysis', 'script', 'ddr_outcome_model_run.R'))
 source(here('analysis', 'script', 'ddr_outcome_panel_size_plots.R'))
 
 # need to set up quarto render still.
+quarto::quarto_render(
+  input = here('analysis', 'report', 'genie-bpc-bladder-ddr.qmd')
+)
+fs::file_copy(
+  path = 'analysis/report/genie-bpc-bladder-ddr.html',
+  new_path = 'output/report/02-genie-bpc-bladder-ddr.html',
+  overwrite = TRUE
+)
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-ddr.qmd'),
   output_file = '02-genie-bpc-bladder-ddr.html',
