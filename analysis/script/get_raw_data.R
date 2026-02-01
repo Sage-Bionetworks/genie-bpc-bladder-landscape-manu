@@ -98,14 +98,11 @@ mg_geno_info <- 'syn7444851.192'
 mg_mut <- 'syn5571527.332'
 mg_cna <- 'syn7213997.234'
 mg_sv <- 'syn44810233.33'
+mg_ai <- 'syn21614837.92'
 
-syn_store_in_dataraw(
-  sid = mg_clin_pt,
-  here("data-raw", "genomic", 'main_genie')
-)
 
 purrr::walk(
-  .x = c(mg_clin_pt, mg_clin_samp, mg_geno_info, mg_mut, mg_cna, mg_sv),
+  .x = c(mg_clin_pt, mg_clin_samp, mg_geno_info, mg_mut, mg_cna, mg_sv, mg_ai),
   .f = \(z) {
     syn_store_in_dataraw(
       z,

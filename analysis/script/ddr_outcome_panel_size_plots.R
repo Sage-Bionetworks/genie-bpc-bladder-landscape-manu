@@ -88,8 +88,6 @@ gg <- ggplot(
   ) +
   scale_color_bmj()
 
-# Plotly script is broken, which is OK since it's not permanent
-
 readr::write_rds(
   gg,
   here(dir_out, 'pltly_ddr_panel_size.rds')
