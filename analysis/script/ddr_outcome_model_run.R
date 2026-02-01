@@ -68,7 +68,7 @@ mira_surv <- with(
     formula = ddr ~
       panel_genes_100 +
         de_novo_met +
-        age_dx_5 +
+        age_seq_5 +
         dx_path_proc_cpt_yrs +
         upper_tract +
         birth_year_5 +
@@ -258,6 +258,15 @@ var_pretty_map <- tribble(
   'race_Asian',
   "Race = Asian",
 
+  "birth_year_5",
+  "**Birth year (/5 yrs)**",
+
+  "age_seq_5",
+  "**Age at seq (/5 yrs)**",
+
+  "age_dx_5",
+  "**Age at dx (/5 yrs)**",
+
   "met_at_cptTRUE",
   "Metastatic @NGS",
 
@@ -271,16 +280,7 @@ var_pretty_map <- tribble(
   "ECOG @NGS (imputed)",
 
   "dx_path_proc_cpt_yrs",
-  "**Yrs from dx to path**",
-
-  "birth_year_5",
-  "**Birth year (/5 yrs)**",
-
-  "age_seq_5",
-  "**Age at seq (/5 yrs)**",
-
-  "age_dx_5",
-  "**Age at dx (/5 yrs)**",
+  "**Yrs from dx to path**"
 )
 
 ddr_out_both <- left_join(
