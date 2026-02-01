@@ -100,7 +100,6 @@ mg_cna <- 'syn7213997.234'
 mg_sv <- 'syn44810233.33'
 mg_ai <- 'syn21614837.92'
 
-
 purrr::walk(
   .x = c(mg_clin_pt, mg_clin_samp, mg_geno_info, mg_mut, mg_cna, mg_sv, mg_ai),
   .f = \(z) {

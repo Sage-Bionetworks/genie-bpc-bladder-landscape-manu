@@ -6,6 +6,7 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_in <- here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome')
 dir_out <- here('data', 'genomic', 'ddr_def_compare', 'ddr_as_outcome')
+manu_out_dir_fig2 <- here('output', 'manu', 'fig2')
 ddr_outcome <- readr::read_rds(
   here(dir_in, 'ddr_outcome_mod_ready.rds')
 )
@@ -48,12 +49,34 @@ ddr_all_aggr <- ddr_all %>%
   group_by(study, seq_assay_id, panel_genes_100, inst_f) %>%
   summarize(cases = n(), prop_ddr = mean(ddr), .groups = 'drop')
 
+# There's one MSK case with no assay ID oddly, we can remove that here.
+ddr_all_aggr %<>%
+  filter(!is.na(seq_assay_id))
+
+assay_info <- readr::read_tsv(
+  here('data-raw', 'genomic', 'main_genie', 'assay_information.txt')
+)
+
+ddr_all_aggr <- left_join(
+  ddr_all_aggr,
+  select(assay_info, seq_assay_id = SEQ_ASSAY_ID, calling_strategy),
+  by = 'seq_assay_id'
+)
+
+ddr_all_aggr %<>%
+  mutate(
+    `Calling Strategy` = case_when(
+      calling_strategy %in% "tumor_normal" ~ 'Matched normal',
+      calling_strategy %in% "tumor_only" ~ 'Tumor only'
+    )
+  )
+
 
 gg <- ggplot(
   ddr_all_aggr,
   aes(x = panel_genes_100, y = prop_ddr)
 ) +
-  geom_point(aes(size = cases, color = inst_f, text = seq_assay_id)) +
+  geom_point(aes(size = cases, color = `Calling Strategy`)) +
   geom_smooth(
     aes(weight = cases),
     color = 'gray20',
@@ -70,7 +93,7 @@ gg <- ggplot(
     se = F
   ) +
   theme_bw() +
-  facet_wrap(vars(study), nrow = 1) +
+  facet_wrap(vars(study), ncol = 1) +
   labs(
     x = "Genes tested in panel",
     y = "Percent DDR+"
@@ -86,9 +109,18 @@ gg <- ggplot(
     limits = c(0, NA),
     labels = scales::percent_format(accuracy = 1)
   ) +
+  guides(size = guide_legend(title = "Cases")) +
   scale_color_bmj()
 
 readr::write_rds(
   gg,
   here(dir_out, 'pltly_ddr_panel_size.rds')
+)
+
+manu_plot_save_helper(
+  dir = manu_out_dir_fig2,
+  gg,
+  name = '2B_panel_size',
+  height = 6,
+  width = 8,
 )
