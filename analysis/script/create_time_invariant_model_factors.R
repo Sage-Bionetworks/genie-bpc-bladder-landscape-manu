@@ -27,6 +27,22 @@ dft_time_invar <- dft_ca_ind %>%
   select(record_id, ca_seq, dob_ca_dx_yrs, ca_type) %>%
   left_join(dft_time_invar, ., by = rc_vec)
 
+cpt <- readr::read_rds(here('data', 'cohort', 'cpt.rds'))
+cpt_sub <- cpt %>%
+  get_first_cpt(dft_ca_ind, .) %>%
+  left_join(
+    .,
+    select(dft_ca_ind, all_of(rc_vec), dob_ca_dx_yrs),
+    by = rc_vec
+  ) %>%
+  mutate(
+    dob_cpt_rep_yrs = dx_cpt_rep_yrs + dob_ca_dx_yrs
+  ) %>%
+  select(-c(dx_cpt_rep_yrs, dob_ca_dx_yrs))
+
+dft_time_invar <- left_join(dft_time_invar, cpt_sub, rc_vec)
+
+
 dft_time_invar %<>%
   mutate(
     upper_tract = ca_type %in% "Renal Pelvis Cancer"
