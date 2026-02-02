@@ -94,8 +94,8 @@ source(here('analysis', 'script', 'basic_survival_descriptive.R'))
 source(here('analysis', 'script', 'surv_ddr_data_all_1L.R'))
 source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R'))
 # Currently Figure 3 does not rely on anything but the univariate model.  Probably a concerning thing.
-source(here('analysis', 'script', 'manu-fig3.R'))
 source(here('analysis', 'script', 'manu-fig3-table-overlays.R'))
+source(here('analysis', 'script', 'manu-fig3.R'))
 # The "interact" surv script is moved to deprecated and the model one needs to be updated to use the 1L data.
 
 # Deleted the 2L script for now.  It can be created again by just changing the 1L script.
@@ -104,7 +104,7 @@ source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures.R'))
 source(here('analysis', 'script', 'create_2025_asco_gu_abstract_figures_lot.R'))
 source(here('analysis', 'script', 'create_2025_asco_gu_abstract_demo.R'))
 
-source(here('analysis', 'script', 'create_fig_1.R'))
+source(here('analysis', 'script', 'create_km_figs.R'))
 
 
 #############################

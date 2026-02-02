@@ -369,16 +369,12 @@ bundle_both <- list(
   gg_ddr_out_both_multiple_lr = list(gg_ddr_out_both_multiple_lr)
 )
 
-ggsave(
+manu_plot_save_helper(
   plot = gg_ddr_out_both_panels,
+  dir = here('output', 'manu', 'fig2'),
+  name = '2A_ddr_as_outcome_models',
   height = 4,
-  width = 8,
-  filename = here(
-    'output',
-    'fig',
-    'aacr_summer_2025',
-    'ddr_outcome_main_bpc.png'
-  )
+  width = 8
 )
 
 write_rds(

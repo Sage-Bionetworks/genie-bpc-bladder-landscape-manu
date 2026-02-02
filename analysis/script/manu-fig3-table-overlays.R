@@ -206,6 +206,11 @@ fig3a_table_inlay %>%
   autofit(.) %>%
   save_as_docx(path = here(manu_out_dir_fig3, 'fig_3a_inlay_table.docx'))
 
+readr::write_rds(
+  fig3a_table_inlay,
+  here('data', 'survival', 'ddr_onco_1L', '3a_tab_inlay.rds')
+)
+
 
 fig3b_top <- tibble(
   left_head = c(
@@ -246,3 +251,8 @@ fig3b_table_inlay %>%
   flextable::merge_at(i = 6, j = 3:4) %>%
   autofit(.) %>%
   save_as_docx(path = here(manu_out_dir_fig3, 'fig_3b_inlay_table.docx'))
+
+readr::write_rds(
+  fig3b_table_inlay,
+  here('data', 'survival', 'ddr_onco_1L', '3b_tab_inlay.rds')
+)
