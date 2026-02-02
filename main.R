@@ -19,6 +19,7 @@ source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'create_cohort_data.R'))
 source(here('analysis', 'script', 'create_characteristics_table.R'))
 source(here('analysis', 'script', 'create_characteristics_table_main_genie.R'))
+source(here('analysis', 'script', 'manu-char-tab-out.R'))
 
 source(here('analysis', 'script', 'create_drug_dat.R'))
 source(here('analysis', 'script', 'create_dmet_data.R'))
@@ -51,11 +52,15 @@ cli_alert_warning(
     "follow the steps in \n/data/genomic/oncoprint/directions.md"
   )
 )
-# need to set up quarto render still.
-rmarkdown::render(
-  input = here('analysis', 'report', 'genie-bpc-bladder-genomic.qmd'),
-  output_file = '02-genie-bpc-bladder-genomic.html',
-  output_dir = here('output', 'report')
+
+
+quarto::quarto_render(
+  input = here('analysis', 'report', 'genie-bpc-bladder-genomic.qmd')
+)
+fs::file_copy(
+  path = 'analysis/report/genie-bpc-bladder-genomic.html',
+  new_path = 'output/report/02-genie-bpc-bladder-genomic.html',
+  overwrite = TRUE
 )
 
 

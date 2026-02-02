@@ -173,11 +173,6 @@ dft_demo %<>%
     .after = record_id
   )
 
-readr::write_rds(
-  dft_demo,
-  here('data', 'cohort', 'formatted_characteristics.rds')
-)
-
 
 # Cancer sites still need to be characterized, printing these for med onc review.
 count(dft_demo, `Cancer site (detailed)`, sort = T) %>%
