@@ -38,3 +38,13 @@ manu_plot_save_helper(
 #   ggsurvfit_build(gg_fig_3b),
 #   ...
 # )
+
+fig3a_table_inlay <- readr::read_rds(
+  here('data', 'survival', 'ddr_onco_1L', '3a_tab_inlay.rds')
+)
+
+fig3b_table_inlay <- readr::read_rds(
+  here('data', 'survival', 'ddr_onco_1L', '3b_tab_inlay.rds')
+)
+
+gg_fig_3a

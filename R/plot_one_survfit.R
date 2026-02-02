@@ -7,9 +7,11 @@ plot_one_survfit <- function(
   x_title = "Years",
   risktable_prop = NULL,
   risktable_font_size = 3.5,
+  risktable_stat_incl = c("n.risk", "cum.censor", "cum.event" ),
   x_exp = 0.15,
   x_breaks = seq(0, 100, by = 2.5),
-  force_color = NULL
+  force_color = NULL,
+  include_censor_mark = FALSE
 ) {
   gg <- survfit2(surv_form, data = dat)
 
@@ -19,14 +21,14 @@ plot_one_survfit <- function(
   } else {
     gg %<>% ggsurvfit()
   }
+  
+  if (include_censor_mark) {
+    gg <- gg + add_censor_mark()
+  }
 
   gg <- gg +
     add_risktable(
-      risktable_stats = c(
-        "n.risk",
-        "cum.censor",
-        "cum.event"
-      ),
+      risktable_stats = risktable_stat_incl,
       hjust = 0,
       risktable_height = risktable_prop,
       size = risktable_font_size # default

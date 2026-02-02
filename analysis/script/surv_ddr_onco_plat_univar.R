@@ -56,10 +56,14 @@ gg_os_fmr_ddr_manu <- plot_one_survfit(
   surv_form = surv_obj_os_fmr ~ ddr_disp,
   plot_title = "OS from first line platinum chemo",
   x_breaks = seq(0, 100, by = 0.5),
-  pal = c('#eecc66', '#997700')
+  pal = c('#eecc66', '#997700'),
+  include_censor_mark = TRUE,
+  risktable_stat_incl = 'n.risk'
 ) +
   coord_cartesian(xlim = c(0, 5)) +
   theme(plot.title.position = 'panel')
+
+gg_os_fmr_ddr_manu
 
 gg_os_fmr_ddr_manu_no_rt <- plot_one_survfit_no_risktable(
   dat = dft_met_ddr_surv,
@@ -112,8 +116,9 @@ gg_os_fmr_ddr_manu_plat_split <- plot_one_survfit(
   surv_form = surv_obj_os_fmr ~ ddr_plat_comb,
   plot_title = "OS from first line platinum chemo",
   x_breaks = seq(0, 100, by = 0.5),
-  pal = c('#6699cc', '#004488', '#ee99aa', '#994455')
-  #   pal = c("#ee99aa", "#994455", "#6699cc", "#004488")
+  pal = c('#6699cc', '#004488', '#ee99aa', '#994455'),
+  include_censor_mark = TRUE,
+  risktable_stat_incl = 'n.risk'
 ) +
   coord_cartesian(xlim = c(0, 5)) +
   theme(plot.title.position = 'panel')
