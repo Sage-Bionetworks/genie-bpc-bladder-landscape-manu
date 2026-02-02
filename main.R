@@ -19,6 +19,7 @@ source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'create_cohort_data.R'))
 source(here('analysis', 'script', 'create_characteristics_table.R'))
 source(here('analysis', 'script', 'create_characteristics_table_main_genie.R'))
+
 source(here('analysis', 'script', 'create_drug_dat.R'))
 source(here('analysis', 'script', 'create_dmet_data.R'))
 source(here('analysis', 'script', 'estimate_reg_year.R')) # resampling takes ~15s

@@ -47,4 +47,62 @@ fig3b_table_inlay <- readr::read_rds(
   here('data', 'survival', 'ddr_onco_1L', '3b_tab_inlay.rds')
 )
 
-gg_fig_3a
+fig3a_inlay_raster <- fig3a_table_inlay %>%
+  rename(` ` = left_head) %>%
+  flextable(.) %>%
+  fontsize(size = 8, part = "all") %>%
+  padding(padding = 3, part = "all") %>%
+  flextable::merge_at(i = 3, j = 2:3) %>%
+  autofit(.) %>%
+  theme_booktabs(.) %>%
+  bg(bg = "white", part = 'all') %>%
+  gen_grob(., fit = 'fixed', scaling = 'fixed')
+
+gg_fig_3a_with_inlay <- gg_fig_3a +
+  annotation_custom(
+    fig3a_inlay_raster,
+    xmin = 1.6,
+    xmax = 5.5,
+    ymin = 0.75,
+    ymax = 0.98
+  )
+
+manu_plot_save_helper(
+  dir = manu_out_dir_fig3,
+  gg_fig_3a_with_inlay,
+  name = 'fig_3a_all_plat_inlay_table',
+  height = 6,
+  width = 8
+)
+
+
+fig3b_inlay_raster <- fig3b_table_inlay %>%
+  rename(`  ` = left_grp_head, ` ` = left_head) %>%
+  flextable(.) %>%
+  fontsize(size = 8, part = "all") %>%
+  padding(padding = 3, part = "all") %>%
+  flextable::merge_v(j = 1) %>%
+  flextable::valign(valign = "top") %>%
+  flextable::merge_at(i = 3, j = 3:4) %>%
+  flextable::merge_at(i = 6, j = 3:4) %>%
+  autofit(.) %>%
+  theme_booktabs(.) %>%
+  bg(bg = "white", part = "all") %>%
+  gen_grob(., fit = 'fixed', scaling = 'fixed')
+
+gg_fig_3b_with_inlay <- gg_fig_3b +
+  annotation_custom(
+    fig3b_inlay_raster,
+    xmin = 1.6,
+    xmax = 5.5,
+    ymin = 0.75,
+    ymax = 0.98
+  )
+
+manu_plot_save_helper(
+  dir = manu_out_dir_fig3,
+  gg_fig_3b_with_inlay,
+  name = 'fig_3b_cis_carbo_split_inlay_table',
+  height = 6,
+  width = 8,
+)
