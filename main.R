@@ -27,6 +27,7 @@ source(here('analysis', 'script', 'estimate_reg_year.R')) # resampling takes ~15
 source(here('analysis', 'script', 'create_neoadj_dat.R'))
 source(here('analysis', 'script', 'derive_lines_of_therapy.R'))
 source(here('analysis', 'script', 'derive_custom_time_to_met.R'))
+source(here('analysis', 'script', 'custom_met_tables.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-clinical.rmd'),
   output_file = '01-genie-bpc-bladder-clinical.html',
@@ -120,6 +121,9 @@ source(here('analysis', 'script', 'create_km_figs.R'))
 # Do:
 # 1. render analysis/report/genie-bpc-met-class.qmd.
 # 2. Run the following copy command:
+quarto::quarto_render(
+  input = here('analysis', 'report', 'genie-bpc-bladder-met-class.qmd')
+)
 fs::file_move(
   path = here('analysis', 'report', 'genie-bpc-bladder-met-class.html'),
   new_path = here('output', 'report', '99-genie-bpc-bladder-met-class.html')
