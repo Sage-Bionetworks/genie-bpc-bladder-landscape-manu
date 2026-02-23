@@ -131,3 +131,18 @@ fs::file_move(
 
 
 source(here('analysis', 'script', 'single_path_site_cases.R'))
+quarto::quarto_render(
+  input = here('analysis', 'report', 'genie-bpc-bladder-genomics-pathology.qmd')
+)
+fs::file_move(
+  path = here(
+    'analysis',
+    'report',
+    'genie-bpc-bladder-genomics-pathology.html'
+  ),
+  new_path = here(
+    'output',
+    'report',
+    '04-genie-bpc-bladder-genomics-pathology.html'
+  )
+)
