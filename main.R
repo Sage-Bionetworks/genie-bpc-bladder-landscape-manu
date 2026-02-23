@@ -27,7 +27,7 @@ source(here('analysis', 'script', 'estimate_reg_year.R')) # resampling takes ~15
 source(here('analysis', 'script', 'create_neoadj_dat.R'))
 source(here('analysis', 'script', 'derive_lines_of_therapy.R'))
 source(here('analysis', 'script', 'derive_custom_time_to_met.R'))
-source(here('analysis', 'script', 'custom_met_tables.R'))
+source(here('analysis', 'script', 'create_met_tables.R'))
 rmarkdown::render(
   input = here('analysis', 'report', 'genie-bpc-bladder-clinical.rmd'),
   output_file = '01-genie-bpc-bladder-clinical.html',
@@ -103,6 +103,8 @@ source(here('analysis', 'script', 'surv_ddr_onco_plat_univar.R'))
 # Currently Figure 3 does not rely on anything but the univariate model.  Probably a concerning thing.
 source(here('analysis', 'script', 'manu-fig3-table-overlays.R'))
 source(here('analysis', 'script', 'manu-fig3.R'))
+source(here('analysis', 'script', 'manu-fig3-iyer-addon.R'))
+
 # The "interact" surv script is moved to deprecated and the model one needs to be updated to use the 1L data.
 
 # Deleted the 2L script for now.  It can be created again by just changing the 1L script.

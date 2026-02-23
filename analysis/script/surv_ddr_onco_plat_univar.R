@@ -33,6 +33,10 @@ dft_met_ddr_surv %<>%
     ddr_disp = case_when(
       ddr_before_entry ~ "Oncogenic DDR",
       T ~ "No Onco. DDR"
+    ),
+    ddr_disp_iyer = case_when(
+      ddr_before_entry_iyer ~ "Oncogenic DDR (Iyer)",
+      T ~ "No Onco. DDR"
     )
   )
 
@@ -63,7 +67,21 @@ gg_os_fmr_ddr_manu <- plot_one_survfit(
   coord_cartesian(xlim = c(0, 5)) +
   theme(plot.title.position = 'panel')
 
-gg_os_fmr_ddr_manu
+# coxph() fit comparison between Iyer and custom def:
+# coxph(surv_obj_os_fmr ~ ddr_disp_iyer, data = dft_met_ddr_surv)
+# coxph(surv_obj_os_fmr ~ ddr_disp, data = dft_met_ddr_surv)
+
+gg_os_fmr_ddr_manu_iyer <- plot_one_survfit(
+  dat = dft_met_ddr_surv,
+  surv_form = surv_obj_os_fmr ~ ddr_disp_iyer,
+  plot_title = "OS from first line platinum chemo",
+  x_breaks = seq(0, 100, by = 0.5),
+  pal = c('#eecc66', '#997700'),
+  include_censor_mark = TRUE,
+  risktable_stat_incl = 'n.risk'
+) +
+  coord_cartesian(xlim = c(0, 5)) +
+  theme(plot.title.position = 'panel')
 
 gg_os_fmr_ddr_manu_no_rt <- plot_one_survfit_no_risktable(
   dat = dft_met_ddr_surv,
@@ -78,6 +96,12 @@ readr::write_rds(
   gg_os_fmr_ddr_manu,
   file = here(dir_out, "gg_met_ddr_manu.rds")
 )
+
+readr::write_rds(
+  gg_os_fmr_ddr_manu_iyer,
+  file = here(dir_out, "gg_met_ddr_manu_iyer.rds")
+)
+
 
 readr::write_rds(
   gg_os_fmr_ddr_manu_no_rt,

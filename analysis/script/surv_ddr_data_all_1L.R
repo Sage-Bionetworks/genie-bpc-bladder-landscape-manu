@@ -77,7 +77,9 @@ custom_ddr_list <- c(
   sort(.)
 dft_onco_ddr <- dft_alt %>%
   filter(hugo %in% custom_ddr_list) %>%
-  filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic"))
+  filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic")) %>%
+  mutate(.ddr_type = "default")
+
 # Add in the relevant stuff from CPT data:
 dft_onco_ddr <- dft_cpt %>%
   select(
@@ -87,11 +89,9 @@ dft_onco_ddr <- dft_cpt %>%
     dx_cpt_rep_days, # interval from dx to report date of this CPT.
     cpt_genie_sample_id
   ) %>%
-  left_join(
-    dft_onco_ddr,
-    .,
-    by = c(sample_id = "cpt_genie_sample_id")
-  )
+  left_join(dft_onco_ddr, ., by = c(sample_id = "cpt_genie_sample_id"))
+
+
 onco_ddr_before_entry <- dft_onco_ddr %>%
   left_join(
     .,
@@ -106,6 +106,35 @@ rel_reg <- onco_ddr_before_entry %>%
   left_join(rel_reg, ., by = c('record_id', 'ca_seq')) %>%
   replace_na(list(ddr_before_entry = F))
 
+
+# Add in the Iyer version:
+dft_onco_ddr_iyer <- dft_alt %>%
+  filter(hugo %in% gene_symbols_iyer()) %>%
+  filter(oncogenic %in% c("Likely Oncogenic", "Oncogenic"))
+
+dft_onco_ddr_iyer <- dft_cpt %>%
+  select(
+    record_id,
+    ca_seq,
+    dx_path_proc_cpt_days, # interval from dx to pathology procedure of this CPT.
+    dx_cpt_rep_days, # interval from dx to report date of this CPT.
+    cpt_genie_sample_id
+  ) %>%
+  left_join(dft_onco_ddr_iyer, ., by = c(sample_id = "cpt_genie_sample_id"))
+onco_ddr_before_entry_iyer <- dft_onco_ddr_iyer %>%
+  left_join(
+    .,
+    select(rel_reg, record_id, ca_seq, dx_entry),
+    by = c('record_id', 'ca_seq')
+  ) %>%
+  # take only those who had a path proc time before entry.
+  filter(dx_entry > dx_path_proc_cpt_days - 0.5)
+rel_reg <- onco_ddr_before_entry_iyer %>%
+  group_by(record_id, ca_seq) %>%
+  summarize(ddr_before_entry_iyer = T) %>%
+  left_join(rel_reg, ., by = c('record_id', 'ca_seq')) %>%
+  replace_na(list(ddr_before_entry_iyer = F))
+# Iyer addon over - back to thread.
 
 rel_reg <- rel_reg %>%
   mutate(

@@ -9,6 +9,7 @@ manu_out_dir_fig3 <- here('output', 'manu', 'fig3')
 gg_fig_3a <- readr::read_rds(
   here('data', 'survival', 'ddr_onco_1L', 'gg_met_ddr_manu.rds')
 )
+
 gg_fig_3b <- readr::read_rds(
   here('data', 'survival', 'ddr_onco_1L', 'gg_met_ddr_plat_split.rds')
 )
