@@ -37,8 +37,34 @@ cpt_path_sum <- cpt_path_long %>%
     regions = paste(sort(unique(map_custom)), collapse = ', '),
     .groups = 'drop'
   )
-  
 
+cpt_path_indicators <- cpt_path_long %>%
+  select(cpt_genie_sample_id, map_custom) %>%
+  mutate(is_there = T) %>%
+  distinct(.) %>% 
+  pivot_wider(
+    names_from = map_custom,
+    values_from = is_there,
+    values_fill = FALSE
+  ) %>%
+  select(-`NA`)
+```
+
+
+```{r}
+
+cpt_path_indicators %>% glimpse
+# sort by colsums just to get good default printing:
+cpt_path_indicators %<>%
+  select(cpt_genie_sample_id, all_of(
+    (cpt_path_indicators %>%
+       select(-cpt_genie_sample_id)) %>%
+       mutate(across(everything(), as.numeric)) %>%
+       colSums(.) %>%
+       sort(., decreasing = T) %>%
+       names(.)
+    )
+  )
 ```
 
 ## Introduction
@@ -53,19 +79,65 @@ We'll start with an accounting of the distribution of body regions associated wi
 
 ## CPT reports, sites
 
-Of the `r nrow(cpt_path_sum)` NGS tests we have, `r nrow(filter(cpt_path_sum, n_regions %in% 1))` have only one site/region included in the path sites.  Here is the list of regions for those with only one listed:
+Of the `r nrow(cpt_path_sum)` NGS tests we have, `r nrow(filter(cpt_path_sum, n_region %in% 1))` have only one site/region included in the path sites.  Here is the list of regions for those with only one listed:
 
 ```{r}
-filter(cpt_path_sum, n_regions %in% 1) %>%
-  dt_wrapper
+#| include: true
+filter(cpt_path_sum, n_region %in% 1) %>%
+  group_by(regions) %>%
+  summarize(n_region = sum(n_region)) %>%
+  arrange(desc(n_region)) %>%
+  flextable(.) %>%
+  autofit(.)
+```
 
+Notes:
+
+- Obviously a lot of these are "local" bladder samples and not mets.
+- Of the specific non-bladder regions we're interested in (liver, bone, CNS, etc) we don't have a ton of samples to go on.
+
+The following table lists the number of CPT tests associated with a particular site, regardless of whether it is the only site associated:
+
+```{r}
+#| include: true
+cpt_path_indicators %>%
+  select(-cpt_genie_sample_id) %>%
+  tbl_summary(.)
+```
+
+## Genomics by site
+
+Just to see if there's much here, we'll start by looking at the proportion of samples covering a pathology site which are DDR altered (oncogenic):
+
+```{r}
+# onco_alt_flags <- readr::read_rds(
+#   here('data', 'genomic', 'ddr_def_compare', 'onco_alt_flags.rds')
+# )
+
+ddr_flags_first_sample <- readr::read_rds(
+  here('data', 'genomic', 'ddr_def_compare', 'ddr_flags_first_sample.rds')
+)
+
+cpt_path_long <- left_join(
+  ddr_flags_first_sample,
+  cpt_path_long,
+  by = c(sample_id = 'cpt_genie_sample_id')
+)
 ```
 
 
 ```{r}
-
+#| include: true
+cpt_path_long %>%
+  group_by(path_site = map_custom) %>%
+  summarize(percent_ddr_alt = paste0(formatC(100 *mean(ddr), digits = 1, format = 'f'), '%')) %>%
+  flextable(.) %>%
+  autofit(.)
 ```
 
+Notes:
+
+- Possibly lower DDR alteration frequency in liver, lung, CNS.  Bladder samples were the highest.
 
 
 
