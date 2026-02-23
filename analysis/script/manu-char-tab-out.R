@@ -15,7 +15,8 @@ demo_coh %>%
       record_id,
       # taking off some stuff that's too detailed:
       `Cancer site (detailed)`,
-      `First ECOG source`
+      `First ECOG source`,
+      Institution # weirdly they didn't want this...
     )
   ) %>%
   gtsummary::tbl_summary(

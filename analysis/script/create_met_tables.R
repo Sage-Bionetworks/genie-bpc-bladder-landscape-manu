@@ -128,6 +128,20 @@ binary_met_dual_col <- bind_rows(
 ) %>%
   mutate(epoch = forcats::fct_inorder(epoch))
 
+cli_abort("Caption not working - gotta figure that out")
+
 binary_met_dual_col %>%
   select(-c(record_id, .met_type)) %>%
-  gtsummary::tbl_summary(., by = epoch)
+  gtsummary::tbl_summary(., by = epoch) %>%
+  as_gt %>%
+  tab_caption(
+    caption = 'Table SX: Metastases based on imaging and custom groupings of ICD codes.  The denominator for this table is the number of paritipants who ever had a confirmed metastasis in one of these categories.  "1st img date" refers to the day of the first image confirmed met, and "Ever" is anytime.'
+  ) %>%
+  gt::gtsave(
+    filename = here(
+      'output',
+      'manu',
+      'supp',
+      'SX_met_by_img.docx'
+    )
+  )

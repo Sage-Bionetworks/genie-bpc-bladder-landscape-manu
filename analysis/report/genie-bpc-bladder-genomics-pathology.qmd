@@ -1,0 +1,71 @@
+---
+title: "BPC Bladder - Genomics / pathology"
+author: "Alex Paynter"
+date: "`r Sys.Date()`"
+editor_options:
+  quarto:
+    chunk_output_type: console
+format:
+  html:
+    embed-resources: true
+    toc: true
+    theme: sandstone 
+execute:
+  echo: false
+  include: false
+  warning: false
+  message: false
+  fig.width: 7
+  fig.height: 5
+---
+
+
+```{r}
+library(purrr)
+library(here)
+library(fs)
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
+
+cpt_path_long <- readr::read_rds(
+  here('data', 'cohort', 'cpt_path_long.rds')
+)
+
+cpt_path_sum <- cpt_path_long %>%
+  group_by(cpt_genie_sample_id) %>%
+  summarize(
+    n_region = length(unique(map_custom)),
+    regions = paste(sort(unique(map_custom)), collapse = ', '),
+    .groups = 'drop'
+  )
+  
+
+```
+
+## Introduction
+
+We were curious about genomic differences between metastatic sites.  First let's summarize the structure of PRISSMM as it relates to this question:
+
+- Each cancer panel test (NGS test, `cpt_genie_sample_id`) is associated with one procedure and report pair (`path_proc_number`, `path_rep_number`), which we will call a path report.
+- Each path report can note up to 30 sites that it is associated with.
+- Sites in the path report are identified by ICD code, which we have grouped into custom body regions.
+
+We'll start with an accounting of the distribution of body regions associated with each CPT report.
+
+## CPT reports, sites
+
+Of the `r nrow(cpt_path_sum)` NGS tests we have, `r nrow(filter(cpt_path_sum, n_regions %in% 1))` have only one site/region included in the path sites.  Here is the list of regions for those with only one listed:
+
+```{r}
+filter(cpt_path_sum, n_regions %in% 1) %>%
+  dt_wrapper
+
+```
+
+
+```{r}
+
+```
+
+
+
+

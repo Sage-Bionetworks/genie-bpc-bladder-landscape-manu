@@ -128,3 +128,6 @@ fs::file_move(
   path = here('analysis', 'report', 'genie-bpc-bladder-met-class.html'),
   new_path = here('output', 'report', '99-genie-bpc-bladder-met-class.html')
 )
+
+
+source(here('analysis', 'script', 'single_path_site_cases.R'))
