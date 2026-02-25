@@ -40,6 +40,8 @@ met_sites_at_met <- met_time_custom %>%
     by = 'record_id'
   )
 
+# code here for gander/ellmer demo to iteratively create the below plot:
+
 gg_dx_dmet_problem <- met_sites_at_met %>%
   mutate(diff = dob_dmet_site_days - dob_dmet_days) %>%
   filter(!is.na(diff)) %>%
